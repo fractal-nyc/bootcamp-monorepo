@@ -17,12 +17,16 @@
 ### Wednesday
 
 **Readings:**
+- [Dear Student: Yes, AI is here, you're screwed unless you take action](https://ghuntley.com/screwed/)
+- [What do I mean by some software devs are "ngmi"?](https://ghuntley.com/ngmi/)
 
 ---
 
 ### Thursday
 
 **Readings:**
+- [You are using Cursor AI incorrectly](https://ghuntley.com/stdlib/)
+- [From Design doc to code: the Groundhog AI coding assistant](https://ghuntley.com/specs/)
 
 ---
 

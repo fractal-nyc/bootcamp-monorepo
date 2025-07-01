@@ -3,8 +3,6 @@
 Today, we will formally be introducing ourselves to Cursor, learning how
 and when to use it, and then building a skeleton of an Expo app.
 
-## [Example Repo](https://github.com/fractal-bootcamp/assignment-native-app)
-
 ## Instructions
 
 - Learn about React Native
@@ -21,8 +19,8 @@ and when to use it, and then building a skeleton of an Expo app.
     - After you get the basics, there's really no way to become an expert. Just starting using it and see what works.
     - The golden rule of AI coding: **DO NOT USE AI-GENERATED CODE YOU DO NOT UNDERSTAND.** Pressing "accept changes" and moving on is extremely tempting. Resist the temptation at all times. It is the quickest way to turn your app to slop.
 - Get the basic Expo template app working on your phone
-    - If you're feeling lost and want a in-depth tour of Expo, follow the first several steps in this [in-depth tutorial](https://docs.expo.dev/tutorial/introduction/).
-    - If you're looking to quickly get your hands dirty, follow the [quick tutorial](https://docs.expo.dev/get-started/introduction/).
+    - Follow the [quick tutorial](https://docs.expo.dev/get-started/introduction/) to get started.
+    - (optional) If you're feeling lost and want a in-depth tour of Expo, follow the first several steps in this [in-depth tutorial](https://docs.expo.dev/tutorial/introduction/).
     - You can use Expo Go if you like, but you'll need to create development builds anyway, so I recommend that approach from the start.
     - Use EAS to build and deploy your app. Setting up local app building is a huge pain.
 - Install [NativeWind](https://www.nativewind.dev/) for a Tailwind-like experience with our Expo app.

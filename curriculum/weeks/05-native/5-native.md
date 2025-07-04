@@ -17,7 +17,7 @@ own abililty to understand our code.
 
 - Monday: Experiment with Cursor, React Native/Expo, and brainstorm ideas
 - Tuesday: Skeleton of app complete, set up backend with API and auth
-- Wednesday: implement UI/backend
+- Wednesday: implement UI/backend`
 - Thursday: add native features (e.g. microphone, phone, notifications)
 - Friday: Polish, ship to beta testing programs if desired
 - Saturday: Demos!

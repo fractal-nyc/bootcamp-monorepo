@@ -10,7 +10,7 @@ The technologies and platform you choose are up to you. Some ideas:
 
  ## Requirements
   - Work as a team, with good division of labor; make commits to the same repo and review PRs
-  - Must be able to be played by an instructor's laptop by saturday
+  - Must be able to be played by an instructor's laptop or phone by saturday
   - Use AI for both development and asset creation as needed
   - Must be high quality and polished by Saturday; this is going into your portfolio!
 

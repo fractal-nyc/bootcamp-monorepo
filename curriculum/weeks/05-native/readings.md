@@ -40,4 +40,4 @@
 ### Saturday
 
 **Readings:**
-- TBD
+- [Learn programming in 10 years](https://www.norvig.com/21-days.html)

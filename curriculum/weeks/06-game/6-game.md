@@ -22,3 +22,8 @@ The technologies and platform you choose are up to you. Some ideas:
 - Thursday: adding more content/features
 - Friday: polish
 - Saturday: demos
+
+
+## Resources
+
+- [Sprite Animator](https://gametorch.app/sprite-animator)

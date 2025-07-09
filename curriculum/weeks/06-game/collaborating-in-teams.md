@@ -140,13 +140,36 @@ sequenceDiagram
 #### Step 2: API Definition
 **Goal:** Define contracts in real-time as you code
 
-**How to do it:**
-- Head of Engineering defines API signatures in TypeScript interfaces
-- APIs are defined just-in-time, right before implementation
-- Use TypeScript/type hints to enforce contracts
-- Changes happen in real-time with immediate team notification
+An API is any interface between one piece of code and another.
 
-**Example API Definition (written in 5 minutes):**
+Realistically, you can identify APIs in your Typescript code via `import` and `export`.
+Any code which is exported is intended to be used as a "module", so is an API.
+
+Changing APIs is a BIG DEAL. Other developers are probably using that API, and not just in Main. They might be modifying that API in their pull request. They might be relying on that API in their pull request.
+
+Changing APIs is the #1 cause of Merge Conflicts and Bugs.
+
+You can limit the number of bugs by keeping API changes minimal, modular, isolated, and tested.
+
+**Some Heuristics for changing APIs:**
+1. Don't PR a change to an API with any other changes to any other part of the code (use `git town prepend` if you're in the middle of a feature and need an API change)
+2. Don't change APIs without tests
+3. Don't change APIs without telling the relevant people on your team (link your tiny PR that changes the API!)
+4. Don't break any existing code that relies on the API!!
+
+**Further thoughts on setting up APIs in a group project:**
+- Head of Engineering defines (or confirms) API signatures in TypeScript interfaces
+- APIs are defined and stubbed/mocked as soon as we know they are needed. But remember [YAGNI](https://martinfowler.com/bliki/Yagni.html)
+- Use TypeScript/type hints to enforce contracts
+- If you need to change an existing exported type to support a feature, decouple that change from your feature and ship it ASAP (eg. `git town prepend`)
+- Message the team and the EM immediately that you are changing the contract for that part of the code.
+- Any code that is IMPORTED or EXPORTED is an API.
+- Limit the amount of code that you export.
+- Limit APIs
+- If you ever need to change code which is exported (eg an API), make that change quickly and modularly, with a minimal pull request; use `git town prepend`
+
+
+**Example API Mock/Stub Definition:**
 ```typescript
 // types/api.ts - updated throughout the day
 interface LoginRequest {
@@ -163,20 +186,22 @@ interface LoginResponse {
 async function loginUser(req: LoginRequest): Promise<LoginResponse>
 ```
 
-**Implementation steps:**
-1. Head of Engineering writes type definitions as team codes
-2. Types are committed immediately to shared repo
-3. Anyone can propose type changes via instant message
-4. Head of Engineering approves/rejects within 5 minutes
+**Where and How you Expose APIs is Very Important!!:**
+1. Any new data types should be added or changed as soon as you need it
+2. Use `git town prepend` to decouple data and type and interface changes from feature/logic changes which rely on that data or those types or those interfaces
+3. Head of Engineering should confirm and merge new interface changes quickly
+4. Locate data and types where they will be used. If they will be used globally across the app, consider a base-level `shared` directory so people are scared to change them. If they will only ever be used locally and not exported at all, just define them inline in the file where they are used. Keep shared code to an absolute minimum. Keep exports to a minimum. Keep APIs to a minimum, they create complexity.
 
 #### Step 3: End-to-End Scaffolding
 **Goal:** Create working skeleton in first hour, expand throughout the day
 
 **How to do it:**
-- Head of Engineering live-codes the basic structure with team watching
-- Create minimal implementations that return hardcoded data
+- Head of Engineering live-codes the basic app structure with team
+- Create minimal implementations (or stubs) that return hardcoded data (or stubs)
 - Each team member immediately starts replacing stubs in parallel
 - Integration happens continuously throughout the day
+
+
 
 **Example Scaffolding (written in 20 minutes):**
 ```javascript
@@ -198,11 +223,12 @@ function LoginForm() {
 }
 ```
 
+
 **Implementation process:**
-1. Head of Engineering creates all stubs in 30 minutes
+1. Head of Engineering creates basic stubbed-out structure with the team in an hour or so
 2. Team members claim stubs via chat: "Taking userAPI.login"
 3. Stubs are replaced with real implementations throughout the day
-4. Integration testing happens after each merge
+4. Integration testing happens in CI/CD so nothing gets merged into main without passing basic smoke tests. "Main Always Works"
 
 #### Step 4: Continuous Integration
 **Goal:** Manage system evolution in real-time
@@ -213,29 +239,14 @@ function LoginForm() {
 - Track integration status on shared screen visible to everyone
 - Adapt architecture in real-time based on implementation learnings
 
-**Example Real-Time Process:**
-```
-Shared Screen Dashboard:
-✅ User Auth API (Sarah) - merged 10:30am
-🔄 Profile UI (Mike) - in progress
-⏳ Payment Integration (Alex) - waiting for auth
-❌ File Upload (Lisa) - needs database schema change
-
-Slack Channel:
-10:35am Sarah: "Auth API is live, profile endpoint ready"
-10:36am Mike: "Testing profile UI now"
-10:37am Head of Engineering: "All good, Mike merge when ready"
-10:38am Alex: "Can start payment integration"
-```
-
 **Managing Rapid Changes:**
 - Architecture decisions made verbally and documented in code
-- Database schema changes coordinated via shared screen
+- Database schema changes coordinated via Head of Engineering
 - API changes broadcast immediately in team chat
 - Integration conflicts resolved through pair programming
 
 **Coordination Strategies:**
-- Head of Engineering maintains mental model of who's working on what
+- Head of Engineering maintains mental model of who's working on what, and when conflicts might crop up with shared modules
 - Team members announce what they're touching before starting
 - Use pair programming for any shared components
 - Immediate integration testing after each merge

@@ -25,3 +25,6 @@ For instance, if we could emulate this:
 
 ## Things to do:
 - Find or create a "Software Engineering Dictionary"
+- Teach Testing
+- Teach Drawing Systems (drawing Stripe, drawing Google, drawing Twitter, etc...)
+- 

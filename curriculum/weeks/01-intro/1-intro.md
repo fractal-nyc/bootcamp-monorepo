@@ -6,7 +6,7 @@ Kicking off the class, we’ll start by building a board game to cover best prac
 
 By the end of the first week, most students should be able to pass the “Calculator Exam”, a hiring test Jake gave to all junior candidates at Tenet.
 
-## Readings
+## Readings 
 
 See [readings.json](./readings.json).
 

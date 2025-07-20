@@ -1,6 +1,7 @@
 # Soft Skills Interview
 
-The soft skills interview is an important component of most interview panels. Although the technical portion is likely more important, making a strong impression in the soft skills interview is critical to landing a job and often acts as a "tiebreaker" between two candidates.
+Most candidates think the soft skills interview is about proving they are nice or easy to work with, but that’s not quite it. You’re being tested on whether you can communicate clearly, handle uncomfortable questions, and project confidence inside the constraints of a professional setting. It's hard to fail this interview, but
+it often serves as a tiebreaker. If there's two candidates with similar technical ability, the one who communicates better and feels easier to work with wins.
 
 # Readings
 
@@ -9,10 +10,23 @@ The soft skills interview is an important component of most interview panels. Al
 
 # Some Advice
 
-Prepare 3 tight-knit stories that can serve to answer multiple questions. Make them compelling, interesting, and adaptable to the question at hand. 
+## Use STAR
+
+See the Cracking the Coding Interview example. STAR is by far the best format for nailing this interview. 
+
+## Prep stories
+Prepare ~3-5 stories that collectively cover most of [the most common soft skills interview questions](https://devskiller.com/blog/45-behavioral-questions-to-use-during-non-technical-interview-with-developers/). These stories should be rehearsed but not memorized; you want to seem free-flowing, spontaneous, and authentic during the interview.
+
+## Control the  Narrative
 
 Some people get tripped over being too honest, accurate, or thorough in these interviews. It's OK not to mention every detail, or to simplify things for the flow of the story. Remember, you are selling yourself and your interviewer knows it. You don't need to be a super even handed objective narrator. This interview is _directly and intentionally_ testing your ability to sell yourself.
 
-Practice these in front of somebody. Practicing in your own head is insufficient. We will do this during class.
+## Handle Loaded Questions
 
-Despite what this interview _claims_ to be, I (Paris) don't think the goal is to provide examples of your soft skills. I think this interview is testing your ability to communicate clearly under business/HR constraints. This might be a controversial take. Consider the question "what is your greatest weakness?" DO NOT ANSWER THIS DIRECTLY. If you say "I have trouble organizing tasks, sometimes I use a list but it's hard" you will fail this interview. Instead, you should have prepared an answer that highlights a real weakness you're aware of, but succinctly explains how you account for it. The "test" is that you noticed the format, noticed that they're asking a question that puts you in an uncomfortable position, prepared an answer beforehand, and you've figured out a way to gracefully communicate a complicated sentiment in a clear and confident way. This models the way you will communicate about projects/teammates/goals in the business environment.
+Questions like “what’s your greatest weakness?” aren’t really about the weakness. They’re about whether you can handle a tricky prompt with poise. Your answer should acknowledge a real but non-fatal weakness, show that you’ve built systems to handle it, and end on a confident note.
+
+ # Rough Schedule
+
+ Morning: brainstorm and draft 3-5 stories with a few STAR responses to example questions
+
+ 3:30pm: mock peer interviews

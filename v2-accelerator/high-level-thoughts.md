@@ -20,7 +20,7 @@ Good examples of "active learning" are:
 - difficult tests that require thinking
 
 For instance, if we could emulate this: 
-[https://www.mirdin.com/quizzes/software-design-quiz-typescript/](software design quiz)
+[software design quiz](https://www.mirdin.com/quizzes/software-design-quiz-typescript/)
 
 
 ## Things to do:

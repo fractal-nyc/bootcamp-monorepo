@@ -19,5 +19,6 @@ Unlike previous weeks, we won't structure exactly what happens when. Many of us 
  - Monday: come up with [a job search plan](./assignments/01-job-search-plan.md)
  - Tuesday: practice [soft skills interviews](./assignments/02-soft-skills.md)
  - Wednesday: [Polished resume + portfolio + website](./assignments/03-portfolio.md)
- - Thursday: Grind leetcode
- - Saturday: We will run an interview-a-thon
+ - Thursday: [Grind Leetcode](./assignments/04-leetcode.md)
+ - Friday: [System Design Primer](./assignments/05-system-design-primer.md)
+ - Saturday: We will run an interview-a-thon!

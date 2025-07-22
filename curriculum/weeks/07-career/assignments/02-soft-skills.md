@@ -5,8 +5,9 @@ it often serves as a tiebreaker. If there's two candidates with similar technica
 
 # Readings
 
-- Chapter V of Cracking The Coding Interview
+- Chapter V of [Cracking The Coding Interview](https://github.com/club-de-programacion-competitiva/libros/blob/master/Cracking-the-Coding-Interview-6th-Edition-189-Programming-Questions-and-Solutions.pdf)
 - [Google behavioral interview guide](https://www.careerflow.ai/blog/google-behavioural-interview-guide#what-is-google%E2%80%99s-behavioral-interviewnbsp)
+- (Optional, 40min) [Interview about Soft Skills Interviews with a Meta hiring manager](https://www.youtube.com/watch?v=bBvPQZmPXwQ)
 
 # Some Advice
 

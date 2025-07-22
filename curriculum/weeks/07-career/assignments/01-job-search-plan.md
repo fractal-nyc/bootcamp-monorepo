@@ -60,6 +60,28 @@ If you need someone's email, maybe use the [Apollo Extension](https://chromewebs
 ### "Microjobs"
 Read about [Micromarriages](https://colah.github.io/personal/micromarriages/). There's a similar concept with job-hunting, "microjobs." There's no single action you can take to get a job. But there are 100 actions you can take that all increase your odds of getting a job by 1%.
 
+Things that are worth microjobs:
+ - Being rejected
+ - Failing an interview
+ - Failing a negotiation
+ - Being awkward in a call
+ - Sending a bad email
+If you do these often enough and learn from your mistakes, you will get a job.
+
+### Focus on providing solutions
+
+Make it REALLY EASY for people to say yes. Propose ridiculously below market prices combined with a very competent and well-written email to communicate “I get it. You’re taking a bet, but I’m smart and worth taking a bet on.”
+
+Negotiate someone down to a junior engineering position. Convince someone to make a role for you. (e.g. "let's just start with a contract")
+
+Do not worry about money. This is not just a negotiation tactic. You need to actually understand that the thing that matters is solving the problem for this person. Is someone going to pay you to solve the problem?
+ - Show them you can solve the problem
+ - Show them you can identify the most important problem
+ - Show them you can understand that problem
+ - Show them you can make progress on that problem
+Then once they’ve decided they want you to solve the problem, you can talk about rates later.
+
+
 ### Find things unique to you
 You need to stand out. Obviously, you should highlight obviously strong traits, but consider also any controversial or polarizing traits you might have. You only need one person to like you enough to give you an offer! Bet on finding that person who finds your polarizing traits interesting, not dismaying.
 

@@ -10,6 +10,7 @@ and work is important.
  - Watch or skim a few of the [System Breakdowns](https://www.hellointerview.com/learn/system-design/problem-breakdowns/uber) in HelloInterview.
     They're pretty realistic and do a good job teaching the high level concepts.
  - Watch a [very realistic mock system design interview](https://www.youtube.com/watch?v=suYjr4ekN1c)
+   - you will not be able to execute at this level. that's OK -- these are senior/staff engineers
  - Practice a few of the System Breakdowns yourself using a whiteboard
 
 # Schedule:

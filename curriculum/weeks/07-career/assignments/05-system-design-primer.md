@@ -17,3 +17,9 @@ and work is important.
 
  - Today, we will run through a couple of system design problems ourselves on a whiteboard.
  - With any remaining time you have, keep grinding leetcode and polishing your website/portfolio as needed.
+
+
+## Reading / Inspiration:
+
+- [System Design Youtube](https://www.youtube.com/@ByteByteGo) (please watch some of these if you have no idea what system design is!)
+  - For instance: [How to Crack Any System Design Interview](https://www.youtube.com/watch?v=o-k7h2G3Gco)

@@ -121,7 +121,7 @@ Learning graphics is highly valuable, there are a lot of computer graphics jobs 
 
 Windsurf and Claude Code and Cursor and Lovable are some of the fastest growing products in history (in other words: AI Coding Agents)
 
-They, and every company competing, and every company in YC, and every company doing any AI systems, is hiring basically as many talented people as they can possibly hire who know ANYTHING about improving AI coding agents.
+They, and every company competing, and every company in YC, and every company doing any AI systems, are hiring basically as many talented people as they can possibly hire who know ANYTHING about improving AI coding agents.
 
 There will be trillions of dollars flowing in the development of AI agent tools built on top of the foundational progress from major AI labs.
 

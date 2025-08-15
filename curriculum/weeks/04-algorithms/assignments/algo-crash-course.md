@@ -19,6 +19,7 @@ https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 - **Debug systematically** – use `console.log` and step-through debugging  
 - **Make PRs** - So instructors can check your work
 - **Ask for help** - if a problem is unclear (even after googling) or you're entirely stuck for more than 90 minutes, ask an instructor.
+- **Just use the standard library** - do not use any fancy libraries, just use plain JS or TS files and use `node` or `bun` to execute your files.
 
 ---
 

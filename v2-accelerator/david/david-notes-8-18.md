@@ -29,6 +29,7 @@
 - Events
 - Data Pipelining
 - Server-side Tracing
+- Posthog (feature flags) + Sentry (logging)
 
 
 ### Controllers, Microphones, Rasp Pis, Web cams (sockets), VR Headset, AR Glasses, Robotic Arms:

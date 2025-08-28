@@ -12,6 +12,8 @@
 
 6. [Leveling, as an Engineer](https://docs.google.com/document/d/1mQbt46Asc39_a5ecE2wZ99T6ftg1tT7APelFZDNrDPw/edit?tab=t.0) - SupplyCo
 
+7. [How to Freelance](https://hath.blog/posts/freelancing/)
+
 ## How to break in:
 
 1. [How I Became A Programmer](https://mattdeboard.net/2011/11/23/how-i-became-a-programmer/)

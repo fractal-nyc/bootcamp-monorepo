@@ -30,6 +30,7 @@
 6. [Built in NYC](https://www.builtinnyc.com/) - tech companies in NYC!
 7. [Job Listings on Hacker News](https://nchelluri.github.io/hnjobs/) - Get a job!!
 8. [Career Brew](https://careerbrew.substack.com/p/career-brew-15th-dec-jobs-digest) - tech job digest on substack
+9. [vansh.nyc internships](https://vansh.nyc/intern) - list of 100s of internships
 
 ## VCs that we know personally, if you want an intro to any company in their portfolio, we can get it:
 

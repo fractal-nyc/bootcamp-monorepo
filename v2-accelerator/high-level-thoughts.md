@@ -27,4 +27,7 @@ For instance, if we could emulate this:
 - Find or create a "Software Engineering Dictionary"
 - Teach Testing
 - Teach Drawing Systems (drawing Stripe, drawing Google, drawing Twitter, etc...)
-- 
+- Office Hours & Work Log (notebook)
+    - daily reminders "Office hours start at 3pm today and will END at 5pm. Please bring your questions to the War Room starting at 3pm."
+    - if a student has a NON URGENT issue, tell them to write it down in their work log, prepare it, and bring it to office hours tomorrow. Also tell students to write down their issues async.
+    

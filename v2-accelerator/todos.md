@@ -17,4 +17,5 @@
 - [] Integrate "timeboxing" into the curriculum
 - [] Add a "box-checking" exercise that can be completed to quickly learn and implement a bunch of "high status" technologies (kubernetes, AWS, etc etc...)
 - [] Once again consider a unit where students contribute to a live codebase (maybe something we build/maintain finally??)
-- [] Build daily system design + scaffolding exercises for the first week of the cohort
+- [] Build daily system design + diagramming + scaffolding exercises for the first 3 weeks of the cohort
+- [] Build a "post-precourse" set of exercises (scaffolded game development + fun daily leetcode puzzles??) that students can complete AFTER THEY PASS the precourse eval to prepare for our cohort 

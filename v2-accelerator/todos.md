@@ -17,3 +17,4 @@
 - [] Integrate "timeboxing" into the curriculum
 - [] Add a "box-checking" exercise that can be completed to quickly learn and implement a bunch of "high status" technologies (kubernetes, AWS, etc etc...)
 - [] Once again consider a unit where students contribute to a live codebase (maybe something we build/maintain finally??)
+- [] Build daily system design + scaffolding exercises for the first week of the cohort

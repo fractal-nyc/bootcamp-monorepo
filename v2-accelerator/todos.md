@@ -20,3 +20,4 @@
 - [] Build daily system design + diagramming + scaffolding exercises for the first 3 weeks of the cohort
 - [] Build a "post-precourse" set of exercises (scaffolded game development + fun daily leetcode puzzles??) that students can complete AFTER THEY PASS the precourse eval to prepare for our cohort 
 - [] Intellectually scaffold up to understanding the point of "functional programming" and "no side effects" and "pure functions" -- why do we limit effects? why do we copy data? etc...
+- [] Add a unit on building LLM evals and studying the future of AI + the industry eg [here](https://github.com/varungodbole/llm-evals) and [here](https://github.com/varungodbole/prompt-tuning-playbook) and [here](https://www.varungodbole.com/p/why-do-companies-struggle-shipping)

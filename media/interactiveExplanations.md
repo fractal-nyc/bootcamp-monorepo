@@ -4,7 +4,8 @@
 ### Basics:
 1. [Web Design in 4 Minutes](https://jgthms.com/web-design-in-4-minutes/) (this is a must read)
 2. [Web Layout basics](https://learnlayout.com/) (this is a must read)
-1. [Learn how Git Branching actually works](https://learngitbranching.js.org/) (visualized, interactive)
+3. [Learn how Git Branching actually works](https://learngitbranching.js.org/) (visualized, interactive)
+4. [Making Software](https://www.makingsoftware.com/)
 
 ### Design:
 1. [Can't Unsee](https://cantunsee.space/) (a game about developing design sense by comparing two designs)

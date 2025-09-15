@@ -1,5 +1,7 @@
 # Week 7: Interview / Career Sprint
 
+## NOTE: in Week 12 we hosted a big "career sprint" -- look at Week 12 for information about that.
+
 The first half of this accelerator was all about building the skills to ship experiences fast. The second half is all about polish, deepening expertise, and landing a job. We're going to develop a strong foundation for job-hunting this week that you will use (and iterate on) for the rest of the problem and then for the rest of your career.
 ## Outcomes
 

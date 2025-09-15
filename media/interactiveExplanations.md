@@ -18,5 +18,10 @@
 5. [Git Immersion](https://gitimmersion.com/index.html) -- an advanced explanation of Git, run on your own computer.
 
 
+
 Another list of good interactive explanations:
 - https://csed.substack.com/p/the-best-online-interactive-learning
+
+
+Yet another list of interactive media, from a Recurse Center grad:
+- https://letsgetcreative.today/

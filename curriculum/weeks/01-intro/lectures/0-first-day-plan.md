@@ -1,5 +1,4 @@
 # Schedule
-
 - 8:30am: Students filter in. minor social hour
   - Name Tags!
   - Hand out orientation packet
@@ -23,3 +22,18 @@
   - “pre-mortem” ask: “if you failed to finish the program, why do you think that happened?”
   - counter-serve fast casual restaurant
 - 20:00: Optional Drinks - or non-drink thing
+
+
+### Ops:
+- make group reservation at Radagast
+- order Thai food for lunch
+- andrew makes his lecture
+- david makes his lecture
+
+
+### To add:
+- Engineering 101 Lecture - David
+- Introduce Mark and "The Inner Game of Software Engineering" - Mark
+- Introduce Priya and "Reading, Writing, and Publishing Will Change Your Life" as an Engineer - Priya
+
+- Guest lecture by Daniel for the Liberal Arts? - Daniel ??

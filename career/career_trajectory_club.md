@@ -1,10 +1,25 @@
-### Career Trajectory Club
+# Career Trajectory Club  
+**Purpose:** A container for alumni to make efficient progress on their career search and avoid getting "stuck" or procrastinating.
 
-Once the cohort ends, job-seeking alumni meet once a week at the career trajectory club. 1-2 instructors also attend.
+## Meeting Structure  
 
-**Goal:** Every person is unblocked, gets the resources and help they need, and is set up for an efficient and productive week. 
+### 1. Review the Career Pipeline 
+Quick reminder of the **career pipeline doc**:  
+1. Optimize online presence  
+2. Tap your network  
+3. Run targeted job applications (“spearfishing”)
 
-**Meeting Structure:** We spend 8-10 minutes simultaneously answering questions in a Google doc about our goals next week, how our previous week’s goals went, and a quick reflection on our high level 1-3 year career goals. We then spend 10 minutes reading through everyone else’s answers and commenting. And then each person gets up to 2 minutes each to talk about anything they’re blocked on and ask for help.
+### 2. Review Opportunities (Andy)  
+- Andy to announce any new/hot opportunities (companies hiring, intro-ready leads, junior engineer openings, essays, career packets).  
+- Interested students to apply *immediately* during the session (during pomodoros).  
 
-**IRL & Zoom:**
-For New Yorkers, the meeting takes place at Fractal Tech in the lounge. For people who are remote, there is a zoom link. Everyone works from the same doc, but the unblocking conversations are held separately (the remote people meet together and the IRL people meet together).
+### 3. Trajectory Club / Stand-Up (20 minutes)  
+Participants write and share: 
+- **1–3 year high-level goals**
+- **Last week’s goals**  
+- **This week’s goals**
+- **Wins** (if any) 
+- **Blockers** 
+
+### 4. Forcing Party (~2 Pomodoros)  
+Everyone works together in real time on career tasks. Announce your intention before each pomodoro and then how you did after each pomodoro.

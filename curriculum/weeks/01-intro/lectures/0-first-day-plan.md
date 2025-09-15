@@ -13,6 +13,7 @@
 - 10:30: First-day lecture by Andrew
 - 11:00: Start work
   - We move about the room nudging people -- much more hands on than we’d usually be
+  - everyone does first pull request BEFORE LUNCH
 - 12:00 social mixer in a google doc
     - Many/Many Google Doc: what are you looking to get out of this? What are you ready to do? What are you scared about with this program?
     - https://docs.google.com/document/d/1d0fM7hAo8GrkfwbCjXn3Z9gS6rhcVMWYMe_QrV6VWiU/edit?usp=sharing

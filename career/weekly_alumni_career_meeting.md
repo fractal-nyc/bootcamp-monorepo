@@ -1,4 +1,4 @@
-# Career Trajectory Club  
+# Weekly Career Meeting 
 **Purpose:** A container for alumni to make efficient progress on their career search and avoid getting "stuck" or procrastinating.
 
 ## Meeting Structure  

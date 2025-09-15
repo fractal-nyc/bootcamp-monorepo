@@ -1,9 +1,23 @@
 import type { Guild } from 'discord.js';
 
 export const ROLES = {
-    instructor: "1362774423391703180",
-    su2025: "1335982158036209706"
-}
+    jake_andrew: "1214297504607113337", // jake + andrew
+    admin: "1219318577270882324", // admin
+    instructor: "1362774423391703180", // instructor
+    sp2025: "1335982238264983552", // Sp2025
+    su2024: "1237976275700944958", // Su2024
+    su2025: "1335982158036209706", // su2025
+    bootcamper: "1303751671947722792", // bootcamper
+    soleda: "1255742357383675995", // soleda
+    axle: "1257723804130742383", // axle
+    heartbeat: "1257724022658044024", // heartbeat
+    forge: "1280182349241258134", // Forge
+    fa2024: "1284144792741089392", // Fa2024
+    book_club: "1299436741278826538", // Book Club
+    valor: "1300850409891565608", // valor
+    quiller: "1306037885136277526", // quiller
+    new_role: "1378915638453600276", // new role
+};
 
 /**
  * Converts a role identifier to a proper Discord mention format
@@ -11,7 +25,7 @@ export const ROLES = {
  * @param roleIdentifier - Can be a role name, role ID, or already formatted mention
  * @returns Properly formatted Discord mention string
  */
-export function getRoleByName(guild: Guild, roleIdentifier: string): string {
+export function getRoleStringByName(guild: Guild, roleIdentifier: string): string {
     // Return as-is if already formatted
     if (roleIdentifier === '@everyone' || roleIdentifier === '@here') {
         return roleIdentifier;
@@ -49,5 +63,5 @@ export function getRoleByName(guild: Guild, roleIdentifier: string): string {
  * @returns Promise resolving to array of properly formatted mention strings
  */
 export async function processRoleMentions(guild: Guild, roleIdentifiers: string[]): Promise<string[]> {
-    return roleIdentifiers.map(identifier => getRoleByName(guild, identifier));
+    return roleIdentifiers.map(identifier => getRoleStringByName(guild, identifier));
 }

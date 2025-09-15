@@ -36,4 +36,6 @@
 - Introduce Mark and "The Inner Game of Software Engineering" - Mark
 - Introduce Priya and "Reading, Writing, and Publishing Will Change Your Life" as an Engineer - Priya
 
+
+### Maybe:
 - Guest lecture by Daniel for the Liberal Arts? - Daniel ??

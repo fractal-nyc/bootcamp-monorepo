@@ -21,8 +21,6 @@ Before getting started, let's cover some things:
 2. Readings for the Week, how to find them in the Bootcamp Monorepo.
 3. Assign a first, short reading.
     - Practice posting in the reading thread in Discord.
-
-
 - create vite app
 - git init
 - gh repo create

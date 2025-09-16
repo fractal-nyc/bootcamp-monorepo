@@ -39,6 +39,7 @@
 3. [AntlerVC](https://www.antler.co/portfolio) - We host events with Antler, and we have a few students who have worked with their portcos before.
 4. [OnDeck](https://www.joinodf.com/)
 5. [Techstars NYC](https://www.techstars.com/accelerators/nyc)
+6. [Collab](https://collabfund.com/)
 
 ## Don't know how to get someone's email? Do this:
 1. Use the [Apollo Extension](https://chromewebstore.google.com/detail/apolloio-free-b2b-phone-n/alhgpfoeiimagjlnfekdhkjlkiomcapa?hl=en-US)

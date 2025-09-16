@@ -1,4 +1,4 @@
-# Career Trajectory Club  
+# Weekly Career Meeting 
 **Purpose:** A container for alumni to make efficient progress on their career search and avoid getting "stuck" or procrastinating.
 
 ## Meeting Structure  
@@ -15,11 +15,11 @@ Quick reminder of the **career pipeline doc**:
 
 ### 3. Trajectory Club / Stand-Up (20 minutes)  
 Participants write and share: 
-- **1–3 year high-level goals**
-- **Last week’s goals**  
-- **This week’s goals**
-- **Wins** (if any) 
-- **Blockers** 
+- 1–3 year high-level goals
+- Last week’s goals
+- This week’s goals
+- Wins (if any) 
+- Blockers
 
 ### 4. Forcing Party (~2 Pomodoros)  
 Everyone works together in real time on career tasks. Announce your intention before each pomodoro and then how you did after each pomodoro.

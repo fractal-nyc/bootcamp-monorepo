@@ -21,6 +21,7 @@ Write a 1-2 page job search plan. By the end of the day, you should:
 - [How I Became A Programmer](https://mattdeboard.net/2011/11/23/how-i-became-a-programmer/)
 - [Demos instead of Resumes](https://x.com/GabrielPeterss4/status/1898566138352820561)
 - [Startup Interview Tips](https://x.com/mitch_troy/status/1810879118428311920)
+- [How to get hired at a Startup](https://nextplayso.substack.com/p/how-to-get-hired-at-a-startup?triedRedirect=true)
 
 ## Advice
 
@@ -39,6 +40,12 @@ If you're going to use online job applications, make sure the platform is highly
  - [Built in NYC](https://www.builtinnyc.com/)
  - [Job Listings on Hacker News](https://nchelluri.github.io/hnjobs/)
  - [Career Brew](https://careerbrew.substack.com/p/career-brew-15th-dec-jobs-digest)
+
+
+### Hiring Manager Mindset
+ - Hiring is risky
+ - Career pivots look risky - get ahead of that ("i'm being intentional, this is my passion, etc")
+ - people expect "your best behavior"/story, not your "authentic" self
 
 ### Prepare an extremely clear story
 
@@ -134,3 +141,15 @@ weekly cadence: 10 hrs/week. mondays for outreach, wednesdays for mock interview
 12:30pm: lunch break, then write up a career plan
 
 4:30pm: peer reviews on rough career plan drafts
+
+## Opportunity Stack
+
+1. Internships / Working
+    - Employers see your work in a non-risky context
+    - 30 microjobs at least
+    - See authentic work, great experience
+    - You can "make these" for youself - see patio11's advice
+2. Warm intros
+3. Networking / Events
+3. Cold emails
+5. Cold applying

@@ -4,7 +4,7 @@ You help run JFK airport. Each gate at the airport has limited seating of `capac
 One of your jobs is to make sure there's never more than `capacity` people assigned to a gate at a given time.
 Given a snapshot of a list of gates, the assigned flights, and the passengers on those flights, return any gates
 that are overloaded. 
-For example, if flight AA101 (51 passengers) and flight BA206 (51 passengers) are both assigned to gate B3, return `["B3"]`.
+For example, if `capacity=100`, and flight AA101 (51 passengers) and flight BA206 (51 passengers) are both assigned to gate B3, return `["B3"]`.
 
 Example input:
 ```

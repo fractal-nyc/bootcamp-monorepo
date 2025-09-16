@@ -53,3 +53,7 @@ Resumes don’t win jobs, but you still need one.
 ## Activities
 
 **3:00pm:** Portfolio reviews. Open each other’s sites and ask: would I hire this person based on this? Write down fixes.
+
+
+### Example Portfolio Sites (feel free to submit PRs with other good examples!)
+- https://laurasinisterra.com/

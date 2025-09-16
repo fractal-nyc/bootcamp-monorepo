@@ -10,7 +10,11 @@
 
 ## Step 2. Value Funnel
 - List all activities required for the business to generate revenue.  
-- Sometimes called a “value funnel,” “marketing funnel,” or “sales funnel.”  
+- Sometimes called a “value funnel,” “marketing funnel,” or “sales funnel.”
+- A good example for understanding what is valuable to a business is this 1-page marketing plan, each box is valuable and important:
+
+<img width="1053" height="1364" alt="image" src="https://github.com/user-attachments/assets/fe382ed5-c53e-461b-8717-6647bec855b2" />
+
 
 **Example Funnel:**  
 Rent property → Hire instructors → Market program → Qualify leads → Evaluate candidates → Accept candidates → Deliver service → Convert outcomes → Profit

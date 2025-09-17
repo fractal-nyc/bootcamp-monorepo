@@ -31,6 +31,9 @@
 7. [Job Listings on Hacker News](https://nchelluri.github.io/hnjobs/) - Get a job!!
 8. [Career Brew](https://careerbrew.substack.com/p/career-brew-15th-dec-jobs-digest) - tech job digest on substack
 9. [vansh.nyc internships](https://vansh.nyc/intern) - list of 100s of internships
+10. [More job listings from Jordan Mazer, a16z](https://www.jobhuntingsux.com/)
+11. [Even more job listings from nextplay](https://nextplay.so/) and from [BEN LANG](https://benlangsnotes.substack.com/notes)
+
 
 ## VCs that we know personally, if you want an intro to any company in their portfolio, we can get it:
 

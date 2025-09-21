@@ -10,8 +10,8 @@
 - Message or email us too! We are part of your network, and the right message is easy for us to forward to people who can potentially help you. We are name@fractalbootcamp.com [Andrew, Paris, Jake, Andy, Priya, Shanthi, David, Regan] 
 
 ### C. Spearfishing for Jobs  
-1. Identify **target company & role**.  
-2. Modify resume/blurb/messaging for that company to maximize conversion.   
+1. Identify target company & role.  
+2. Follow the [value worksheet](https://github.com/fractal-bootcamp/bootcamp-monorepo/blob/main/career/value_worksheet.md).   
 3. Look for intros via LinkedIn/Twitter.  
 4. Send targeted outreach directly. 
 

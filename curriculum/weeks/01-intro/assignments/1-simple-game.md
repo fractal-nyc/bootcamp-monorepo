@@ -6,52 +6,54 @@ Pick a Tic Tac Toe style game and build it from scratch in React. Good contender
 
 ## Helpful Readings
 
- - Git is hard. I strongly recommend learning via "Main Levels 1-4" and "Remote Levels 1-6" [here](https://learngitbranching.js.org/?locale=en_US)
+- Git is hard. I strongly recommend learning via "Main Levels 1-4" and "Remote Levels 1-6" [here](https://learngitbranching.js.org/?locale=en_US)
 
 ## Features
 
 A simple version of your game should have the following:
+
 - [ ] Game Engine
-      - [ ] Separate game logic from React components
-      - [ ] Track game state (board, current player, etc.)
-      - [ ] Calculate what a given move would do
-      - [ ] Handle move validation
-      - [ ] Detect win/lose/draw conditions
-      - [ ] Can run entirely in browser, resets on page refresh
+  - [ ] Separate game logic from React components
+  - [ ] Track game state (board, current player, etc.)
+  - [ ] Calculate what a given move would do
+  - [ ] Handle move validation
+  - [ ] Detect win/lose/draw conditions
+  - [ ] Can run entirely in browser, resets on page refresh
 - [ ] Frontend/React Game Interface
-      - [ ] Display current game state
-      - [ ] Allow players to make moves by using the game engine
-      - [ ] Show game status (whose turn, winner, etc.)
-      - [ ] Reset/restart game functionality
+  - [ ] Display current game state
+  - [ ] Allow players to make moves by using the game engine
+  - [ ] Show game status (whose turn, winner, etc.)
+  - [ ] Reset/restart game functionality
 
 Bonus:
+
 - [ ] \[Styling\] - Make it look sexy. Add animations for game moves (react-spring, framer, keyframes)
 - [ ] \[Algorithms\] - Player vs AI modes: start with random moves, then implement minimax or other algorithms for calculating optimal moves
 
 ## Steps (Morning)
 
- - Set up your favorite AI with [this prompt](../../../../tools/prompts/tutor-prompt.md)
-      - Recommendation: Use ChatGPT 5 + a separate Project
- - [Install `git`](https://git-scm.com/downloads/mac) using Homebrew ([install homebrew](https://brew.sh/))
-      - What is homebrew...?
-      - What is git...?
- - Create a [new github repo](https://github.com/new) with no template
-      - Use a `Node` .gitignore template
-      - What is github and .gitignore...?
- - Clone repo to your laptop
- - [Install bun](https://bun.com/get).
-      - What is bun...?
- - Switch to a new branch named `initial-tic-tac-toe-display`
- - Create a new Vite project: `bun create vite`, using `React` and `TypeScript + SWC`
-      - What is vite..?
- - Edit the main page to display a tic-tac-toe grid (no state yet)
-     - It's OK if it looks ugly!
- - Add all files to staging for commit
- - Git Commit
- - Git push to remote (github)
- - Make a PR for `initial-tic-tac-toe-display`
- - Merge into `main`
- - Grab lunch
+- Set up your favorite AI with [this prompt](../../../../tools/prompts/tutor-prompt.md)
+  - Recommendation: Use ChatGPT 5 + a separate Project
+- [Install `git`](https://git-scm.com/downloads/mac) using Homebrew ([install homebrew](https://brew.sh/))
+  - What is homebrew...?
+  - What is git...?
+- Create a [new github repo](https://github.com/new) with no template
+  - Use a `Node` .gitignore template
+  - What is github and .gitignore...?
+- Clone repo to your laptop
+- [Install bun](https://bun.com/get).
+  - What is bun...?
+- Switch to a new branch named `initial-tic-tac-toe-display`
+- Create a new Vite project: `bun create vite`, using `React` and `TypeScript + SWC`
+  - What is vite..?
+- Edit the main page to display a tic-tac-toe grid (no state yet)
+  - It's OK if it looks ugly!
+- Add all files to staging for commit
+- Git Commit
+- Git push to remote (github)
+- Make a PR for `initial-tic-tac-toe-display`
+- Merge into `main`
+- Grab lunch
 
 ## Diagram
 
@@ -70,16 +72,18 @@ Bonus:
  - Add move validation (can't make moves after a win)
  - Don't forget to do the [readings](./2-styling.md) for tomorrow
 
- ## Diagram
+## Diagram
 
- ![image](1-simple-game-diagram-2.png)
+![image](1-simple-game-diagram-2.png)
 
 ## Inspiration
-- [https://playtictactoe.org/](https://playtictactoe.org/)  
-- [Tetris (Brian Smiley)](https://bs-tetris.netlify.app/)  
-- [https://kevinshannon.com/connect4/](https://kevinshannon.com/connect4/)  
+
+- [https://playtictactoe.org/](https://playtictactoe.org/)
+- [Tetris (Brian Smiley)](https://bs-tetris.netlify.app/)
+- [https://kevinshannon.com/connect4/](https://kevinshannon.com/connect4/)
 - [https://www.gameaipro.com/](https://www.gameaipro.com/)
 
 ## Example Code
+
 - https://github.com/fractal-bootcamp/tic-tac-toe-fa-2025
 - Do not copy and paste from this! Use it for inspiration and instruction.

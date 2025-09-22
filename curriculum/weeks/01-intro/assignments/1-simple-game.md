@@ -61,14 +61,14 @@ Bonus:
 ![image](1-simple-game-diagram-1.png)
 
 ## Steps (Afternoon)
- - Style the main page so tic-tac-toe grid doesn't look ugly
-     - Use [tailwind](https://tailwindcss.com/docs/installation/using-vite)
-     - What is CSS..? What is tailwind..?
  - Now we need a model for how Tic Tac Toe works:
      - Create `tictactoe.ts`
      - Define a type `GameState` that can represent everything about a tic-tac-toe game
  - Add a function called `makeMove` that takes a game + player + move location and returns a new `GameState`
  - Wire up `GameState` and `makeMove` into your React component
+ - Style the main page so tic-tac-toe grid doesn't look ugly
+     - Use [tailwind](https://tailwindcss.com/docs/installation/using-vite)
+     - What is CSS..? What is tailwind..?
  - Add detection of winners + show celebration
  - Add move validation (can't make moves after a win)
  - Don't forget to do the [readings](./2-styling.md) for tomorrow

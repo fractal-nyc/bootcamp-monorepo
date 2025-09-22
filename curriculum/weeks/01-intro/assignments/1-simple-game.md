@@ -43,6 +43,7 @@ Bonus:
 - Clone repo to your laptop
 - [Install bun](https://bun.com/get).
   - What is bun...?
+- Add `README.md` and commit to `main` branch
 - Switch to a new branch named `initial-tic-tac-toe-display`
 - Create a new Vite project: `bun create vite`, using `React` and `TypeScript + SWC`
   - What is vite..?
@@ -71,6 +72,7 @@ Bonus:
  - Add detection of winners + show celebration
  - Add move validation (can't make moves after a win)
  - Don't forget to do the [readings](./2-styling.md) for tomorrow
+ - Don't forget to write in #eod
 
 ## Diagram
 

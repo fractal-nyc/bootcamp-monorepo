@@ -17,6 +17,7 @@ Build the components from [this figma](https://www.figma.com/design/9x5JatG37qfM
 - [ ] Post  
 - [ ] Heat Grid  
 - [ ] Tab Descriptor
+- [ ] Don't forget to update #eod and do readings for tomorrow
 
 ## Example Repo:
 - https://github.com/fractal-bootcamp/styling

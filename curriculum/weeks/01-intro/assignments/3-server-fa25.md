@@ -11,7 +11,7 @@ themselves, they make requests to an Express server, powered by an HTTP API.
 
 ## Prework
 
-- (~20 min) [Promises & Asynchronous Programming](https://eloquentjavascript.net/11_async.html)
+- (~20 min) [Promises & Asynchronous Programming, from beginning until "Generators" section](https://eloquentjavascript.net/11_async.html)
 
 ## Requirements
 

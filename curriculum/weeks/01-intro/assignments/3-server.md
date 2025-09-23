@@ -1,7 +1,5 @@
 # Tic Tac Toe on a Server
 
-## [Repo Link](https://github.com/fractal-bootcamp/assignment-3-databases)
-
 ## Overview
 
 Our goal is to make our Tic-Tac-Toe use online multiplayer. Right now, the entire game runs
@@ -11,33 +9,42 @@ we can make the first step towards managing the game state outside of our client
 When a player loads the page or makes a move, instead of changing the Tic Tac Toe game state
 themselves, they make requests to an Express server, powered by an HTTP API.
 
-## Prework
-- (~20 min) [Promises & Asynchronous Programming](https://eloquentjavascript.net/11_async.html)
-- Also complete the prework for the second day 3 assignment [here](./3-databases.md).
+## Pre-work
 
+- (~20 min) [Promises & Asynchronous Programming, from beginning until "Generators" section](https://eloquentjavascript.net/11_async.html)
+- (~20 min) [React Query Docs](https://tanstack.com/query/latest/docs/framework/react/overview)
 
-## Requirements
+## Steps (Morning)
+ - Set up [Vite-Express](https://github.com/szymmis/vite-express?tab=readme-ov-file#fresh-setup-with-create-vite) on your existing tic-tac-toe app
+ - Modify `bun run dev` to run `server.ts`
+ - Add a `/game` (GET) and `/move` (POST) endpoints
+ - move `makeMove` to the server, manage the game state in-memory
+ - Use React Query and `fetch` to read and write game data via a server
+ - Goal State:
+   - your game has identical functionality, but all game state is managed by the server
+   - game state persists if you refresh the tab, but not if you restart the server
 
-Your app:
- - maintains all the functionality it had in the in-browser version (feel free to add more if you have time).
- - runs on a server using `express` and `vite-express` by following Step 3 onward in 
- [this tutorial](https://github.com/szymmis/vite-express?tab=readme-ov-file#fresh-setup-with-create-vite)
- - `bun dev` runs `bun run --watch server.ts`
- - identifies games by their `id`, which uses a [`uuid`](https://www.npmjs.com/package/uuid)
- - has a new `interface` called `TicTacToeApi` 
-    - 3 functions: create a game, make a move, and get a game by ID
-    - return `Promise` and use `async/await` as needed
- - `TicTacToeApi` has two implementations:
-    - a server implementation, using an in-memory data structure to store and manage games
-    - a client implementation, using [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) to 
-    communicate with the sever
- - `TicTacToeApi` has a good set of tests that can run against the in-memory version of the API
- - Our express server has new routes that receieve requests made
- using `fetch` on the client
+## Diagram
+![image](3-server-1.png)
 
- ## Bonus
- Your app:
-- is prettier and has animations, sound effects, etc.
-- gracefully handles slow internet connections when connections are very slow
-    - use Chrome's [Network Throttling](https://www.debugbear.com/blog/chrome-devtools-network-throttling) to slow down your internet connection and see how the user experience degrades
-    - use [useOptimistic](https://react.dev/reference/react/useOptimistic) so the UI updates even when requests are very slow
+## Steps (Afternoon)
+ - Now we need to support multiple games.
+ - Add game ID to the `GameState` model
+ - Add game ID to `/game` and `/move`
+ - Add a list of games: GET `/games` and a create game endpoint: `/create`
+ - Now we need to allow a user to pick a game:
+    - Add a new "pick/create game" component that displays initially
+    - Once a game ID is selected, display the normal tic-tac-toe component
+ - Goal State:
+    - your game allows users to join an existing game or start a new one
+    - each tic-tac-toe game functions as normal (detects winners, ties, etc.)
+    - states persist between chrome tab refreshes, but not server restarts
+
+## Diagram
+
+![image](3-server-2.png)
+
+## Example Code
+
+[Step 1](https://github.com/fractal-bootcamp/tic-tac-toe-fa-2025/pull/1)
+[Step 2]()

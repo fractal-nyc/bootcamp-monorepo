@@ -22,3 +22,9 @@ Build the components from [this figma](https://www.figma.com/design/9x5JatG37qfM
 
 ## Example Repo:
 - https://github.com/fractal-bootcamp/styling
+
+### Some notes:
+
+- Download the [Tailwind CSS extension](https://marketplace.cursorapi.com/items/?itemName=bradlc.vscode-tailwindcss) in VSCode for autocomplete/intellisense on styles
+- The [Tailwind Docs](https://tailwindcss.com/) are very good, very easy to search.
+- if you are annoyed by writing a bunch of "if" statements to merge tailwind styles by hand, AND frustrated that you don't get autocomplete, consider using [clsx](https://github.com/lukeed/clsx)

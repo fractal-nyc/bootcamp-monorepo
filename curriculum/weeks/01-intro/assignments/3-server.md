@@ -18,7 +18,7 @@ themselves, they make requests to an Express server, powered by an HTTP API.
  - Set up [Vite-Express](https://github.com/szymmis/vite-express?tab=readme-ov-file#fresh-setup-with-create-vite) on your existing tic-tac-toe app
  - Modify `bun run dev` to run `server.ts`
  - Add a `/game` (GET) and `/move` (POST) endpoints
- - move `makeMove` to the server, manage the game state in-memory
+ - call `makeMove` in the server, manage the game state in-memory
  - Use React Query and `fetch` to read and write game data via a server
  - Goal State:
    - your game has identical functionality, but all game state is managed by the server
@@ -26,7 +26,7 @@ themselves, they make requests to an Express server, powered by an HTTP API.
 
 ## Diagram
 ![image](3-server-1.png)
-
+¡
 ## Steps (Afternoon)
  - Now we need to support multiple games.
  - Add game ID to the `GameState` model

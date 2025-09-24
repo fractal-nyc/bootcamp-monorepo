@@ -5,32 +5,28 @@
 ## Overview
 
 By the end of this assignment, our tic-tac-toe app will be functionally identical,
-but the game state will be managed entirely on a centralized server that we control, backed by a database.
+but the game state will be managed in a database, rather than in-memory in our server.
 
-Each player will communicate with that server when they want to make a move that changes the game, and the server will write that data to our database.
+This means we can freely restart the server, and tic-tac-toe state will be maintained.
 
-## Readings
+## Pre-Work
 - (~10 min) [What is a database?](https://www.whalesync.com/blog/an-intro-to-databases)
     - You can ignore the stuff about Whalesync, but we are going to use Supabase!
 - (~1 hour) Learn basic SQL by completing [Chapter 1 and 2 here.](https://www.executeprogram.com/courses/sql).
+- (~10 min) Read about [Drizzle](https://orm.drizzle.team/docs/overview)
 
-## Requirements
+## Steps
 
-Your app:
-- maintains all the functionality it had in the in-browser version (feel free to add more if you have time).
-- communicates with a server running [Express.js](https://expressjs.com/en/starter/hello-world.html) using an API.
-- runs a [PostgreSQL](https://www.postgresql.org/about/) database hosted by [Supabase](https://supabase.com/).
-- uses [Drizzle.js](https://orm.drizzle.team/docs/overview) on the server for communicating with and managing your database.
-- stores and updates all game state associated with each game in the server and database, not the client
+ - To host our database, we will use [Supabase](https://supabase.com). It runs Postgres servers, and it's free(!)
+ - Create a Supabase project (make sure to save off the URL and password -- the password will only appear once)
+ - We will use Drizzle to connect to our supabase project.
+    - Why use Drizzle and not raw SQL clients and SQL directly?
+    - Follow [the guide](https://orm.drizzle.team/docs/get-started/supabase-new) to set up Drizzle and Supabase
+ - Make a `schema.ts` for your tic-tac-toe table
+ - Push it to your database with `bun drizzle-kit generate` and `bun drizzle-kit migrate`
+ - Replace the logic in `/game`, `/move`, etc. so instead of writing to an in-memory store, you use Drizzle
+ - Observe that your games persist even if you restart your server!
 
 # Diagram
 
 ![image](05-database.png)
-# Bonus
-
-Your app:
-- connects to a test database in Supabase when running locally, so you don't pollute your "prod" database (we will deploy to prod later)
-- is prettier and has animations, sound effects, etc.
-- gracefully handles slow internet connections when connections are very slow
-    - use Chrome's [Network Throttling](https://www.debugbear.com/blog/chrome-devtools-network-throttling) to slow down your internet connection and see how the user experience degrades
-    - use [useOptimistic](https://react.dev/reference/react/useOptimistic) so the UI updates even when requests are very slow

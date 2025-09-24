@@ -47,4 +47,4 @@ themselves, they make requests to an Express server, powered by an HTTP API.
 ## Example Code
 
 [Step 1](https://github.com/fractal-bootcamp/tic-tac-toe-fa-2025/pull/1)
-[Step 2]()
+[Step 2](https://github.com/fractal-bootcamp/tic-tac-toe-fa-2025/pull/2)

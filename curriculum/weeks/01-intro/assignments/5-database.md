@@ -1,6 +1,5 @@
 # Databases
 
-## [Repo Link](https://github.com/fractal-bootcamp/assignment-3-databases)
 
 ## Overview
 

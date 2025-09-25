@@ -22,11 +22,17 @@ This means we can freely restart the server, and tic-tac-toe state will be maint
  - We will use Drizzle to connect to our supabase project.
     - Why use Drizzle and not raw SQL clients and SQL directly?
     - Follow [the guide](https://orm.drizzle.team/docs/get-started/supabase-new) to set up Drizzle and Supabase
+    - **DO NOT PUSH YOUR .ENV TO GITHUB. MAKE SURE IT IS IN YOUR .gitignore. IT HAS A PASSWORD IN IT.**
  - Make a `schema.ts` for your tic-tac-toe table
  - Push it to your database with `bun drizzle-kit generate` and `bun drizzle-kit migrate`
+ - Make sure Supabase now has a table with the specified name in it
  - Replace the logic in `/game`, `/move`, etc. so instead of writing to an in-memory store, you use Drizzle
  - Observe that your games persist even if you restart your server!
 
-# Diagram
+## Diagram
 
 ![image](05-database.png)
+
+## Example Code
+
+[PR](https://github.com/fractal-bootcamp/tic-tac-toe-fa-2025/pull/3)

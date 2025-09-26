@@ -1,11 +1,33 @@
 # Programming Fundamentals Exercises - TicTacToe Series
 
+## Purpose
+
+This document provides one possible exercise designed to guide you through the four fundamental programming concepts that we are teaching this week. Each exercise builds progressively on the previous one, moving from basic concepts to distributed systems.
+
+### The Four Fundamental Pillars
+
+1. **Concepts/Systems** - Understanding how to describe and model real-world systems (like games) in terms of rules, logic, and behavior. We start with English descriptions and pseudocode before moving to actual implementation.
+
+2. **Data/State** - Learning how to represent the "state" of a system that changes over time, and how to build programs that manipulate and maintain this state accurately. This is the foundation of all programming.
+
+3. **The Reactive Model** - Understanding how to build user interfaces that automatically update when state changes. You describe your UI in terms of state, and the framework handles the rest.
+
+4. **HTTP/Networking/Client-Server Model** - Learning how to build distributed systems where state and logic can exist on remote servers, and clients can interact with that state over networks.
+
+## How to Use This Document
+
+**Self-Assessment and Flexibility**: You should feel free to skip sections where you already feel confident and jump directly to the section that challenges you. Each exercise has clear learning objectives and success criteria, so you can quickly assess whether you need the practice.
+
+**Find Your Edge**: The goal is to work at the edge of your current understanding. If an exercise feels too easy, move to the next one. If it feels overwhelming, consider going back to review the previous concepts.
+
+**Reusable Foundation**: Your TicTacToe implementation from early exercises becomes the foundation for later ones, so you'll see how the same core logic can be used in different contexts (local, React UI, networked).
+
 ## Exercise 0 & 1: Concepts/Systems + Data/State
 **Goal**: Build a complete TicTacToe game engine that manages state and game logic
 
 ### Part A: English & Pseudocode (Concepts/Systems)
 
-Students write out TicTacToe rules and logic in plain English, then convert to pseudocode:
+Write out TicTacToe rules and logic in plain English, then convert to pseudocode:
 
 ```
 English Description Exercise:
@@ -24,7 +46,7 @@ Pseudocode Exercise:
 
 ### Part B: TypeScript Implementation (Data/State)
 
-Students implement their pseudocode in TypeScript with specific requirements:
+Implement your pseudocode in TypeScript with specific requirements:
 
 ```typescript
 // tictactoe.ts
@@ -64,7 +86,7 @@ export function isValidMove(game: GameState, row: number, col: number): boolean 
 }
 ```
 
-**Key Learning Check**: Students must demonstrate their functions work by writing simple test cases:
+**Key Learning Check**: You must demonstrate your functions work by writing simple test cases:
 ```typescript
 // Test cases they must make pass
 let game = initializeGame();
@@ -83,16 +105,16 @@ console.log(game.board[0][0]); // should be 'X'
 **Goal**: Build a React frontend that renders any valid TicTacToe state
 
 ### Setup
-Students take their working TicTacToe engine from Exercise 1 and build a React app around it.
+Take your working TicTacToe implementation from Exercise 1 and build a React app around it.
 
 ### Part A: State-Driven UI
 
 ```typescript
-// Students must create a component that renders ANY valid game state
+// Create a component that renders ANY valid game state
 function TicTacToeGame() {
   const [gameState, setGameState] = useState(initializeGame());
   
-  // Challenge: How do we re-render when state changes?
+  // Challenge: How do you re-render when state changes?
   
   return (
     <div>
@@ -112,15 +134,15 @@ function TicTacToeGame() {
   const [gameState, setGameState] = useState(initializeGame());
   
   const handleCellClick = (row: number, col: number) => {
-    // Challenge: How do we make a move?
-    // Challenge: How do we update our React state?
-    // Challenge: How do we handle invalid moves?
+    // Challenge: How do you make a move?
+    // Challenge: How do you update your React state?
+    // Challenge: How do you handle invalid moves?
     const newGameState = makeMove(gameState, row, col);
-    // What do we do with newGameState?
+    // What do you do with newGameState?
   };
   
   const handleReset = () => {
-    // Challenge: How do we reset the game?
+    // Challenge: How do you reset the game?
   };
   
   return (
@@ -137,7 +159,7 @@ function TicTacToeGame() {
 }
 ```
 
-**Key Learning Check**: Students must demonstrate:
+**Key Learning Check**: You must demonstrate:
 1. Game renders correctly for any state
 2. Clicking cells makes valid moves
 3. UI updates immediately after each move
@@ -146,7 +168,7 @@ function TicTacToeGame() {
 
 ### Part C: State Visualization Exercise
 
-Students create a "State Inspector" component that shows the raw game state:
+Create a "State Inspector" component that shows the raw game state:
 ```typescript
 function StateInspector({ gameState }: { gameState: GameState }) {
   return (
@@ -158,7 +180,7 @@ function StateInspector({ gameState }: { gameState: GameState }) {
 }
 ```
 
-This helps them understand that the UI is just a "view" of the underlying state.
+This helps you understand that the UI is just a "view" of the underlying state.
 
 ---
 
@@ -167,7 +189,7 @@ This helps them understand that the UI is just a "view" of the underlying state.
 
 ### Part A: Server Setup
 
-Students create an Express server that manages the game state:
+Create an Express server that manages the game state:
 
 ```typescript
 // server.ts
@@ -195,7 +217,7 @@ class GameServer {
 const server = new GameServer();
 const app = express();
 
-// Students must implement these endpoints:
+// You must implement these endpoints:
 app.post('/games', (req, res) => {
   // Create new game, return game ID and initial state
 });
@@ -216,7 +238,7 @@ app.post('/games/:id/reset', (req, res) => {
 
 ### Part B: Client Refactor
 
-Students modify their React app to communicate with the server instead of using local state:
+Modify your React app to communicate with the server instead of using local state:
 
 ```typescript
 function TicTacToeGame() {
@@ -240,8 +262,8 @@ function TicTacToeGame() {
     // Challenge: Make HTTP request to reset
   };
   
-  // Challenge: How do we load game state when component mounts?
-  // Challenge: How do we handle network errors?
+  // Challenge: How do you load game state when component mounts?
+  // Challenge: How do you handle network errors?
   
   return (
     <div>
@@ -263,16 +285,16 @@ function TicTacToeGame() {
 ### Part C: Multi-Player Support (Advanced)
 
 ```typescript
-// Students extend server to support multiple players per game
+// Extend your server to support multiple players per game
 app.post('/games/:id/join', (req, res) => {
   // Join existing game as second player
 });
 
-// Students extend client to:
+// Extend your client to:
 // 1. Join games by ID
 // 2. Handle "waiting for other player" states
-// 3. Poll for updates when it's not their turn
-// 4. Show which player they are (X or O)
+// 3. Poll for updates when it's not your turn
+// 4. Show which player you are (X or O)
 ```
 
 ---
@@ -307,21 +329,21 @@ app.post('/games/:id/join', (req, res) => {
 ## Common Debugging Exercises
 
 ### "My state isn't updating" Debug Session
-Students get a broken React component where clicking doesn't update the UI. They must:
+You get a broken React component where clicking doesn't update the UI. You must:
 1. Check if state is actually changing (console.log)
-2. Check if they're mutating state directly
-3. Check if they're calling the state setter
+2. Check if you're mutating state directly
+3. Check if you're calling the state setter
 4. Understand immutability in React
 
 ### "My server isn't working" Debug Session
-Students get common server issues to diagnose:
+You get common server issues to diagnose:
 1. CORS errors
 2. JSON parsing issues
 3. Route not found (404s)
 4. Server crashes on invalid input
 
 ### "State Synchronization" Debug Session
-Students get a client that gets "out of sync" with server state. They must:
+You get a client that gets "out of sync" with server state. You must:
 1. Understand when to fetch fresh data
 2. Handle optimistic vs. server-confirmed updates
 3. Deal with network failures

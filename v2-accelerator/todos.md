@@ -21,6 +21,7 @@
 - [] Add a unit on building LLM evals and studying the future of AI + the industry eg [here](https://github.com/varungodbole/llm-evals) and [here](https://github.com/varungodbole/prompt-tuning-playbook) and [here](https://www.varungodbole.com/p/why-do-companies-struggle-shipping)
 - [] (David) Write bots to check the #attendance and #eod channels each day
 - [] Incorporate feedback from Fa25 Week 1 retro: https://docs.google.com/document/d/15oYolh4OpCxrAwu1P7tplbabJOHciROrWvyCEMO9vg0/edit
+  - [] add lecture notes to each day with the high level confusions we can clear. make sure we resist the temptation to write any code
   - [] Update day one to be (morning) pure backend/game engine Tic Tac Toe that passes unit tests and (afternoon) basic React UI.
   - [] Update day two styling lecture to be going nuts on Tic Tac Toe (Mobile first/responsive design, the Box Model, sound effects, visual razzle dazzle)
   - [] Remove React Query from day three

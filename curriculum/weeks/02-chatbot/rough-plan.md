@@ -1,13 +1,12 @@
-- Day 1: Next.js
-    - Set up Next.js
-    - t3.gg
-    - Vercel AI SDK + basic stateless chatbot
+- Day 1: React Router + Auth
+    - Explain React Router
+    - Authentication (betterauth)
+- Day 2: Vercel AI + Chat
+    - use vercel AI to power chats
     - shadcn
-- Day 2: Multiple chats
-    - tRPC explanation
-    - use a database
-    - chat persistence
-- Day 3: Users
-    - logins, SSO, separate table
+- Day 3: Multiple chats + persistence + authorization
+    - chats CRUD
+    - connected to the users
 - Day 4: Search
     - full text chat search (scoped per-user)
+    - skeptical anyone will get here

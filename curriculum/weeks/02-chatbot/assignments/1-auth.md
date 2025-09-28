@@ -2,7 +2,7 @@
 
 ## Overview
 
-This week We're going to build a clone of [chatgpt.com](http://chatgpt.com). It will have
+This week we're going to build a clone of [chatgpt.com](http://chatgpt.com). It will have
  - A nice chat UI for talking to a model
  - Real-time streaming of AI responses
  - Multiple chats

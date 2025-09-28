@@ -15,6 +15,14 @@ between sessions. The page should be nicely styled using ShadCN.
     - You should be able to clearly answer the question "What is ShadCN and why is it useful to us?"
     - Hint: it is NOT a component library
 
+## Lecture Notes
+ - Explain what ShadCN is
+ - Explain useChat() and streams
+
+## Diagram
+
+![image](2-chat.png)
+
 ## Steps
 
  - Most of this day is fairly well explained by [this tutorial](https://ai-sdk.dev/docs/getting-started/nextjs-app-router), but it's for Next.js
@@ -35,10 +43,6 @@ between sessions. The page should be nicely styled using ShadCN.
  - Peruse a list of component libraries that use ShadCN [here](https://github.com/birobirobiro/awesome-shadcn-ui) and pick one you'd like to use or modify for your project
  - Re-style your chat page using your fancy pretty shadcn components
  - Protect `/chat` behind a login of some kind. Don't forget that `POST /chat` should be protected too!
-
-## Diagram
-
-![image](2-chat.png)
 
 ## Optional Extras
 

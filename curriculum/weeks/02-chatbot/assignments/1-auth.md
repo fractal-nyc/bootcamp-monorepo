@@ -17,6 +17,18 @@ Previous cohorts have have made:
  - a trivia game where you talk to characters to learn about new york city
  - a recipes app where the AI can save/generate recipes for you
 
+## Pre-Work
+
+ - [Data vs. State -- The Two Reacts](https://overreacted.io/the-two-reacts/)
+ - [Impossible Components](https://overreacted.io/impossible-components/)
+  <sub>Note: If these are confusing, also try this talk by Dan Abramov called [React for Two Computers](https://www.youtube.com/watch?v=ozI4V_29fj4&t=2s)</sub>
+ - (1 hour) [React Router Framework Tutorial](https://reactrouter.com/tutorials/address-book)
+    - If you follow the tutorial closely, you may not need to actually _do_ the tutorial
+    - No need to read every word -- spend time on the features that seem relevant to you
+    - [Video](https://www.youtube.com/watch?v=pw8FAg07kdo) if you must
+ - (10 min) [Intro to JWTs](https://www.youtube.com/watch?v=Y2H3DXDeS3Q)
+    - JWTs are the way we will authenticate users in our app!
+
 ## Today's Assignment
 
 For today, we have two goals:
@@ -35,14 +47,6 @@ This is deceptively difficult! We need to build:
 
 Given how hard and sensitive these problems are, we won't be buliding it from scratch.
 We will use an auth framework to do most of the heavy lifting for us.
-
-## Pre-Work
-
- - (10 min) [Intro to JWTs](https://www.youtube.com/watch?v=Y2H3DXDeS3Q)
- - (1 hour) [React Router Framework Tutorial](https://reactrouter.com/tutorials/address-book)
-    - If you follow the tutorial closely, you may not need to actually _do_ the tutorial
-    - No need to read every word -- spend time on the features that seem relevant to you
-    - [Video](https://www.youtube.com/watch?v=pw8FAg07kdo) if you must
 
 ## Lecture Notes
 

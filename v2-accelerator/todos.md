@@ -29,3 +29,4 @@
   - [] Write our own Drizzle docs for day five
   - [] Show video of amazing demo (iPhone demo?) and/or demos-gone-wrong montage on day six
   - [] Add more challenges for the advanced students
+- [] Update fractalbootcamp.com site with a section for Hiring Partners to hire our grads for internships/full-time (see Gauntlet for an example: https://www.gauntletai.com/program-hiring-partner-form)

@@ -45,8 +45,9 @@ Bonus:
   - What is bun...?
 - Add `README.md` and commit to `main` branch
 - Switch to a new branch named `initial-tic-tac-toe-display`
-- Create a new Vite project: `bun create vite`, using `React` and `TypeScript + SWC`
+- Create a new Vite project: `bun create vite .`, using `React` and `TypeScript + SWC`
   - What is vite..?
+  - The `.` is important
 - Edit the main page to display a tic-tac-toe grid (no state yet)
   - It's OK if it looks ugly!
 - Add all files to staging for commit

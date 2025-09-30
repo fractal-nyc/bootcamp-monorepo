@@ -30,7 +30,7 @@ This means we can freely restart the server, and tic-tac-toe state will be maint
 
 ## Diagram
 
-![image](05-database.png)
+![image](5-database.png)
 
 ## Example Code
 

@@ -41,7 +41,8 @@ const client = new Client({
 
 client.once("clientReady", () => {
   console.log(`Logged in as ${client.user?.tag ?? "unknown user"}`);
-  scheduleJobs();
+  verifyPosts(EOD_CHANNEL_ID, "EOD");
+  // scheduleJobs();
 });
 
 client.login(DISCORD_TOKEN).catch((error) => {
@@ -127,6 +128,9 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
   const channel = await fetchTextChannel(channelId);
   const since = new Date(Date.now() - 8 * 60 * 60 * 1000);
   const messages = await fetchMessagesSince(channel, since);
+  // messages.forEach((msg) => {
+  //   console.log(msg);
+  // });
 
   const usersWhoPosted = new Set<string>();
   for (const message of messages) {
@@ -144,7 +148,7 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
   } else {
     const mentionList = missingUsers.map((id) => `<@${id}>`).join(", ");
     await channel.send({
-      content: `The following users still need to complete their ${label} update: ${mentionList}`,
+      content: `The following users still need to complete their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
     });
     console.warn(
       `Missing ${label} updates from ${missingUsers.length} users in #${

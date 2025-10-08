@@ -186,21 +186,21 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
 
   const missingUsers = USER_IDS.filter((id) => !usersWhoPosted.has(id));
 
-  // if (missingUsers.length === 0) {
-  //   console.log(
-  //     `All users completed their ${label} posts in #${channel.name}.`
-  //   );
-  // } else {
-  //   const mentionList = missingUsers.map((id) => `<@${id}>`).join(", ");
-  //   await channel.send({
-  //     content: `The following engineers still need to post their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
-  //   });
-  //   console.warn(
-  //     `Missing ${label} updates from ${missingUsers.length} users in #${
-  //       channel.name
-  //     }: ${missingUsers.join(", ")}`
-  //   );
-  // }
+  if (missingUsers.length === 0) {
+    console.log(
+      `All users completed their ${label} posts in #${channel.name}.`
+    );
+  } else {
+    const mentionList = missingUsers.map((id) => `<@${id}>`).join(", ");
+    await channel.send({
+      content: `The following engineers still need to post their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
+    });
+    console.warn(
+      `Missing ${label} updates from ${missingUsers.length} users in #${
+        channel.name
+      }: ${missingUsers.join(", ")}`
+    );
+  }
 }
 
 async function fetchTextChannel(channelId: string): Promise<TextChannel> {

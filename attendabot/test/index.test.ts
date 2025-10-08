@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { countPrsInMessage } from "../src/index.ts";
 
 describe("countPrsInMessage", () => {
-  it("returns 1 when there's one PR URL", () => {
+  it("returns 1 when there is one PR URL", () => {
     const message = "https://github.com/NielsdaWheelz/fractal-chat/pull/26";
     expect(countPrsInMessage(message)).toEqual(1);
   });
@@ -11,6 +11,18 @@ describe("countPrsInMessage", () => {
     const message =
       "https://github.com/NielsdaWheelz/fractal-chat/pull/26https://github.com/NielsdaWheelz/fractal-chat/pull/26";
     expect(countPrsInMessage(message)).toEqual(2);
+  });
+
+  it("returns 3 when there are three PR URLs", () => {
+    const message = `Wins:
+      Made significant progress implementing our basic game logic. Good vision of the path forward for tomorrow.
+
+
+      PRs:
+      https://github.com/Pryzux/rogue-like-uno/pull/10
+      https://github.com/Pryzux/rogue-like-uno/pull/12
+      https://github.com/Pryzux/rogue-like-uno/pull/17`;
+    expect(countPrsInMessage(message)).toEqual(3);
   });
 
   it("returns 5 when there are five PR URLs", () => {

@@ -41,8 +41,7 @@ const client = new Client({
 
 client.once("clientReady", () => {
   console.log(`Logged in as ${client.user?.tag ?? "unknown user"}`);
-  verifyPosts(EOD_CHANNEL_ID, "EOD");
-  // scheduleJobs();
+  scheduleJobs();
 });
 
 client.login(DISCORD_TOKEN).catch((error) => {

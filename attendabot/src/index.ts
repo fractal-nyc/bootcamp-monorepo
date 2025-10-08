@@ -7,9 +7,11 @@ import {
 } from "discord.js";
 import cron from "node-cron";
 import dotenv from "dotenv";
+import { userIdToNameMap } from "./constants";
 
 dotenv.config();
 
+// Validate environment.
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
 const EOD_CHANNEL_ID = process.env.EOD_CHANNEL_ID!;
 const ATTENDANCE_CHANNEL_ID = process.env.ATTENDANCE_CHANNEL_ID!;
@@ -31,7 +33,7 @@ if (!ATTENDANCE_CHANNEL_ID) {
   throw new Error("ATTENDANCE_CHANNEL_ID is not set in the environment.");
 }
 
-const client = new Client({
+const discordClient = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
@@ -40,12 +42,13 @@ const client = new Client({
 });
 
 // Main entry point into the app.
-client.once("clientReady", () => {
-  console.log(`Logged in as ${client.user?.tag ?? "unknown user"}`);
-  scheduleJobs();
+discordClient.once("clientReady", () => {
+  console.log(`Logged in as ${discordClient.user?.tag ?? "unknown user"}`);
+  verifyEodPost();
+  // scheduleJobs();
 });
 
-client.login(DISCORD_TOKEN).catch((error) => {
+discordClient.login(DISCORD_TOKEN).catch((error) => {
   console.error("Failed to login to Discord:", error);
   process.exit(1);
 });
@@ -144,33 +147,64 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
   const messages = await fetchMessagesSince(channel, since);
 
   const usersWhoPosted = new Set<string>();
+  const userPullRequestCounts = new Map<string, number>();
+
   for (const message of messages) {
-    if (USER_IDS.includes(message.author.id)) {
+    const authorId = message.author.id;
+    if (USER_IDS.includes(authorId)) {
       usersWhoPosted.add(message.author.id);
+
+      const prCount = countPrsInMessage(message.content);
+
+      userPullRequestCounts.set(
+        authorId,
+        (userPullRequestCounts.get(message.author.id) ?? 0) + prCount
+      );
     }
+  }
+
+  if (channelId == EOD_CHANNEL_ID) {
+    const prCountStrings: string[] = [];
+    for (const [userId, count] of userPullRequestCounts.entries()) {
+      const userName = userIdToNameMap.get(userId) ?? "Unknown User";
+      prCountStrings.push(`${userName}: ${count}`);
+    }
+
+    prCountStrings.sort((a, b) => {
+      const countA = parseInt(a.split(": ")[1], 10);
+      const countB = parseInt(b.split(": ")[1], 10);
+      return countB - countA;
+    });
+
+    const prCountString =
+      `PR Leaderboard for ${getCurrentMonthDay()}:\n` +
+      prCountStrings.join("\n");
+    await channel.send({
+      content: prCountString,
+    });
   }
 
   const missingUsers = USER_IDS.filter((id) => !usersWhoPosted.has(id));
 
-  if (missingUsers.length === 0) {
-    console.log(
-      `All users completed their ${label} posts in #${channel.name}.`
-    );
-  } else {
-    const mentionList = missingUsers.map((id) => `<@${id}>`).join(", ");
-    await channel.send({
-      content: `The following users still need to post their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
-    });
-    console.warn(
-      `Missing ${label} updates from ${missingUsers.length} users in #${
-        channel.name
-      }: ${missingUsers.join(", ")}`
-    );
-  }
+  // if (missingUsers.length === 0) {
+  //   console.log(
+  //     `All users completed their ${label} posts in #${channel.name}.`
+  //   );
+  // } else {
+  //   const mentionList = missingUsers.map((id) => `<@${id}>`).join(", ");
+  //   await channel.send({
+  //     content: `The following engineers still need to post their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
+  //   });
+  //   console.warn(
+  //     `Missing ${label} updates from ${missingUsers.length} users in #${
+  //       channel.name
+  //     }: ${missingUsers.join(", ")}`
+  //   );
+  // }
 }
 
 async function fetchTextChannel(channelId: string): Promise<TextChannel> {
-  const channel = await client.channels.fetch(channelId);
+  const channel = await discordClient.channels.fetch(channelId);
 
   if (!channel || channel.type !== ChannelType.GuildText) {
     throw new Error(
@@ -229,4 +263,9 @@ function getCurrentMonthDay(): string {
 
 function roleMention(roleId: string) {
   return `<@&${roleId}>`;
+}
+
+export function countPrsInMessage(messageContent: string): number {
+  const re = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+  return (messageContent.match(re) || []).length;
 }

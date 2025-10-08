@@ -1,0 +1,26 @@
+import { describe, it, expect } from "vitest";
+import { countPrsInMessage } from "../src/index.ts";
+
+describe("countPrsInMessage", () => {
+  it("returns 1 when there's one PR URL", () => {
+    const message = "https://github.com/NielsdaWheelz/fractal-chat/pull/26";
+    expect(countPrsInMessage(message)).toEqual(1);
+  });
+
+  it("returns 2 when there are two PR URLs", () => {
+    const message =
+      "https://github.com/NielsdaWheelz/fractal-chat/pull/26https://github.com/NielsdaWheelz/fractal-chat/pull/26";
+    expect(countPrsInMessage(message)).toEqual(2);
+  });
+
+  it("returns 5 when there are five PR URLs", () => {
+    const message = `maybe tomorrow I can actually do something cool and fun
+      PRs (I thought it would be just one today. I have no memory of the others. I must've blacked out):
+      https://github.com/NielsdaWheelz/fractal-chat/pull/26
+      https://github.com/NielsdaWheelz/fractal-chat/pull/28
+      https://github.com/NielsdaWheelz/fractal-chat/pull/33
+      https://github.com/NielsdaWheelz/fractal-chat/pull/37
+      (got another one in) https://github.com/NielsdaWheelz/fractal-chat/pull/38`;
+    expect(countPrsInMessage(message)).toEqual(5);
+  });
+});

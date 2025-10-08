@@ -39,6 +39,7 @@ const client = new Client({
   ],
 });
 
+// Main entry point into the app.
 client.once("clientReady", () => {
   console.log(`Logged in as ${client.user?.tag ?? "unknown user"}`);
   scheduleJobs();
@@ -52,39 +53,53 @@ client.login(DISCORD_TOKEN).catch((error) => {
 function scheduleJobs(): void {
   scheduleTask(
     process.env.EOD_REMINDER_CRON ?? "0 19 * * *",
-    () =>
-      sendReminder(
-        EOD_CHANNEL_ID,
-        `${roleMention(
-          process.env.CURRENT_COHORT_ROLE_ID!
-        )} please post your EOD update for ${getCurrentMonthDay()} when you're done working for the day.`
-      ),
+    () => sendEodReminder(),
     "EOD reminder"
   );
 
   scheduleTask(
     process.env.EOD_VERIFICATION_CRON ?? "59 23 * * *",
-    () => verifyPosts(EOD_CHANNEL_ID, "EOD"),
+    () => verifyEodPost(),
     "EOD verification"
   );
 
   scheduleTask(
     process.env.ATTENDANCE_REMINDER_CRON ?? "0 9 * * *",
-    () =>
-      sendReminder(
-        ATTENDANCE_CHANNEL_ID,
-        `Good morning ${roleMention(
-          process.env.CURRENT_COHORT_ROLE_ID!
-        )}, please check in for ${getCurrentMonthDay()}.`
-      ),
+    () => sendAttendanceReminder(),
     "Attendance reminder"
   );
 
   scheduleTask(
     process.env.ATTENDANCE_VERIFICATION_CRON ?? "15 9 * * *",
-    () => verifyPosts(ATTENDANCE_CHANNEL_ID, "attendance"),
+    () => verifyAttendancePost(),
     "Attendance verification"
   );
+}
+
+async function sendAttendanceReminder(): Promise<void> {
+  sendReminder(
+    ATTENDANCE_CHANNEL_ID,
+    `Good morning ${roleMention(
+      process.env.CURRENT_COHORT_ROLE_ID!
+    )}, please check in for ${getCurrentMonthDay()}.`
+  );
+}
+
+async function sendEodReminder(): Promise<void> {
+  sendReminder(
+    EOD_CHANNEL_ID,
+    `${roleMention(
+      process.env.CURRENT_COHORT_ROLE_ID!
+    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working for the day.`
+  );
+}
+
+async function verifyAttendancePost(): Promise<void> {
+  verifyPosts(ATTENDANCE_CHANNEL_ID, "attendance");
+}
+
+async function verifyEodPost(): Promise<void> {
+  verifyPosts(EOD_CHANNEL_ID, "EOD");
 }
 
 function scheduleTask(

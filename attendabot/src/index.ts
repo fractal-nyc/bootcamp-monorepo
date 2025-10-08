@@ -44,8 +44,7 @@ const discordClient = new Client({
 // Main entry point into the app.
 discordClient.once("clientReady", () => {
   console.log(`Logged in as ${discordClient.user?.tag ?? "unknown user"}`);
-  verifyEodPost();
-  // scheduleJobs();
+  scheduleJobs();
 });
 
 discordClient.login(DISCORD_TOKEN).catch((error) => {

@@ -125,7 +125,7 @@ async function sendReminder(channelId: string, message: string): Promise<void> {
 
 async function verifyPosts(channelId: string, label: string): Promise<void> {
   const channel = await fetchTextChannel(channelId);
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const since = new Date(Date.now() - 8 * 60 * 60 * 1000);
   const messages = await fetchMessagesSince(channel, since);
 
   const usersWhoPosted = new Set<string>();

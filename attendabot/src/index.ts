@@ -7,19 +7,23 @@ import {
 } from "discord.js";
 import cron from "node-cron";
 import dotenv from "dotenv";
-import { userIdToNameMap } from "./constants";
+import {
+  ATTENDANCE_CHANNEL_ID,
+  ATTENDANCE_REMINDER_CRON,
+  ATTENDANCE_VERIFICATION_CRON,
+  CRON_TIMEZONE,
+  CURRENT_COHORT_ROLE_ID,
+  EOD_CHANNEL_ID,
+  EOD_REMINDER_CRON,
+  EOD_VERIFICATION_CRON,
+  USER_ID_TO_NAME_MAP,
+} from "./constants";
 
 dotenv.config();
 
 // Validate environment.
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
-const EOD_CHANNEL_ID = process.env.EOD_CHANNEL_ID!;
-const ATTENDANCE_CHANNEL_ID = process.env.ATTENDANCE_CHANNEL_ID!;
-const USER_IDS = (process.env.USER_IDS ?? "")
-  .split(",")
-  .map((id) => id.trim())
-  .filter((id) => id.length > 0);
-const CRON_TIMEZONE = process.env.CRON_TIMEZONE;
+const USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
 
 if (!DISCORD_TOKEN) {
   throw new Error("DISCORD_TOKEN is not set in the environment.");
@@ -53,26 +57,22 @@ discordClient.login(DISCORD_TOKEN).catch((error) => {
 });
 
 function scheduleJobs(): void {
-  scheduleTask(
-    process.env.EOD_REMINDER_CRON ?? "0 19 * * *",
-    () => sendEodReminder(),
-    "EOD reminder"
-  );
+  scheduleTask(EOD_REMINDER_CRON, () => sendEodReminder(), "EOD reminder");
 
   scheduleTask(
-    process.env.EOD_VERIFICATION_CRON ?? "59 23 * * *",
+    EOD_VERIFICATION_CRON,
     () => verifyEodPost(),
     "EOD verification"
   );
 
   scheduleTask(
-    process.env.ATTENDANCE_REMINDER_CRON ?? "0 9 * * *",
+    ATTENDANCE_REMINDER_CRON,
     () => sendAttendanceReminder(),
     "Attendance reminder"
   );
 
   scheduleTask(
-    process.env.ATTENDANCE_VERIFICATION_CRON ?? "15 9 * * *",
+    ATTENDANCE_VERIFICATION_CRON,
     () => verifyAttendancePost(),
     "Attendance verification"
   );
@@ -82,7 +82,7 @@ async function sendAttendanceReminder(): Promise<void> {
   sendReminder(
     ATTENDANCE_CHANNEL_ID,
     `Good morning ${roleMention(
-      process.env.CURRENT_COHORT_ROLE_ID!
+      CURRENT_COHORT_ROLE_ID
     )}, please check in for ${getCurrentMonthDay()}.`
   );
 }
@@ -91,7 +91,7 @@ async function sendEodReminder(): Promise<void> {
   sendReminder(
     EOD_CHANNEL_ID,
     `${roleMention(
-      process.env.CURRENT_COHORT_ROLE_ID!
+      CURRENT_COHORT_ROLE_ID
     )} please post your EOD update for ${getCurrentMonthDay()} when you're done working for the day.`
   );
 }
@@ -165,7 +165,7 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
   if (channelId == EOD_CHANNEL_ID) {
     const prCountStrings: string[] = [];
     for (const [userId, count] of userPullRequestCounts.entries()) {
-      const userName = userIdToNameMap.get(userId) ?? "Unknown User";
+      const userName = USER_ID_TO_NAME_MAP.get(userId) ?? "Unknown User";
       prCountStrings.push(`${userName}: ${count}`);
     }
 

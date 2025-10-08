@@ -1,4 +1,14 @@
-export const userIdToNameMap = new Map<string, string>([
+export const EOD_REMINDER_CRON = "0 17 * * *";
+export const EOD_VERIFICATION_CRON = "59 23 * * *";
+export const ATTENDANCE_REMINDER_CRON = "0 9 * * *";
+export const ATTENDANCE_VERIFICATION_CRON = "15 9 * * *";
+export const CRON_TIMEZONE = "America/New_York";
+
+export const EOD_CHANNEL_ID = "1336123201968935006";
+export const ATTENDANCE_CHANNEL_ID = "1418329701658792046";
+export const CURRENT_COHORT_ROLE_ID = "1416479282817007797";
+
+export const USER_ID_TO_NAME_MAP = new Map<string, string>([
   ["800099563767726100", "Aarti"],
   ["256191677566287873", "Anansi"],
   ["362690699042226176", "Boris"],

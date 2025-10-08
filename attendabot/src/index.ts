@@ -144,7 +144,7 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
   } else {
     const mentionList = missingUsers.map((id) => `<@${id}>`).join(", ");
     await channel.send({
-      content: `The following users still need to complete their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
+      content: `The following users still need to post their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
     });
     console.warn(
       `Missing ${label} updates from ${missingUsers.length} users in #${

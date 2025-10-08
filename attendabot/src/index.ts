@@ -127,9 +127,6 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
   const channel = await fetchTextChannel(channelId);
   const since = new Date(Date.now() - 8 * 60 * 60 * 1000);
   const messages = await fetchMessagesSince(channel, since);
-  // messages.forEach((msg) => {
-  //   console.log(msg);
-  // });
 
   const usersWhoPosted = new Set<string>();
   for (const message of messages) {

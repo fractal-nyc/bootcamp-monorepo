@@ -48,7 +48,8 @@ const discordClient = new Client({
 // Main entry point into the app.
 discordClient.once("clientReady", () => {
   console.log(`Logged in as ${discordClient.user?.tag ?? "unknown user"}`);
-  scheduleJobs();
+  // scheduleJobs();
+  verifyAttendancePost();
 });
 
 discordClient.login(DISCORD_TOKEN).catch((error) => {
@@ -83,7 +84,7 @@ async function sendAttendanceReminder(): Promise<void> {
     ATTENDANCE_CHANNEL_ID,
     `Good morning ${roleMention(
       CURRENT_COHORT_ROLE_ID
-    )}, please check in for ${getCurrentMonthDay()}.`
+    )}, please check in for ${getCurrentMonthDay()} if you haven't already.`
   );
 }
 

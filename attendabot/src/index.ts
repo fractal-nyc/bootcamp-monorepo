@@ -49,6 +49,12 @@ const discordClient = new Client({
 discordClient.once("clientReady", () => {
   console.log(`Logged in as ${discordClient.user?.tag ?? "unknown user"}`);
   scheduleJobs();
+
+  // Uncomment if you want to send any of the messages ad-hoc.
+  // sendAttendanceReminder();
+  // verifyAttendancePost();
+  // sendEodReminder();
+  // verifyEodPost();
 });
 
 discordClient.login(DISCORD_TOKEN).catch((error) => {

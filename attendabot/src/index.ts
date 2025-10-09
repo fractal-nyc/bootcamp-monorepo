@@ -92,7 +92,7 @@ async function sendEodReminder(): Promise<void> {
     EOD_CHANNEL_ID,
     `${roleMention(
       CURRENT_COHORT_ROLE_ID
-    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working for the day.`
+    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`
   );
 }
 

@@ -43,6 +43,27 @@ You will work on this for one week, but the idea should be meaty enough that you
 ## Timeline
 - **Weekend of Week 2 + Monday Week 3**: Find your team and idea.
 - **Monday Afternoon**: Every team must deliver a pitch to the instructors and get it approved.
+- **Wednesday Afternoon**: Proof of concept that is minimally fun or useful.
 - **Saturday**: **5-minute live demo per team**.  
     - Audience: your cohort and instructors.  
-    - The only test is whether you built something worth showing off.  
+    - The only test is whether you built something people would use or find cool.
+
+# Readings / Lectures
+
+- Agile-ish development
+    - tight feedback loops are #1 prioirty. iterate quickly
+    - tiny, incremental improvements with PR review
+    - always have something working end-to-end (vertical slice vs horizontal layers)
+- Decomposing systems into parts
+- Law of Leaky Abstractions: https://www.joelonsoftware.com/2002/11/11/the-law-of-leaky-abstractions/
+- Choose Boring Technology: https://mcfunley.com/choose-boring-technology
+- Falsehoods Programmers Believe About Names: https://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/
+    - Highlights the importance of constrained data models and simplifying assumptions
+- Computers Can Be Understood: https://blog.nelhage.com/post/computers-can-be-understood/
+- Write code that is easy to delete, not extend: https://programmingisterrible.com/post/139222674273/write-code-that-is-easy-to-delete-not-easy-to
+- Hold a program in your head: https://www.paulgraham.com/head.htmlx
+- The Wrong Abstraction: https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction
+    - We probably can't assign this until students have built lots of abstractions
+- Data Modeling
+    - Lecture? "Design twitter". 
+    - First, a spec. Then, an overall design. Then, an order of operations. Then, a view of the day-to-day dev experience

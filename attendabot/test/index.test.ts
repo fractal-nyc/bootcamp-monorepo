@@ -35,4 +35,14 @@ describe("countPrsInMessage", () => {
       (got another one in) https://github.com/asdf/fractal-chat/pull/38`;
     expect(countPrsInMessage(message)).toEqual(5);
   });
+
+  it("returns 5 when there are five PR URLs in different repos", () => {
+    const message = `PRs:
+      https://github.com/asdf/fghj/pull/100
+      https://github.com/asdf/vbnm/pull/101
+      https://github.com/asdf/zxcv/pull/103
+      https://github.com/asdf/qwer/pull/104
+      https://github.com/asdf/asdf/pull/1`;
+    expect(countPrsInMessage(message)).toEqual(5);
+  });
 });

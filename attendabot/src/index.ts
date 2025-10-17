@@ -141,7 +141,9 @@ function scheduleTask(
 }
 
 async function sendReminder(channelId: string, message: string): Promise<void> {
+  console.log(`fetching text channel: ${channelId}`);
   const channel = await fetchTextChannel(channelId);
+  console.log(`sending message: ${message}`);
   await channel.send({ content: message });
   console.log(`Sent reminder to #${channel.name}: ${message}`);
 }

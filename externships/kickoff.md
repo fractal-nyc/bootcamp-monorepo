@@ -52,8 +52,17 @@ Name*
 
 ## The Next 2 Weeks
 
-Work on the project. If you get stuck or lost, reach out to an instructor. If you think you are falling behind timeline, let an instructor know asap.
+The people giving the internship often aren't good at scoping and don't know how fast y'all are. **The #1 way to open doors and make a good impression is to get the project done much faster than expected.**
+
+This won't always be possible (not all projects are under-scoped), but it is what you should aim for.
+
+If you get stuck or lost, reach out to an instructor. If you think you are falling behind timeline and cannot complete the work in 2 weeks, let an instructor know asap.
 
 On Friday, send an update email to the founder/eng manager, and cc Andrew, Priya, and Paris.
 
-Then by the next Friday you should have something to deliver (and if you don't, we'll discuss and make a plan separately)
+Example email:
+*Hi Name,
+Just a quick update. So far I have done X, Y, Z, and next week I will work on A, B, C. You can see my current progress here: [link]. Have a great weekend!
+Best,
+Name*
+(Note: what you link, if anything, is dependent on the project. Perhaps your PRs to their codebase, or e.g. a video of what the dashboard looks like so far).

@@ -33,12 +33,13 @@ I recommend exploring in increasing levels of complexity:
     - Figure out which frontier model and tool you like to use the most
     - Ask it to "Refactor this function, make this button green and shiny, write a database query to select all users who signed up later than Jan 10", etc.
     - [Follow this advice](https://simonwillison.net/2025/Mar/11/using-llms-for-code/)
+    - [Read this too](https://steipete.me/posts/just-talk-to-it). It argues for less automation for now
     - Give the AI agent small tasks in an existing codebase (your group project, your tic tac toe app, etc)
     - Figure out how to maintain conceptual clarity and high level understanding while using AI
     - **DO NOT BLINDLY CLICK ACCEPT EDITS**
     - Try to get your projects to the point where the slop is piling up and things are breaking and hard to fix with AI alone.
  - **Spec-driven development**
-     - [Here](https://blog.fsck.com/2025/10/05/how-im-using-coding-agents-in-september-2025/) is a good model to follow, but there are many many others.
+    - [Here](https://blog.fsck.com/2025/10/05/how-im-using-coding-agents-in-september-2025/) is a good model to follow, but there are many many others.
     - Writing really good specs seems to help avoid AI Slop.
     - This is a great opportunity to have the AI just one-shot some new project and see how it goes. With AI you can build 4 toy apps a day, easily.
     - Learn to prompt it well and don't let it write slop.

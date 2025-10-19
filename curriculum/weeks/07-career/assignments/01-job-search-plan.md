@@ -22,6 +22,7 @@ Write a 1-2 page job search plan. By the end of the day, you should:
 - [Demos instead of Resumes](https://x.com/GabrielPeterss4/status/1898566138352820561)
 - [Startup Interview Tips](https://x.com/mitch_troy/status/1810879118428311920)
 - [How to get hired at a Startup](https://nextplayso.substack.com/p/how-to-get-hired-at-a-startup?triedRedirect=true)
+- [The only things you need to do well as a junior](https://x.com/0xKyon/status/1978102437241131398?s=19)
 
 ## Advice
 

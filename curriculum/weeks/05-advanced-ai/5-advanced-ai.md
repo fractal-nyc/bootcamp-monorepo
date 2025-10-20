@@ -8,7 +8,7 @@ This week is about building something that uses **advanced AI capabilities** in 
 
 These skills matter. Modern software teams are integrating AI into every layer of their stack — from intelligent assistants to adaptive workflows and domain-specific copilots. Hiring managers now assume familiarity with LLM-based tools, embeddings, and agentic systems. Building something tangible with them gives you portfolio proof that you’re already fluent in the next generation of tech.
 
-Also: this is new ground. Nobody fully knows the “right” way to do any of this yet. You’re experimenting at the frontier.
+Also: this is new ground. Nobody fully knows the “right” way to do any of this yet. You’re experimenting at the frontier. AI development right now is chaotic and fast-moving. You’ll be working with half-documented tools, vague APIs, and shifting best practices. That’s good. Learning to navigate that chaos is part of becoming the kind of engineer who can lead, not follow, the next wave of technology.
 
 ## What Counts as “Advanced”
 
@@ -41,13 +41,8 @@ Don't use these directly.
 - A personal research assistant with RAG over your notes  
 - A workflow orchestrator that turns natural language into cloud jobs  
 - A multimodal tutor that reads diagrams and answers conceptual questions  
-- A domain-specific chatbot (law, finance, music) with fine-tuned tone or behavior  
-
-## Philosophy
-
-The point isn’t perfection — it’s exploration.  
-AI development right now is chaotic and fast-moving. You’ll be working with half-documented tools, vague APIs, and shifting best practices. That’s good. Learning to navigate that chaos is part of becoming the kind of engineer who can lead, not follow, the next wave of technology.
-
+- A domain-specific chatbot (law, finance, music) with fine-tuned tone or behavior
+- 
 ## Resources
 
 Again, there's no state of the art here -- just a bunch of advice. You will need to do extensive research and experimentation yourself.

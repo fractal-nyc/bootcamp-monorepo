@@ -39,6 +39,9 @@ If you're going to use online job applications, make sure the platform is highly
  - [Pampam City Job Listings](https://www.pampam.city/p/Pd82Tp8aq5EfxTP3yJhu)
  - [More curated jobs](https://www.joinprospect.com/)
  - [Built in NYC](https://www.builtinnyc.com/)
+ - https://nextplayso.substack.com/
+ - https://stealthstartupspy.substack.com/
+ - Using LinkedIn Jobs actually has tuned their email rec’s a lot
  - [Job Listings on Hacker News](https://nchelluri.github.io/hnjobs/)
  - [Career Brew](https://careerbrew.substack.com/p/career-brew-15th-dec-jobs-digest)
 

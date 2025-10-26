@@ -54,8 +54,10 @@ Again, there's no state of the art here -- just a bunch of advice. You will need
     - [Langchain - Agent Framework](https://docs.langchain.com/)
     - [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
 - **AI-assisted coding:**  
+    - [This video](https://www.youtube.com/watch?v=WcpfyZ1yQRA) is a fantastic demonstration of prompt-driven coding
     - [Dear Student: Yes, AI is here, you're screwed unless you take action](https://archive.is/MaGZ0)
     - [Just talk to it](https://steipete.me/posts/just-talk-to-it)
+    - [Vibing a non-trivial feature](https://mitchellh.com/writing/non-trivial-vibing)
     - [Follow this advice](https://simonwillison.net/2025/Mar/11/using-llms-for-code/)
     - [This too](https://blog.fsck.com/2025/10/05/how-im-using-coding-agents-in-september-2025/)
     - [Vibe Engineering](https://simonwillison.net/2025/Oct/7/vibe-engineering/)

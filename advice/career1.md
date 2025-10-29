@@ -20,6 +20,8 @@
 
 2. https://x.com/GabrielPeterss4/status/1898566138352820561
 
+3. [Prototypes are the new cover letter](https://www.linkedin.com/posts/jessereiss_it-used-to-be-that-emailing-a-founder-was-activity-7389330180974108672-D5HA/)
+
 ## What to do after bootcamp:
 
 1. [Workatastartup](https://workatastartup.com/) - literally apply to startups

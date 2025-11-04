@@ -19,7 +19,7 @@ In general, we recommend spearfishing companies that are actively hiring, so tha
 3. Use their product and identify 3 possible improvements or additions to their product. A lot of companies are behind the curve on AI. Imagine if there are ways that AI could improve their product or solve one of their problems.
 
 
-4. What is one improvement that you could build a demo for today? Make sure it’s small enough to be able to deploy something asap, while still being compelling. As an excellent example, please see Andrei’s demo from the time he successfully spearfilled Eleven Labs.
+4. What is one improvement that you could build a demo for today? Make sure it’s small enough to be able to deploy something asap, while still being compelling. As an excellent example, please see [Andrei’s demo from the time he successfully spearfilled Eleven Labs](https://github.com/fractal-bootcamp/bootcamp-monorepo/blob/main/career/spearfishing/andrei_11labs_example.md).
 
 
 5. Compose a short email a la “Here is a properly scoped internship project and here is the Day One output. Are you interested in seeing Day Two?”. You can see an excellent example email here. 

@@ -37,6 +37,12 @@ Two constraints fall directly out of this:
 
 The rest of this guide assumes this mental model: a resume is a short, high-signal artifact that makes a specific story about you feel believable.
 
+Here are some great examples of Fractal Tech resumes:
+ - [Mahlen](https://cv.mahlen.dev/)
+ - [Parth](https://parthagrawal.com/resume)
+ - [Norman](https://normanqian.com/Norman%20Qian%20Resume%202024%20V.3.2.pdf)
+ - [Brian](https://binarysmile.com/resume.pdf)
+ - [Paris](https://docs.google.com/document/d/1q38ze-yAkY-d2myTk6DC-k63GEQnx7LUzFpvEqnqSsI/edit?usp=sharing)
 
 ## 2. Choose your target lane and story
 

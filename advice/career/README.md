@@ -53,7 +53,7 @@ From the company’s point of view, the risk is clear:
 
 If your resume is not in roughly the top few percent of that pile on paper, the system is perfectly comfortable filtering you out. You are not competing with the 10 people you feel “similar” to. You are competing with thousands of candidates, some of whom have significantly stronger traditional signals than you do.
 
-You can and should improve your resume. Fractal gives you concrete tools to do that. But you should not build your job hunt around a channel where:
+You can and should improve your resume. We have plenty of advice on resumes and how to use them [here](../resume/README.md). But you should not build your job hunt around a channel where:
 
 - Your structural disadvantages (little experience, non-fancy education, career change) matter most.
 - You are relying on a one-page document to carry your entire story through a noisy, automated filter.
@@ -169,7 +169,7 @@ What they really do is open a mental tab in someone’s head:
 
 From that moment on, the question is: **Can you turn that initial curiosity into real belief that you would be a strong hire?**
 
-This is where your story, your portfolio, and your resume come in. They are not optional extras. They are the tools that convert a promising introduction into a concrete opportunity.
+This is where your [story](story.md), your portfolio, and your [resume](../resume/README.md) come in. They are not optional extras. They are the tools that convert a promising introduction into a concrete opportunity.
 
 ---
 
@@ -240,7 +240,7 @@ This is not about fancy design for its own sake. It is about making it effortles
 
 ### 4.4 Your Resume: Supporting Evidence, Not Your Only Chance
 
-In the standard job hunt, the resume is the first and only thing anyone sees. That is why it ends up overloaded with fluff and buzzwords. It is trying to carry your entire story through a hostile, noisy filter.
+In the standard job hunt, the [resume](../resume/README.md) is the first and only thing anyone sees. That is why it ends up overloaded with fluff and buzzwords. It is trying to carry your entire story through a hostile, noisy filter.
 
 In the Fractal strategy, the resume has a narrower, more realistic job:
 
@@ -258,7 +258,7 @@ Now they are scanning for:
 - Evidence that you stick with things and deliver.
 - Concrete signs of impact where possible (metrics, scope, responsibilities).
 
-You should still apply Fractal’s resume principles. Clarity, structure, and signal density matter. But you no longer pretend that a single page, dropped into a sea of thousands, is going to carry your entire job hunt.
+You should still apply [Fractal’s resume principles](../resume/README.md). Clarity, structure, and signal density matter. But you no longer pretend that a single page, dropped into a sea of thousands, is going to carry your entire job hunt.
 
 ### 4.5 Interviews: Due Diligence, Not a Lottery
 

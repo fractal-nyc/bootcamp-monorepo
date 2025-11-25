@@ -13,6 +13,7 @@ Write a 1-2 page job search plan. By the end of the day, you should:
 - [Ways to Stand Out](https://letterstoanewdeveloper.com/2022/09/19/ways-to-stand-out/)
 - [Advice for Junior Engineers](https://blog.pragmaticengineer.com/advice-for-junior-software-engineers/)
     - my only disagreement: don't tailor your resume. see below. the resume blender doesn't work.
+- [Product-minded Engineer](https://blog.pragmaticengineer.com/the-product-minded-engineer/)
 - [How to get an amazing internship](https://x.com/patio11/status/1344313750334046210) - Patio11
 - [Don't call yourself a programmer and other career advice](https://www.kalzumeus.com/2011/10/28/dont-call-yourself-a-programmer/) - Patio11
 - [Career advice that no one asked me for](https://x.com/gokulns/status/1810598394286497854)

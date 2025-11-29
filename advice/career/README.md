@@ -13,7 +13,7 @@ If something is going wrong in your job hunt, you should be able to come back he
 
 ---
 
-## 1. Why the Default Strategy Fails
+## Why the Default Strategy Fails
 
 The default plan most juniors have in their head looks like this:
 
@@ -24,7 +24,7 @@ The default plan most juniors have in their head looks like this:
 
 For most early-career engineers without elite credentials or brand-name experience, this plan simply does not function anymore. The bottleneck is not “effort.” The bottleneck is that the channel you are using cannot carry enough signal about you.
 
-### 1.1 The Resume Blender
+### The Resume Blender
 
 When you click “Easy Apply” on a typical posting, something like this happens:
 
@@ -37,7 +37,7 @@ Every extra applicant makes it easier for the company to be more aggressive with
 
 If you do not look obviously excellent on paper compared to that entire pile, you disappear before a human ever sees your name. Not because anyone hates you personally, but because the process is built to eliminate almost everyone as quickly as possible.
 
-### 1.2 Why Your Resume Cannot Stand Out There
+### Why You Can't "Stand Out"
 
 For early-career engineers, this environment has a few brutal properties:
 
@@ -64,7 +64,7 @@ If you earnestly feel that your resume is in the top 5% of people who apply for 
 
 ---
 
-## 2. How People Actually Get Jobs Now
+## How People Actually Get Jobs
 
 If the resume blender is not going to save you, what does?
 
@@ -76,11 +76,11 @@ That “reason to pay attention” is the introduction. At Fractal, we care abou
 
 1. Warm introductions.
 2. Networking encounters.
-3. Spearfishing.
+3. [Spearfishing](./spearfishing.md).
 
 All of them do the same basic job: they bypass the low-context resume filter and create a moment where a person with power inside a company stops and thinks, “I should at least look at this person seriously.”
 
-### 2.1 Warm Introductions
+### Warm Introductions
 
 A warm introduction is when someone the company trusts says something like:
 
@@ -99,7 +99,7 @@ From the hiring manager’s perspective:
 
 Your warm intro is not competing against thousands. It is competing against a handful. That is why it is so powerful.
 
-### 2.2 Networking Encounters
+### Networking Encounters
 
 Sometimes the introduction happens live, at an event:
 
@@ -121,45 +121,19 @@ A single good conversation at the right event can give you:
 
 Humans overweight in-person impressions compared to documents. A five-minute conversation can outweigh a mediocre resume. If you tell them a good story about yourself, it will stand out in their mind. We have a whole guide on producing a good story [here](story.md).
 
-### 2.3 Spearfishing
+### Spearfishing
 
 The third type of introduction is the one almost no one uses, and it is where Fractal students have a huge edge:
 
 > You pick a specific company, identify a real problem they have, build a targeted demo or tool that helps with that problem, and send it to them.
 
-This is spearfishing. We are working on a more thorough guide, but it's explained well by [this](https://x.com/patio11/status/1344313750334046210) and [this](https://x.com/GabrielPeterss4/status/1898566138352820561) tweet.
-
-From the company’s point of view, this is a shock:
-
-- Most applicants barely read the job description.
-- Almost no one does meaningful work tailored to their situation.
-- It is extremely rare for someone to send them a working prototype that feels like it belongs inside their product or workflow.
-
-Pre-AI, this would have been hard to recommend. Spending a week or more on each attempt, with no guarantee that anyone would even open your email, is a miserable trade.
-
-Post-AI, the equation is different:
-
-- You already know how to build with AI. You have been doing it for months in the program and during your externship.
-- You can turn a well-chosen idea into a convincing demo in hours, not weeks.
-- If you are focused and efficient, you can plausibly produce one to three solid spearfish projects in a day.
-
-When you aim carefully in your chosen [lane](lane.md), you do not need a huge hit rate for this to be worth it. Even if only one out of three serious spearfishes turns into a real conversation, that is an extremely good use of your time compared to sending out hundreds of anonymous applications.
-
-A good spearfish:
-
-- Reads like, “I am very specifically interested in *you*, and I took the time to prove it.”
-- Demonstrates your abilities in the exact context the company cares about.
-- Creates a story that the recipient will remember for years: “Do you remember that person who just built the thing we wanted, without us even asking?”
-
-Spearfishing is a high-context introduction you can create for yourself, on demand.
+This technique is extremely effective at landing warm intros, which lead to interviews. We have a whole guide [here](./spearfishing.md).
 
 ---
 
-## 3. Intros Create Curiosity, Not Trust
+## Turning Intros into Interviews
 
-Warm introductions, networking, and spearfishing all do the same core job:
-
-> They buy you a small burst of serious attention from a real human.
+Warm introductions, networking, and spearfishing all do the same core job: they buy you a small burst of serious attention from a real human.
 
 They do *not* guarantee a job. They do not even guarantee an interview.
 
@@ -173,17 +147,17 @@ This is where your [story](story.md), your portfolio, and your [resume](../resum
 
 ---
 
-## 4. From Intro to Offer: The Fractal Stack
+## Core Pieces of a Job Hunt
 
-The Fractal strategy from this point is simple:
+The Fractal strategy is simple:
 
-> Use high-context introductions to get on someone’s radar.  
-> Use a clear [story](story.md) and strong artifacts to make it easy for them to believe in you.  
-> Then treat interviews as due diligence rather than a random lottery.
+- Use high-context introductions to get on someone’s radar.  
+- Use a clear [story](story.md) and strong artifacts to make it easy for them to believe in you.  
+- Then interviews become due diligence rather than a test or lottery.
 
 Here is how the pieces fit together.
 
-### 4.1 Your Story: Who Are You as an Engineer?
+### Your Story
 
 Once someone has a reason to pay attention to you, they immediately start trying to answer one question:
 
@@ -202,7 +176,7 @@ Vague stories are forgettable. Specific stories make you legible and memorable. 
 
 A strong introduction plus a clear story is what allows someone inside a company to think, “I can see how this person would fit here.”
 
-### 4.2 Your Portfolio Projects: Show, Don’t Just Claim
+### Your Portfolio Projects
 
 After hearing your [story](story.md), people look for evidence.
 
@@ -215,14 +189,14 @@ Good portfolio projects:
 - Demonstrate real use cases, clear UX, or at least real taste and judgment.
 - Are polished enough that someone could realistically imagine shipping them.
 
-Think of your portfolio projects as the general version of spearfishing:
+Think of your portfolio projects as the general version of [spearfishing](./spearfishing.md):
 
 - Spearfishing shows what you can do for one company.
 - Portfolio projects show what you can do in general, for any company that matches your [lane](lane.md).
 
 If your story is “I build internal tools that automate annoying workflows,” your projects should make that feel obviously true without you saying another word.
 
-### 4.3 Your Portfolio Site: Compress the Signal
+### Your Portfolio Site
 
 Most people will not dig through all your GitHub repos or read long READMEs. They will skim.
 
@@ -232,19 +206,15 @@ Your portfolio site exists to compress the signal:
 - One to three flagship projects, each with a short explanation and a visible demo or screenshots.
 - Simple navigation that lets a busy person find what matters in seconds.
 
-The goal is:
-
-> In 30 seconds, a busy person should understand your [lane](lane.md), see one or two concrete examples of your work, and feel that you care enough to polish your output.
+In 30 seconds, a busy person should understand your [lane](lane.md), see one or two concrete examples of your work, and feel that you care enough to polish your output.
 
 This is not about fancy design for its own sake. It is about making it effortless for someone to understand why you are interesting.
 
-### 4.4 Your Resume: Supporting Evidence, Not Your Only Chance
+### Your Resume
 
 In the standard job hunt, the [resume](../resume/README.md) is the first and only thing anyone sees. That is why it ends up overloaded with fluff and buzzwords. It is trying to carry your entire story through a hostile, noisy filter.
 
-In the Fractal strategy, the resume has a narrower, more realistic job:
-
-> Your resume exists to back up a story people already want to believe about you, with concrete facts and numbers.
+In the Fractal strategy, the resume has a narrower, more realistic job. Your resume exists to back up a story people already want to believe about you, with concrete facts and numbers.
 
 By the time someone opens your resume, ideally:
 
@@ -260,7 +230,7 @@ Now they are scanning for:
 
 You should still apply [Fractal’s resume principles](../resume/README.md). Clarity, structure, and signal density matter. But you no longer pretend that a single page, dropped into a sea of thousands, is going to carry your entire job hunt.
 
-### 4.5 Interviews: Due Diligence, Not a Lottery
+### Interviews
 
 If the earlier pieces are working, by the time you reach an interview, the situation should roughly be:
 
@@ -268,16 +238,11 @@ If the earlier pieces are working, by the time you reach an interview, the situa
 - They have seen your work.
 - They have some idea of how they might use you because you have a clear [lane](lane.md) and [story](story.md).
 
-The interview is still challenging. You still need to prepare, to practice, and to perform under pressure. But the frame is different:
+The interview is still challenging. You still need to prepare, to practice, and to perform under pressure. But the frame is different. You are not trying to convince a skeptical stranger that you are real. You are confirming that the positive impression they already have is accurate.
 
-> You are not trying to convince a skeptical stranger that you are real.  
-> You are confirming that the positive impression they already have is accurate.
+That is a much saner game than trying to cold-start that belief inside a timed online coding screen after being pulled randomly out of a pile.
 
-That is a much saner game than trying to cold-start belief inside a timed online coding screen after being pulled randomly out of a pile.
-
----
-
-## 5. Think of Your Job Hunt as a Sales Pipeline
+## The Job Hunt Pipeline
 
 One more framing that is important at Fractal: your job hunt is a pipeline, very similar to a sales funnel.
 
@@ -291,33 +256,25 @@ For any given period of time, you can think about your process in four stages:
    (Warm introductions, real conversations, spearfishes, etc.)
 
 3. **Serious Interest / Interview:**  
-   How many of those contacts have turned into interviews or long, concrete conversations about working together?
+   How many of those contacts have turned into interviews or long, concrete conversations about working together? Did your [resume](../resume/README.md) and portfolio convince them to stay interested?
 
 4. **Offers:**  
    How many of those interviews have turned into offers?
 
-For most juniors, the pipeline is broken very early:
+For most juniors, the pipeline is usually broken very early:
 
 - They know very few target companies.
 - They have almost no high-context introductions.
 - They send hundreds of low-context applications instead.
 - Nothing moves, and they conclude they are “bad at interviewing” even though they are not reaching interviews at all.
 
-Sometimes the break is later:
-
-- You are good at generating intros.
-- You get interviews, but you consistently stumble in certain formats (technical screens, system design, behavioral questions).
-
 From a Fractal perspective:
 
-- Early-stage problems (no prospects, no intros) are about your [**story**](story.md), [**lane**](lane.md), **networking**, and **spearfishing**.
+- Early-stage problems (no prospects, no intros) are about your [**story**](story.md), [**lane**](lane.md), **networking**, and [**spearfishing**](./spearfishing.md).
 - Mid-stage problems (people like you but are not moving to interviews) are often about **weak artifacts** (portfolio and resume not backing up the story).
 - Late-stage problems (many interviews, no offers) are about **interview skills** and **anxiety management**, not about your story or value.
 
-We are much happier when your problems are later in the pipeline:
-
-- If you are getting consistent interviews, it means your story, portfolio, and introductions are working.
-- Then we “only” need to train your interview skills and help you execute.
+We are much happier when your problems are later in the pipeline! If you are getting consistent interviews, it means your story, portfolio, and introductions are working. Then we “only” need to train your interview skills and help you execute.
 
 When you feel stuck, do not just say “the job market is bad.” Look at your pipeline:
 

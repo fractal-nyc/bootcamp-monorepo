@@ -6,7 +6,7 @@
 
 ### B. Tap Your Network  
 - Make a big list of people who could help you and then message them. We recommend following [Alterman's All-American Outreach Workbook](https://docs.google.com/document/d/1gif1am4T0CRESkXKiK6RjaciRciwTfjRoM-7ctnp34A/edit?usp=sharing).
-  - And especially: who are the supperconnectors in your network?
+  - And especially: who are the superconnectors in your network?
 - Message or email us too! We are part of your network, and the right message is easy for us to forward to people who can potentially help you. We are name@fractalbootcamp.com [Andrew, Paris, Jake, Andy, Priya, Shanthi, David, Regan] 
 
 ### C. Spearfishing for Jobs  

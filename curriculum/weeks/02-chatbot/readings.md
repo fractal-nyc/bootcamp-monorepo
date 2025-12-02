@@ -61,3 +61,22 @@ Practice WILL help with **memorization** and **concept mastery**, which WILL red
 
 **Readings:**
 - [Grokking Simplicity Ch5. Improving The Design of Actions](https://drive.google.com/drive/u/0/folders/1SP4zHMcrRGaTNt9QtllwQXLTfkBxf9XG)
+
+
+### Monday
+
+**Readings:**
+- [Emotional Management](https://www.scattered-thoughts.net/writing/emotional-management/)
+- [Don't stop at 90%](https://austinhenley.com/blog/90percent.html)
+
+---
+
+### Tuesday
+
+**Readings:**
+- [No one can teach you conviction](https://www.benkuhn.net/conviction/)
+- [Great Hackers](https://paulgraham.com/gh.html)
+**Readings:**
+- [Dear Student: Yes, AI is here, you're screwed unless you take action](https://archive.is/MaGZ0)
+**Readings:**
+- [Learn programming in 10 years](https://www.norvig.com/21-days.html)

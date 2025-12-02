@@ -13,6 +13,8 @@ Write a 1-2 page job search plan. By the end of the day, you should:
 - [Ways to Stand Out](https://letterstoanewdeveloper.com/2022/09/19/ways-to-stand-out/)
 - [Advice for Junior Engineers](https://blog.pragmaticengineer.com/advice-for-junior-software-engineers/)
     - my only disagreement: don't tailor your resume. see below. the resume blender doesn't work.
+- [More Advice for Junior Engineers](https://x.com/aarondev/status/1993424775470010732?s=33)
+- [Product-minded Engineer](https://blog.pragmaticengineer.com/the-product-minded-engineer/)
 - [How to get an amazing internship](https://x.com/patio11/status/1344313750334046210) - Patio11
 - [Don't call yourself a programmer and other career advice](https://www.kalzumeus.com/2011/10/28/dont-call-yourself-a-programmer/) - Patio11
 - [Career advice that no one asked me for](https://x.com/gokulns/status/1810598394286497854)
@@ -22,6 +24,7 @@ Write a 1-2 page job search plan. By the end of the day, you should:
 - [Demos instead of Resumes](https://x.com/GabrielPeterss4/status/1898566138352820561)
 - [Startup Interview Tips](https://x.com/mitch_troy/status/1810879118428311920)
 - [How to get hired at a Startup](https://nextplayso.substack.com/p/how-to-get-hired-at-a-startup?triedRedirect=true)
+- [The only things you need to do well as a junior](https://x.com/0xKyon/status/1978102437241131398?s=19)
 
 ## Advice
 
@@ -38,6 +41,9 @@ If you're going to use online job applications, make sure the platform is highly
  - [Pampam City Job Listings](https://www.pampam.city/p/Pd82Tp8aq5EfxTP3yJhu)
  - [More curated jobs](https://www.joinprospect.com/)
  - [Built in NYC](https://www.builtinnyc.com/)
+ - https://nextplayso.substack.com/
+ - https://stealthstartupspy.substack.com/
+ - Using LinkedIn Jobs actually has tuned their email rec’s a lot
  - [Job Listings on Hacker News](https://nchelluri.github.io/hnjobs/)
  - [Career Brew](https://careerbrew.substack.com/p/career-brew-15th-dec-jobs-digest)
 

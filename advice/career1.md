@@ -20,9 +20,11 @@
 
 2. https://x.com/GabrielPeterss4/status/1898566138352820561
 
-3. [How To Get Hired at a Startup](https://quarter--mile.com/How-To-Get-Hired)
+3. [Prototypes are the new cover letter](https://www.linkedin.com/posts/jessereiss_it-used-to-be-that-emailing-a-founder-was-activity-7389330180974108672-D5HA/)
 
-4. [Ways to Stand Out When You Apply for a Startup](https://quarter--mile.com/Standing-Out)
+4. [How To Get Hired at a Startup](https://quarter--mile.com/How-To-Get-Hired)
+
+5. [Ways to Stand Out When You Apply for a Startup](https://quarter--mile.com/Standing-Out)
 
 ## What to do after bootcamp:
 

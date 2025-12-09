@@ -22,6 +22,10 @@
 
 3. [Prototypes are the new cover letter](https://www.linkedin.com/posts/jessereiss_it-used-to-be-that-emailing-a-founder-was-activity-7389330180974108672-D5HA/)
 
+4. [How To Get Hired at a Startup](https://quarter--mile.com/How-To-Get-Hired)
+
+5. [Ways to Stand Out When You Apply for a Startup](https://quarter--mile.com/Standing-Out)
+
 ## What to do after bootcamp:
 
 1. [Workatastartup](https://workatastartup.com/) - literally apply to startups
@@ -36,7 +40,6 @@
 10. [More job listings from Jordan Mazer, a16z](https://www.jobhuntingsux.com/)
 11. [Even more job listings from nextplay](https://nextplay.so/) and from [BEN LANG](https://benlangsnotes.substack.com/notes)
 
-
 ## VCs that we know personally, if you want an intro to any company in their portfolio, we can get it:
 
 1. [Betaworks](https://www.betaworks.com/companies) - Betaworks likes us, and we know a lot of people there.
@@ -47,8 +50,10 @@
 6. [Collab](https://collabfund.com/)
 
 ## Don't know how to get someone's email? Do this:
+
 1. Use the [Apollo Extension](https://chromewebstore.google.com/detail/apolloio-free-b2b-phone-n/alhgpfoeiimagjlnfekdhkjlkiomcapa?hl=en-US)
 2. Send a list of the companies that you need a contact at to us.
 
 ## If you need a visa, here are startups that sponsor employees:
+
 1. [Stamplist](https://landing.club/stamplist)

@@ -51,7 +51,12 @@ Bonus:
 - [https://danielwu.fyi/](https://danielwu.fyi/)  
 - [https://shravani.design/](https://shravani.design/)  
 - [https://worrydream.com/Home2011/](https://worrydream.com/Home2011/)  
-- [https://root.vc](https://root.vc)  
+- [https://root.vc](https://root.vc) 
+- https://soham.sh/
+- https://rgbcu.be/
+- https://www.surajgaud.com/
+- https://s4rah.dev/
+- https://mcyoung.xyz/
 - owimer.co  
 - Mahlen.dev
 -

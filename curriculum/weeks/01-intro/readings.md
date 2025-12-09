@@ -32,6 +32,7 @@
 
 **Readings:**
 - [Intro to Containers and Docker](https://endjin.com/blog/2022/01/introduction-to-containers-and-docker) <span title="~20 minutes">⏱️</span>
+- [How to build/write quickly using outlines](https://learnhowtolearn.org/how-to-build-extremely-quickly/)
 
 ---
 

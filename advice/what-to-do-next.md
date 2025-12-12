@@ -118,7 +118,7 @@ This approach works surprisingly well when the demo is scoped tightly and well-e
 - Over-scoping or over-engineering.  
 - Sending outreach without a strong artifact.  
 
-(See the full [*Spearfishing Guide*](../career/spearfishing/spearfishing_guide.md) for a deeper walkthrough.)
+(See the full [*Spearfishing Guide*](../advice/career/spearfishing.md) for a deeper walkthrough.)
 
 ---
 

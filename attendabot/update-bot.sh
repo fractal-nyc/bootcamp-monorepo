@@ -19,22 +19,27 @@ SSH_KEY="$HOME/.ssh/attendabot.pem"
 echo "Updating attendabot on $INSTANCE_IP..."
 
 ssh -i "$SSH_KEY" ec2-user@$INSTANCE_IP << 'EOF'
+    if [ -f ~/.bash_profile ]; then
+        source ~/.bash_profile
+    fi
+
     cd ~/bootcamp-monorepo
     echo "Pulling latest code..."
     git pull
 
     cd attendabot
-    echo "Installing backend dependencies..."
-    npm install
+    echo "Installing backend dependencies (bun)..."
+    bun install
 
     echo "Building backend..."
-    npm run build
+    bun run build
 
-    echo "Installing frontend dependencies..."
-    cd src/frontend && npm install
+    echo "Installing frontend dependencies (bun)..."
+    cd src/frontend
+    bun install
 
     echo "Building frontend..."
-    npm run build
+    bun run build
     cd ../..
 
     echo "Restarting bot..."

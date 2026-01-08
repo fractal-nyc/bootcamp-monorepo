@@ -19,7 +19,8 @@ app.use("/api/messages", messagesRouter);
 app.use("/api/channels", channelsRouter);
 
 // Serve static frontend files in production
-const frontendPath = path.join(__dirname, "../frontend/dist");
+// __dirname is dist/api when compiled, so go up to project root then into src/frontend/dist
+const frontendPath = path.join(__dirname, "../../src/frontend/dist");
 app.use(express.static(frontendPath));
 
 // Fallback to index.html for SPA routing

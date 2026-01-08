@@ -16,7 +16,10 @@ export function isLoggedIn(): boolean {
   return !!getToken();
 }
 
-async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+async function fetchWithAuth(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const token = getToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -30,7 +33,9 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
   return fetch(url, { ...options, headers });
 }
 
-export async function login(password: string): Promise<{ success: boolean; error?: string }> {
+export async function login(
+  password: string
+): Promise<{ success: boolean; error?: string }> {
   try {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
@@ -81,6 +86,7 @@ export async function getStatus(): Promise<BotStatus | null> {
     }
     return res.json();
   } catch (error) {
+    console.error(error);
     return null;
   }
 }
@@ -98,6 +104,7 @@ export async function getChannels(): Promise<Channel[]> {
     const data = await res.json();
     return data.channels;
   } catch (error) {
+    console.error(error);
     return [];
   }
 }
@@ -121,12 +128,18 @@ export interface ChannelMessages {
   messages: Message[];
 }
 
-export async function getMessages(channelId: string, limit: number = 50): Promise<ChannelMessages | null> {
+export async function getMessages(
+  channelId: string,
+  limit: number = 50
+): Promise<ChannelMessages | null> {
   try {
-    const res = await fetchWithAuth(`${API_BASE}/messages/${channelId}?limit=${limit}`);
+    const res = await fetchWithAuth(
+      `${API_BASE}/messages/${channelId}?limit=${limit}`
+    );
     if (!res.ok) return null;
     return res.json();
   } catch (error) {
+    console.error(error);
     return null;
   }
 }

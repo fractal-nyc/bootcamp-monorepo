@@ -107,7 +107,7 @@ async function sendEodReminder(): Promise<void> {
     );
     sendReminder(
       EOD_CHANNEL_ID,
-      `Friendly reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.`
+      `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`
     );
     return;
   }

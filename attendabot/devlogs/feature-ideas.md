@@ -10,6 +10,7 @@
 # Bug fixes
 
 - Need to make links in messages clickable.
+
 - ...
 
 # Random thoughts

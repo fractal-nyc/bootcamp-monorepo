@@ -17,7 +17,9 @@ export function MessageFeed() {
       if (isMounted) setChannels(data);
     };
     fetchChannels();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export function MessageFeed() {
           <option value="">Select a channel...</option>
           {channels.map((ch) => (
             <option key={ch.id} value={ch.id}>
-              {ch.guildName} / #{ch.name}
+              #{ch.name}
             </option>
           ))}
         </select>
@@ -103,13 +105,15 @@ export function MessageFeed() {
 
       <div className="messages-list">
         {messages.length === 0 && selectedChannel && !loading && (
-          <p className="no-messages">No messages in the last 24 hours</p>
+          <p className="no-messages">No messages in the last week</p>
         )}
 
         {messages.map((msg) => (
           <div key={msg.id} className="message">
             <div className="message-header">
-              <span className="author">{msg.author.displayName || msg.author.username}</span>
+              <span className="author">
+                {msg.author.displayName || msg.author.username}
+              </span>
               <span className="timestamp">{formatTime(msg.createdAt)}</span>
             </div>
             <div className="message-content">
@@ -118,7 +122,12 @@ export function MessageFeed() {
             {msg.attachments.length > 0 && (
               <div className="attachments">
                 {msg.attachments.map((att, i) => (
-                  <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
+                  <a
+                    key={i}
+                    href={att.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     {att.name}
                   </a>
                 ))}

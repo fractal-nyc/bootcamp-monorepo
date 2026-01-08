@@ -178,3 +178,6 @@ dist
 .DS_Store
 
 .claude
+
+# Private devlogs with sensitive info
+**/devlogs/private/

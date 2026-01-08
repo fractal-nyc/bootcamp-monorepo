@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage } from "../src/index.ts";
+import { countPrsInMessage } from "../../src/bot/index.ts";
 
 describe("countPrsInMessage", () => {
   it("returns 1 when there is one PR URL", () => {

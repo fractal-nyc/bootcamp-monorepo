@@ -24,11 +24,18 @@ ssh -i "$SSH_KEY" ec2-user@$INSTANCE_IP << 'EOF'
     git pull
 
     cd attendabot
-    echo "Installing dependencies..."
+    echo "Installing backend dependencies..."
     npm install
 
-    echo "Building..."
+    echo "Building backend..."
     npm run build
+
+    echo "Installing frontend dependencies..."
+    cd src/frontend && npm install
+
+    echo "Building frontend..."
+    npm run build
+    cd ../..
 
     echo "Restarting bot..."
     pm2 restart attendabot

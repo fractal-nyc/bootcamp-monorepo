@@ -181,3 +181,6 @@ dist
 
 # Private devlogs with sensitive info
 **/devlogs/private/
+
+# SQLite databases
+**/db/*.db

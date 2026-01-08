@@ -10,7 +10,7 @@
 # Bug fixes
 
 - Need to make links in messages clickable.
-
+- Remove the private channels from the dropdown.
 - ...
 
 # Random thoughts

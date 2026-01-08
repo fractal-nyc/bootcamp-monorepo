@@ -85,6 +85,13 @@ function scheduleJobs(): void {
 }
 
 async function sendAttendanceReminder(): Promise<void> {
+  if (!CURRENT_COHORT_ROLE_ID) {
+    console.log(
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance reminder."
+    );
+    return;
+  }
+
   sendReminder(
     ATTENDANCE_CHANNEL_ID,
     `Good morning ${roleMention(
@@ -94,6 +101,17 @@ async function sendAttendanceReminder(): Promise<void> {
 }
 
 async function sendEodReminder(): Promise<void> {
+  if (!CURRENT_COHORT_ROLE_ID) {
+    console.log(
+      "CURRENT_COHORT_ROLE_ID is not set. Sending EOD reminder without role mention."
+    );
+    sendReminder(
+      EOD_CHANNEL_ID,
+      `Friendly reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.`
+    );
+    return;
+  }
+
   sendReminder(
     EOD_CHANNEL_ID,
     `${roleMention(
@@ -103,10 +121,24 @@ async function sendEodReminder(): Promise<void> {
 }
 
 async function verifyAttendancePost(): Promise<void> {
+  if (!CURRENT_COHORT_ROLE_ID) {
+    console.log(
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance verification."
+    );
+    return;
+  }
+
   verifyPosts(ATTENDANCE_CHANNEL_ID, "attendance");
 }
 
 async function verifyEodPost(): Promise<void> {
+  if (!CURRENT_COHORT_ROLE_ID) {
+    console.log(
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping EOD verification."
+    );
+    return;
+  }
+
   verifyPosts(EOD_CHANNEL_ID, "EOD");
 }
 

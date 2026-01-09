@@ -25,17 +25,36 @@ ssh -i "$SSH_KEY" ec2-user@$INSTANCE_IP << 'EOF'
 
     cd ~/bootcamp-monorepo
     echo "Pulling latest code..."
+    git stash
     git pull
 
     cd attendabot
-    echo "Installing backend dependencies (bun)..."
+
+    # Determine API port for status message
+    API_PORT_MSG="${API_PORT:-}"
+    if [ -z "$API_PORT_MSG" ] && [ -f .env ]; then
+        API_PORT_MSG=$(grep -E '^API_PORT=' .env | tail -n 1 | cut -d '=' -f2-)
+    fi
+    if [ -z "$API_PORT_MSG" ]; then
+        API_PORT_MSG="3001"
+    fi
+
+    # Ensure production mode so Express serves the built frontend
+    if [ -z "$NODE_ENV" ]; then
+        export NODE_ENV=production
+    fi
+    echo "Using NODE_ENV=$NODE_ENV (required for frontend static serving)"
+
+    echo "Installing backend dependencies..."
+    pwd
     bun install
 
     echo "Building backend..."
     bun run build
 
-    echo "Installing frontend dependencies (bun)..."
+    echo "Installing frontend dependencies..."
     cd src/frontend
+    pwd
     bun install
 
     echo "Building frontend..."
@@ -43,8 +62,9 @@ ssh -i "$SSH_KEY" ec2-user@$INSTANCE_IP << 'EOF'
     cd ../..
 
     echo "Restarting bot..."
-    pm2 restart attendabot
+    pm2 restart attendabot --update-env
 
     echo "Done! Current status:"
     pm2 status attendabot
+    echo "Admin panel should now be reachable via the API server (port $API_PORT_MSG)."
 EOF

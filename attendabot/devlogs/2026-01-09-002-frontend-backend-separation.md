@@ -7,19 +7,23 @@ Separated frontend and backend servers for cleaner development workflow. Backend
 ## What We Did
 
 ### 1. Configured Vite Proxy
+
 - Added proxy config to `vite.config.ts`
 - `/api` requests from frontend dev server now forward to `localhost:3001`
 
 ### 2. Made Static Serving Production-Only
+
 - Backend no longer serves static frontend files in development
 - Static file serving only activates when `NODE_ENV=production`
 
 ### 3. Added Dev Scripts
+
 - `dev:frontend` - Run frontend dev server separately
 - `dev:all` - Run both servers concurrently
 - Added `concurrently` as dev dependency
 
 ## Files Modified
+
 - `src/frontend/vite.config.ts` - Added server proxy config
 - `src/api/index.ts` - Conditional static file serving
 - `package.json` - New scripts and concurrently dep

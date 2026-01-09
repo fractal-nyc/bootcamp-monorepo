@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { ChannelType } from "discord.js";
+import { ChannelType, PermissionFlagsBits } from "discord.js";
 import { AuthRequest, authenticateToken } from "../middleware/auth";
 import { getDiscordClient, isDiscordReady } from "../../services/discord";
 
@@ -15,9 +15,21 @@ channelsRouter.get("/", authenticateToken, async (req: AuthRequest, res: Respons
     const client = getDiscordClient();
     const channels: Array<{ id: string; name: string; guildName: string }> = [];
 
+    const botUser = client.user;
+
     for (const guild of client.guilds.cache.values()) {
       for (const channel of guild.channels.cache.values()) {
         if (channel.type === ChannelType.GuildText) {
+          const permissions = botUser ? channel.permissionsFor(botUser) : null;
+          const canView =
+            permissions?.has(PermissionFlagsBits.ViewChannel) ?? false;
+          const canReadHistory =
+            permissions?.has(PermissionFlagsBits.ReadMessageHistory) ?? false;
+
+          if (!canView || !canReadHistory) {
+            continue;
+          }
+
           channels.push({
             id: channel.id,
             name: channel.name,

@@ -10,7 +10,6 @@
 
 # Bug fixes
 
-- Remove the private channels from the dropdown.
 - ...
 
 # Random thoughts

@@ -5,11 +5,11 @@
 - Keep a dossier on every student (stored in Airtable?) based on their Discord and Github activity.
 - Be able to read instructor notes on a per student basis from Airtable.
 - Send other reminders to students (e.g. upcoming workshops, demo prep).
+- Show server logs in the panel.
 - ...
 
 # Bug fixes
 
-- Need to make links in messages clickable.
 - Remove the private channels from the dropdown.
 - ...
 

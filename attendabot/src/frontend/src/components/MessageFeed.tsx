@@ -73,6 +73,22 @@ export function MessageFeed() {
     return date.toLocaleString();
   };
 
+  const renderWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, i) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer">
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="panel message-feed">
       <h2>Message Feed</h2>
@@ -117,7 +133,7 @@ export function MessageFeed() {
               <span className="timestamp">{formatTime(msg.createdAt)}</span>
             </div>
             <div className="message-content">
-              {msg.content || <em>(no text content)</em>}
+              {msg.content ? renderWithLinks(msg.content) : <em>(no text content)</em>}
             </div>
             {msg.attachments.length > 0 && (
               <div className="attachments">

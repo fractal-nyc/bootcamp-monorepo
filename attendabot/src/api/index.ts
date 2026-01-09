@@ -18,17 +18,19 @@ app.use("/api/status", statusRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/channels", channelsRouter);
 
-// Serve static frontend files in production
-// __dirname is dist/api when compiled, so go up to project root then into src/frontend/dist
-const frontendPath = path.join(__dirname, "../../src/frontend/dist");
-app.use(express.static(frontendPath));
+// Serve static frontend files in production only
+if (process.env.NODE_ENV === "production") {
+  // __dirname is dist/api when compiled, so go up to project root then into src/frontend/dist
+  const frontendPath = path.join(__dirname, "../../src/frontend/dist");
+  app.use(express.static(frontendPath));
 
-// Fallback to index.html for SPA routing
-app.get("*", (req, res) => {
-  if (!req.path.startsWith("/api")) {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  }
-});
+  // Fallback to index.html for SPA routing
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(frontendPath, "index.html"));
+    }
+  });
+}
 
 export function startApiServer(port: number = 3001): void {
   app.listen(port, () => {

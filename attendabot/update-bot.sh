@@ -46,23 +46,27 @@ ssh -i "$SSH_KEY" ec2-user@$INSTANCE_IP << 'EOF'
     echo "Using NODE_ENV=$NODE_ENV (required for frontend static serving)"
 
     echo "Installing backend dependencies..."
+    cd backend
     pwd
     bun install
 
     echo "Building backend..."
     bun run build
 
+    cd ..
+
     echo "Installing frontend dependencies..."
-    cd src/frontend
+    cd frontend
     pwd
     bun install
 
     echo "Building frontend..."
     bun run build
-    cd ../..
+
+    cd ..
 
     echo "Restarting bot..."
-    pm2 restart attendabot --update-env
+    pm2 restart attendabot --update-env --cwd ~/bootcamp-monorepo/attendabot/backend
 
     echo "Done! Current status:"
     pm2 status attendabot

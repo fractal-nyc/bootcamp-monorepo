@@ -20,8 +20,8 @@ app.use("/api/channels", channelsRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {
-  // __dirname is dist/api when compiled, so go up to project root then into src/frontend/dist
-  const frontendPath = path.join(__dirname, "../../src/frontend/dist");
+  // __dirname is backend/dist/api when compiled, so go up to attendabot/ then into frontend/dist
+  const frontendPath = path.join(__dirname, "../../../frontend/dist");
   app.use(express.static(frontendPath));
 
   // Fallback to index.html for SPA routing

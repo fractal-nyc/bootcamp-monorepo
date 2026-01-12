@@ -1,26 +1,14 @@
 {
-  "name": "attendabot",
+  "name": "attendabot-backend",
   "version": "1.0.0",
-  "description": "Discord automation app for daily reminders and attendance checks.",
+  "description": "Discord bot and API server",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "dev:frontend": "cd src/frontend && bun run dev",
-    "dev:all": "concurrently \"bun run dev\" \"bun run dev:frontend\"",
-    "test": "vitest",
-    "build:frontend": "cd src/frontend && npm run build",
-    "build:all": "npm run build && npm run build:frontend"
+    "test": "vitest"
   },
-  "keywords": [
-    "discord",
-    "automation",
-    "cron",
-    "typescript"
-  ],
-  "author": "",
-  "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "better-sqlite3": "^9.4.3",
@@ -39,9 +27,6 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.12.7",
     "@types/node-cron": "^3.0.11",
-    "add": "^2.0.6",
-    "bun": "^1.2.23",
-    "concurrently": "^9.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
     "vitest": "^1.5.4"

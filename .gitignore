@@ -184,3 +184,5 @@ dist
 
 # SQLite databases
 **/db/*.db
+
+tmpclaude-*

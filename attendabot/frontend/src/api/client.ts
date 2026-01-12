@@ -143,3 +143,56 @@ export async function getMessages(
     return null;
   }
 }
+
+export interface User {
+  author_id: string;
+  display_name: string | null;
+  username: string;
+}
+
+export async function getUsers(): Promise<User[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/users`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.users;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+export interface UserMessage {
+  id: string;
+  channelId: string;
+  channelName: string;
+  author: {
+    id: string;
+    username: string;
+    displayName: string | null;
+  };
+  content: string;
+  createdAt: string;
+}
+
+export interface UserMessagesResponse {
+  userId: string;
+  channelId: string | null;
+  messages: UserMessage[];
+}
+
+export async function getUserMessages(
+  userId: string,
+  limit: number = 100
+): Promise<UserMessagesResponse | null> {
+  try {
+    const res = await fetchWithAuth(
+      `${API_BASE}/users/${userId}/messages?limit=${limit}`
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}

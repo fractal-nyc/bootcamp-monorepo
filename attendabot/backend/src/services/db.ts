@@ -171,6 +171,66 @@ export function getRecentActivity(limit: number = 100): Array<{ event_type: stri
   return stmt.all(limit) as Array<{ event_type: string; details: string | null; created_at: string }>;
 }
 
+export interface UserRecord {
+  author_id: string;
+  display_name: string | null;
+  username: string;
+}
+
+export function getAllUsers(): UserRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT author_id, display_name, username
+    FROM users
+    ORDER BY username ASC
+  `);
+  return stmt.all() as UserRecord[];
+}
+
+export function getMessagesByUser(authorId: string, channelId?: string, limit: number = 100): MessageRecord[] {
+  const db = getDatabase();
+
+  if (channelId) {
+    const stmt = db.prepare(`
+      SELECT
+        m.discord_message_id,
+        m.channel_id,
+        c.channel_name,
+        m.author_id,
+        u.display_name,
+        u.username,
+        m.content,
+        m.created_at
+      FROM messages m
+      JOIN channels c ON m.channel_id = c.channel_id
+      JOIN users u ON m.author_id = u.author_id
+      WHERE m.author_id = ? AND m.channel_id = ?
+      ORDER BY m.created_at DESC
+      LIMIT ?
+    `);
+    return stmt.all(authorId, channelId, limit) as MessageRecord[];
+  }
+
+  const stmt = db.prepare(`
+    SELECT
+      m.discord_message_id,
+      m.channel_id,
+      c.channel_name,
+      m.author_id,
+      u.display_name,
+      u.username,
+      m.content,
+      m.created_at
+    FROM messages m
+    JOIN channels c ON m.channel_id = c.channel_id
+    JOIN users u ON m.author_id = u.author_id
+    WHERE m.author_id = ?
+    ORDER BY m.created_at DESC
+    LIMIT ?
+  `);
+  return stmt.all(authorId, limit) as MessageRecord[];
+}
+
 export function closeDatabase(): void {
   if (db) {
     db.close();

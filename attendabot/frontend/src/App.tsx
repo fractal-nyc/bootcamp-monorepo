@@ -3,6 +3,7 @@ import { isLoggedIn, clearToken } from "./api/client";
 import { Login } from "./components/Login";
 import { StatusPanel } from "./components/StatusPanel";
 import { MessageFeed } from "./components/MessageFeed";
+import { UserMessages } from "./components/UserMessages";
 import "./App.css";
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
       <main>
         <StatusPanel />
         <MessageFeed />
+        <UserMessages />
       </main>
     </div>
   );

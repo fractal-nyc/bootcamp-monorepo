@@ -119,6 +119,17 @@ main {
   border-radius: 4px;
 }
 
+/* User Messages - full width */
+.user-messages {
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .user-messages {
+    grid-column: span 1;
+  }
+}
+
 /* Message Feed */
 .channel-selector {
   display: flex;

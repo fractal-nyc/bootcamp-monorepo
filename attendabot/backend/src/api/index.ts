@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth";
 import { statusRouter } from "./routes/status";
 import { messagesRouter } from "./routes/messages";
 import { channelsRouter } from "./routes/channels";
+import { usersRouter } from "./routes/users";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/status", statusRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/channels", channelsRouter);
+app.use("/api/users", usersRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {

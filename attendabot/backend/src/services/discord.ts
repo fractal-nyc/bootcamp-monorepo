@@ -6,6 +6,8 @@ import {
   TextChannel,
 } from "discord.js";
 import dotenv from "dotenv";
+import { logMessage, getMessageCount } from "./db";
+import { EOD_CHANNEL_ID } from "../bot/constants";
 
 dotenv.config();
 
@@ -52,6 +54,35 @@ export async function initializeDiscord(): Promise<Client> {
     discordClient.once("ready", () => {
       isReady = true;
       console.log(`Discord client logged in as ${discordClient.user?.tag ?? "unknown user"}`);
+
+      // Register messageCreate listener for EOD channel logging
+      discordClient.on("messageCreate", (message) => {
+        if (message.channelId !== EOD_CHANNEL_ID) return;
+        if (message.author.bot) return;
+
+        try {
+          const channel = message.channel as TextChannel;
+          logMessage({
+            discord_message_id: message.id,
+            channel_id: message.channelId,
+            channel_name: channel.name,
+            author_id: message.author.id,
+            display_name: message.member?.displayName || null,
+            username: message.author.username,
+            content: message.content,
+            created_at: message.createdAt.toISOString(),
+          });
+          console.log(`Logged EOD message from ${message.author.username}`);
+        } catch (error) {
+          console.error("Failed to log message:", error);
+        }
+      });
+
+      // Run backfill after ready
+      backfillEodMessages(discordClient).catch((error) => {
+        console.error("Failed to backfill EOD messages:", error);
+      });
+
       resolve();
     });
 
@@ -120,4 +151,68 @@ export async function fetchMessagesSince(
   }
 
   return collected;
+}
+
+async function backfillEodMessages(discordClient: Client): Promise<void> {
+  const count = getMessageCount();
+  if (count > 0) {
+    console.log(`Skipping backfill, ${count} messages already in database`);
+    return;
+  }
+
+  console.log("Messages table empty, starting backfill...");
+
+  const channel = await discordClient.channels.fetch(EOD_CHANNEL_ID);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    console.error("Could not fetch EOD channel for backfill");
+    return;
+  }
+
+  const textChannel = channel as TextChannel;
+  let insertedCount = 0;
+  let before: string | undefined;
+
+  // Fetch all messages from the channel (paginated)
+  while (true) {
+    const options: { limit: number; before?: string } = { limit: 100 };
+    if (before) {
+      options.before = before;
+    }
+
+    const batch = await textChannel.messages.fetch(options);
+    if (batch.size === 0) {
+      break;
+    }
+
+    for (const message of batch.values()) {
+      if (message.author.bot) continue;
+
+      try {
+        logMessage({
+          discord_message_id: message.id,
+          channel_id: message.channelId,
+          channel_name: textChannel.name,
+          author_id: message.author.id,
+          display_name: message.member?.displayName || null,
+          username: message.author.username,
+          content: message.content,
+          created_at: message.createdAt.toISOString(),
+        });
+        insertedCount++;
+      } catch (error) {
+        console.error(`Failed to backfill message ${message.id}:`, error);
+      }
+    }
+
+    const lastMessage = batch.last();
+    if (!lastMessage) {
+      break;
+    }
+    before = lastMessage.id;
+
+    // Log progress every batch
+    console.log(`Backfill progress: ${insertedCount} messages...`);
+  }
+
+  console.log(`Backfilled ${insertedCount} messages from EOD channel`);
 }

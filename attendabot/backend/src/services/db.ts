@@ -1,12 +1,18 @@
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 
 let db: Database.Database | null = null;
 
 export function getDatabase(): Database.Database {
   if (!db) {
-    const dbPath = path.join(__dirname, "../../db/attendabot.db");
+    const dbDir = path.join(__dirname, "../../db");
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    const dbPath = path.join(dbDir, "attendabot.db");
     db = new Database(dbPath);
+    db.pragma("foreign_keys = ON");
     initializeTables();
   }
   return db;
@@ -15,14 +21,32 @@ export function getDatabase(): Database.Database {
 function initializeTables(): void {
   if (!db) return;
 
-  // Messages log table
+  // Channels table (must be created before messages for FK)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS channels (
+      channel_id TEXT PRIMARY KEY,
+      channel_name TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Users table (must be created before messages for FK)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      author_id TEXT PRIMARY KEY,
+      display_name TEXT,
+      username TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Messages log table with foreign keys
   db.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       discord_message_id TEXT UNIQUE,
-      channel_id TEXT NOT NULL,
-      author_id TEXT NOT NULL,
-      author_name TEXT,
+      channel_id TEXT NOT NULL REFERENCES channels(channel_id),
+      author_id TEXT NOT NULL REFERENCES users(author_id),
       content TEXT,
       created_at TEXT NOT NULL,
       logged_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -45,23 +69,61 @@ function initializeTables(): void {
 export interface MessageRecord {
   discord_message_id: string;
   channel_id: string;
+  channel_name: string;
   author_id: string;
-  author_name: string | null;
+  display_name: string | null;
+  username: string;
   content: string | null;
   created_at: string;
 }
 
-export function logMessage(message: MessageRecord): void {
+export function upsertChannel(channelId: string, channelName: string): void {
   const db = getDatabase();
   const stmt = db.prepare(`
-    INSERT OR IGNORE INTO messages (discord_message_id, channel_id, author_id, author_name, content, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO channels (channel_id, channel_name, updated_at)
+    VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(channel_id) DO UPDATE SET
+      channel_name = excluded.channel_name,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(channelId, channelName);
+}
+
+export function upsertUser(authorId: string, displayName: string | null, username: string): void {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO users (author_id, display_name, username, updated_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(author_id) DO UPDATE SET
+      display_name = excluded.display_name,
+      username = excluded.username,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(authorId, displayName, username);
+}
+
+export function getMessageCount(): number {
+  const db = getDatabase();
+  const stmt = db.prepare("SELECT COUNT(*) as count FROM messages");
+  const result = stmt.get() as { count: number };
+  return result.count;
+}
+
+export function logMessage(message: MessageRecord): void {
+  const db = getDatabase();
+
+  // Upsert channel and user first (required for FK constraints)
+  upsertChannel(message.channel_id, message.channel_name);
+  upsertUser(message.author_id, message.display_name, message.username);
+
+  const stmt = db.prepare(`
+    INSERT OR IGNORE INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+    VALUES (?, ?, ?, ?, ?)
   `);
   stmt.run(
     message.discord_message_id,
     message.channel_id,
     message.author_id,
-    message.author_name,
     message.content,
     message.created_at
   );
@@ -70,10 +132,20 @@ export function logMessage(message: MessageRecord): void {
 export function getRecentMessages(channelId: string, limit: number = 50): MessageRecord[] {
   const db = getDatabase();
   const stmt = db.prepare(`
-    SELECT discord_message_id, channel_id, author_id, author_name, content, created_at
-    FROM messages
-    WHERE channel_id = ?
-    ORDER BY created_at DESC
+    SELECT
+      m.discord_message_id,
+      m.channel_id,
+      c.channel_name,
+      m.author_id,
+      u.display_name,
+      u.username,
+      m.content,
+      m.created_at
+    FROM messages m
+    JOIN channels c ON m.channel_id = c.channel_id
+    JOIN users u ON m.author_id = u.author_id
+    WHERE m.channel_id = ?
+    ORDER BY m.created_at DESC
     LIMIT ?
   `);
   return stmt.all(channelId, limit) as MessageRecord[];

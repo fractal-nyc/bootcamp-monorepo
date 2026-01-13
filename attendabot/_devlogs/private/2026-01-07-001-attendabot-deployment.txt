@@ -1,0 +1,34 @@
+[last message from Claude after deploying attendabot to AWS on 2026-1-7]
+
+Done! Your bot is deployed and running.
+
+## Summary
+
+| Resource | Value |
+|----------|-------|
+| **Instance IP** | `54.87.34.182` |
+| **Instance ID** | `i-099e4d352a3829c36` |
+| **SSH Key** | `~/.ssh/attendabot.pem` |
+| **Bot status** | Online as `Coach Dsemo#4292` |
+
+## Scheduled jobs (America/New_York)
+- `9:00 AM` - Attendance reminder
+- `9:15 AM` - Attendance verification
+- `5:00 PM` - EOD reminder
+- `11:59 PM` - EOD verification
+
+## Useful commands
+
+```bash
+# SSH into the instance
+ssh -i ~/.ssh/attendabot.pem ec2-user@54.87.34.182
+
+# View logs
+pm2 logs attendabot
+
+# Restart bot
+pm2 restart attendabot
+
+# Update code
+cd ~/bootcamp-monorepo && git pull && cd attendabot && npm install && npm run build && pm2 restart attendabot
+```

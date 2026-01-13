@@ -24,6 +24,7 @@ export function getDiscordClient(): Client {
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.DirectMessages,
       ],
     });
   }
@@ -59,6 +60,16 @@ export async function initializeDiscord(): Promise<Client> {
           discordClient.user?.tag ?? "unknown user"
         }`
       );
+
+      // Send startup DM to David
+      const davidUserId = process.env.DAVID_USER_ID;
+      if (davidUserId) {
+        discordClient.users
+          .fetch(davidUserId)
+          .then((user) => user.send("Attendabot is online!"))
+          .then(() => console.log("Sent startup DM to David"))
+          .catch((error) => console.error("Failed to send startup DM:", error));
+      }
 
       // Register messageCreate listener for EOD channel logging
       discordClient.on("messageCreate", (message) => {

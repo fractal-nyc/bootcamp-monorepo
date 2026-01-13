@@ -18,6 +18,9 @@ SSH_KEY="$HOME/.ssh/attendabot.pem"
 
 echo "Updating attendabot on $INSTANCE_IP..."
 
+echo "Uploading .env file..."
+scp -i "$SSH_KEY" "$SCRIPT_DIR/.env" ec2-user@$INSTANCE_IP:~/bootcamp-monorepo/attendabot/.env
+
 ssh -i "$SSH_KEY" ec2-user@$INSTANCE_IP << 'EOF'
     if [ -f ~/.bash_profile ]; then
         source ~/.bash_profile

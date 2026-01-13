@@ -10,11 +10,7 @@ import {
   EOD_VERIFICATION_CRON,
   USER_ID_TO_NAME_MAP,
 } from "./constants";
-import {
-  getDiscordClient,
-  fetchTextChannel,
-  fetchMessagesSince,
-} from "../services/discord";
+import { fetchTextChannel, fetchMessagesSince } from "../services/discord";
 import {
   incrementMessagesSent,
   incrementRemindersTriggered,

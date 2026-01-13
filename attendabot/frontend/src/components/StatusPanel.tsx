@@ -1,7 +1,12 @@
+/**
+ * @fileoverview Status panel component showing bot stats and scheduled jobs.
+ */
+
 import { useEffect, useState } from "react";
 import { getStatus } from "../api/client";
 import type { BotStatus } from "../api/client";
 
+/** Formats milliseconds as a human-readable duration string. */
 function formatUptime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -20,6 +25,7 @@ function formatUptime(ms: number): string {
   return `${seconds}s`;
 }
 
+/** Displays bot connection status, stats, and scheduled job information. */
 export function StatusPanel() {
   const [status, setStatus] = useState<BotStatus | null>(null);
   const [loading, setLoading] = useState(true);

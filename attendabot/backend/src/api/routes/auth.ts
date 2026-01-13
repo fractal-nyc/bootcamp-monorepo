@@ -1,6 +1,11 @@
+/**
+ * @fileoverview Authentication routes for admin login.
+ */
+
 import { Router, Request, Response } from "express";
 import { generateToken, verifyPassword } from "../middleware/auth";
 
+/** Router for authentication endpoints. */
 export const authRouter = Router();
 
 authRouter.post("/login", (req: Request, res: Response) => {

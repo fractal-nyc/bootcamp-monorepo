@@ -1,10 +1,16 @@
+/**
+ * @fileoverview Login form component for admin authentication.
+ */
+
 import { useState } from "react";
 import { login } from "../api/client";
 
+/** Props for the Login component. */
 interface LoginProps {
   onLogin: () => void;
 }
 
+/** Login form that authenticates with the backend. */
 export function Login({ onLogin }: LoginProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

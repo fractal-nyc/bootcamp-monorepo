@@ -1,11 +1,14 @@
+/**
+ * @fileoverview Routes for user data and message history.
+ */
+
 import { Router, Response } from "express";
 import { AuthRequest, authenticateToken } from "../middleware/auth";
 import { getAllUsers, getMessagesByUser } from "../../services/db";
 import { syncUserDisplayNames } from "../../services/discord";
 
+/** Router for user-related endpoints. */
 export const usersRouter = Router();
-
-// Get all users from the database
 usersRouter.get(
   "/",
   authenticateToken,

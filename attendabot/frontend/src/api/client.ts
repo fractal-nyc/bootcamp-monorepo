@@ -1,17 +1,25 @@
+/**
+ * @fileoverview API client for communicating with the attendabot backend.
+ * Handles authentication, status, channels, messages, and user data.
+ */
+
 const API_BASE = "/api";
 
 function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
+/** Stores the JWT token in localStorage. */
 export function setToken(token: string): void {
   localStorage.setItem("token", token);
 }
 
+/** Removes the JWT token from localStorage. */
 export function clearToken(): void {
   localStorage.removeItem("token");
 }
 
+/** Returns whether a JWT token exists in localStorage. */
 export function isLoggedIn(): boolean {
   return !!getToken();
 }
@@ -33,6 +41,7 @@ async function fetchWithAuth(
   return fetch(url, { ...options, headers });
 }
 
+/** Authenticates with the backend and stores the returned JWT token. */
 export async function login(
   password: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -52,10 +61,12 @@ export async function login(
     setToken(data.token);
     return { success: true };
   } catch (error) {
+    console.log(error);
     return { success: false, error: "Network error" };
   }
 }
 
+/** Bot status including connection state, stats, and scheduled jobs. */
 export interface BotStatus {
   discordConnected: boolean;
   botUsername: string | null;
@@ -75,6 +86,7 @@ export interface BotStatus {
   }>;
 }
 
+/** Fetches the current bot status from the backend. */
 export async function getStatus(): Promise<BotStatus | null> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/status`);
@@ -91,12 +103,14 @@ export async function getStatus(): Promise<BotStatus | null> {
   }
 }
 
+/** A Discord channel the bot can access. */
 export interface Channel {
   id: string;
   name: string;
   guildName: string;
 }
 
+/** Fetches all channels the bot has access to. */
 export async function getChannels(): Promise<Channel[]> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/channels`);
@@ -109,6 +123,7 @@ export async function getChannels(): Promise<Channel[]> {
   }
 }
 
+/** A Discord message with author info and attachments. */
 export interface Message {
   id: string;
   author: {
@@ -122,12 +137,14 @@ export interface Message {
   attachments: Array<{ name: string; url: string }>;
 }
 
+/** Response containing messages from a specific channel. */
 export interface ChannelMessages {
   channelId: string;
   channelName: string;
   messages: Message[];
 }
 
+/** Fetches recent messages from a channel. */
 export async function getMessages(
   channelId: string,
   limit: number = 50
@@ -144,12 +161,14 @@ export async function getMessages(
   }
 }
 
+/** A user from the database. */
 export interface User {
   author_id: string;
   display_name: string | null;
   username: string;
 }
 
+/** Fetches all users from the database. */
 export async function getUsers(): Promise<User[]> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/users`);
@@ -162,6 +181,7 @@ export async function getUsers(): Promise<User[]> {
   }
 }
 
+/** A message from the user messages endpoint. */
 export interface UserMessage {
   id: string;
   channelId: string;
@@ -175,12 +195,14 @@ export interface UserMessage {
   createdAt: string;
 }
 
+/** Response containing messages from a specific user. */
 export interface UserMessagesResponse {
   userId: string;
   channelId: string | null;
   messages: UserMessage[];
 }
 
+/** Fetches messages by a specific user. */
 export async function getUserMessages(
   userId: string,
   limit: number = 100
@@ -197,7 +219,12 @@ export async function getUserMessages(
   }
 }
 
-export async function syncDisplayNames(): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
+/** Triggers a sync of user display names from Discord. */
+export async function syncDisplayNames(): Promise<{
+  success: boolean;
+  updatedCount?: number;
+  error?: string;
+}> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/users/sync-display-names`, {
       method: "POST",

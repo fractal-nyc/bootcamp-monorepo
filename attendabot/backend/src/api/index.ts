@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Express API server setup. Configures middleware, mounts
+ * routes, and serves the frontend in production.
+ */
+
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -7,6 +12,7 @@ import { messagesRouter } from "./routes/messages";
 import { channelsRouter } from "./routes/channels";
 import { usersRouter } from "./routes/users";
 
+/** Express application instance. */
 const app = express();
 
 // Middleware
@@ -34,6 +40,10 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+/**
+ * Starts the Express API server on the specified port.
+ * @param port - Port number to listen on.
+ */
 export function startApiServer(port: number = 3001): void {
   app.listen(port, () => {
     console.log(`API server listening on port ${port}`);

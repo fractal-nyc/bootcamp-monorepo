@@ -1,7 +1,12 @@
+/**
+ * @fileoverview Message feed component for viewing Discord channel messages.
+ */
+
 import { useEffect, useState } from "react";
 import { getChannels, getMessages } from "../api/client";
 import type { Channel, Message } from "../api/client";
 
+/** Displays messages from a selected Discord channel with auto-refresh. */
 export function MessageFeed() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<string>("");

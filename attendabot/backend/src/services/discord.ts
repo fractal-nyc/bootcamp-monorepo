@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Discord client service for bot initialization, message
+ * fetching, and user data synchronization.
+ */
+
 import {
   ChannelType,
   Client,
@@ -11,11 +16,11 @@ import { EOD_CHANNEL_ID } from "../bot/constants";
 
 dotenv.config();
 
-// Singleton Discord client
 let client: Client | null = null;
 let isReady = false;
 let readyPromise: Promise<void> | null = null;
 
+/** Returns the singleton Discord client, creating it if needed. */
 export function getDiscordClient(): Client {
   if (!client) {
     client = new Client({
@@ -31,10 +36,12 @@ export function getDiscordClient(): Client {
   return client;
 }
 
+/** Returns whether the Discord client is connected and ready. */
 export function isDiscordReady(): boolean {
   return isReady;
 }
 
+/** Initializes and logs in the Discord client, setting up event listeners. */
 export async function initializeDiscord(): Promise<Client> {
   const discordClient = getDiscordClient();
 
@@ -112,6 +119,7 @@ export async function initializeDiscord(): Promise<Client> {
   return discordClient;
 }
 
+/** Fetches a text channel by ID, throwing if not found or not a text channel. */
 export async function fetchTextChannel(
   channelId: string
 ): Promise<TextChannel> {
@@ -134,6 +142,11 @@ export async function fetchTextChannel(
   return channel as TextChannel;
 }
 
+/**
+ * Fetches all messages from a channel since a given date.
+ * @param channel - The text channel to fetch from.
+ * @param since - Only fetch messages after this date.
+ */
 export async function fetchMessagesSince(
   channel: TextChannel,
   since: Date
@@ -237,6 +250,7 @@ async function backfillEodMessages(discordClient: Client): Promise<void> {
   console.log(`Backfilled ${insertedCount} messages from EOD channel`);
 }
 
+/** Syncs display names from Discord guild members to the database. */
 export async function syncUserDisplayNames(): Promise<number> {
   const discordClient = getDiscordClient();
 

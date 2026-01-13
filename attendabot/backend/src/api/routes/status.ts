@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Routes for bot status, stats, and scheduled job info.
+ */
+
 import { Router, Response } from "express";
 import { getStats } from "../../services/stats";
 import { isDiscordReady, getDiscordClient } from "../../services/discord";
@@ -10,6 +14,7 @@ import {
   CRON_TIMEZONE,
 } from "../../bot/constants";
 
+/** Router for status and stats endpoints. */
 export const statusRouter = Router();
 
 statusRouter.get("/", authenticateToken, (req: AuthRequest, res: Response) => {

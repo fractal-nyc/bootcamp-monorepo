@@ -1,8 +1,13 @@
+/**
+ * @fileoverview Routes for listing Discord channels the bot can access.
+ */
+
 import { Router, Response } from "express";
 import { ChannelType, PermissionFlagsBits } from "discord.js";
 import { AuthRequest, authenticateToken } from "../middleware/auth";
 import { getDiscordClient, isDiscordReady } from "../../services/discord";
 
+/** Router for channel listing endpoints. */
 export const channelsRouter = Router();
 
 channelsRouter.get("/", authenticateToken, async (req: AuthRequest, res: Response) => {

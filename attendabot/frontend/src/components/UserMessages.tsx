@@ -1,7 +1,12 @@
+/**
+ * @fileoverview User messages component for viewing EOD messages by user.
+ */
+
 import { useEffect, useState } from "react";
 import { getUsers, getUserMessages, syncDisplayNames } from "../api/client";
 import type { User, UserMessage } from "../api/client";
 
+/** Displays EOD messages for a selected user with display name sync. */
 export function UserMessages() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");

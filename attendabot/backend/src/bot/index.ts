@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Bot scheduler that manages cron jobs for attendance and
+ * EOD reminders, verification, and PR leaderboard tracking.
+ */
+
 import cron from "node-cron";
 import {
   ATTENDANCE_CHANNEL_ID,
@@ -20,7 +25,7 @@ import {
 
 const USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
 
-// Validate required channel IDs
+/** Validates that required channel IDs are configured. */
 function validateConfig(): void {
   if (!EOD_CHANNEL_ID) {
     throw new Error("EOD_CHANNEL_ID is not set in constants.");
@@ -30,12 +35,14 @@ function validateConfig(): void {
   }
 }
 
+/** Initializes the bot by validating config and scheduling all cron jobs. */
 export function startBot(): void {
   validateConfig();
   scheduleJobs();
   console.log("Bot jobs scheduled");
 }
 
+/** Schedules all reminder and verification cron jobs. */
 function scheduleJobs(): void {
   scheduleTask(EOD_REMINDER_CRON, () => sendEodReminder(), "EOD reminder");
 
@@ -237,6 +244,7 @@ function roleMention(roleId: string) {
   return `<@&${roleId}>`;
 }
 
+/** Counts the number of GitHub pull request URLs in a message. */
 export function countPrsInMessage(messageContent: string): number {
   const re = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   return (messageContent.match(re) || []).length;

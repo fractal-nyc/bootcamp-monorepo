@@ -1,16 +1,39 @@
+/**
+ * @fileoverview Configuration constants for the attendance bot including
+ * cron schedules, channel IDs, and user mappings.
+ */
+
+/** Cron expression for daily EOD reminder (5 PM EST). */
 export const EOD_REMINDER_CRON = "0 17 * * *";
+
+/** Cron expression for EOD verification (11:59 PM EST). */
 export const EOD_VERIFICATION_CRON = "59 23 * * *";
+
+/** Cron expression for daily attendance reminder (9 AM EST). */
 export const ATTENDANCE_REMINDER_CRON = "0 9 * * *";
+
+/** Cron expression for attendance verification (9:15 AM EST). */
 export const ATTENDANCE_VERIFICATION_CRON = "15 9 * * *";
+
+/** Timezone for all cron schedules. */
 export const CRON_TIMEZONE = "America/New_York";
 
+/** Discord channel ID for EOD updates. */
 export const EOD_CHANNEL_ID = "1336123201968935006";
+
+/** Discord channel ID for attendance check-ins. */
 export const ATTENDANCE_CHANNEL_ID = "1418329701658792046";
+
+/** Discord role ID for the current active cohort (empty if disabled). */
 export const CURRENT_COHORT_ROLE_ID = "";
+
+/** Discord role ID for the FA2025 cohort. */
 export const FA2025_COHORT_ROLE_ID = "1416479282817007797";
 
+/** Discord user ID to name mapping for the current cohort. */
 export const USER_ID_TO_NAME_MAP = new Map<string, string>([]);
 
+/** Discord user ID to name mapping for FA2025 cohort members. */
 export const FA2025_USER_ID_TO_NAME_MAP = new Map<string, string>([
   ["800099563767726100", "Aarti"],
   ["256191677566287873", "Anansi"],

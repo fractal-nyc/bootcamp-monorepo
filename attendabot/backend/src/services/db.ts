@@ -1,9 +1,15 @@
+/**
+ * @fileoverview SQLite database service for storing messages, users,
+ * channels, and activity logs.
+ */
+
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 
 let db: Database.Database | null = null;
 
+/** Returns the singleton database instance, initializing it if needed. */
 export function getDatabase(): Database.Database {
   if (!db) {
     const dbDir = path.join(__dirname, "../../db");
@@ -66,6 +72,7 @@ function initializeTables(): void {
   console.log("Database tables initialized");
 }
 
+/** A message record from the database with joined channel and user data. */
 export interface MessageRecord {
   discord_message_id: string;
   channel_id: string;
@@ -77,6 +84,7 @@ export interface MessageRecord {
   created_at: string;
 }
 
+/** Inserts or updates a channel record. */
 export function upsertChannel(channelId: string, channelName: string): void {
   const db = getDatabase();
   const stmt = db.prepare(`
@@ -89,6 +97,7 @@ export function upsertChannel(channelId: string, channelName: string): void {
   stmt.run(channelId, channelName);
 }
 
+/** Inserts or updates a user record. */
 export function upsertUser(authorId: string, displayName: string | null, username: string): void {
   const db = getDatabase();
   const stmt = db.prepare(`
@@ -102,6 +111,7 @@ export function upsertUser(authorId: string, displayName: string | null, usernam
   stmt.run(authorId, displayName, username);
 }
 
+/** Returns the total count of messages in the database. */
 export function getMessageCount(): number {
   const db = getDatabase();
   const stmt = db.prepare("SELECT COUNT(*) as count FROM messages");
@@ -109,6 +119,7 @@ export function getMessageCount(): number {
   return result.count;
 }
 
+/** Logs a Discord message to the database, upserting channel and user first. */
 export function logMessage(message: MessageRecord): void {
   const db = getDatabase();
 
@@ -129,6 +140,7 @@ export function logMessage(message: MessageRecord): void {
   );
 }
 
+/** Retrieves recent messages from a channel, ordered by newest first. */
 export function getRecentMessages(channelId: string, limit: number = 50): MessageRecord[] {
   const db = getDatabase();
   const stmt = db.prepare(`
@@ -151,6 +163,7 @@ export function getRecentMessages(channelId: string, limit: number = 50): Messag
   return stmt.all(channelId, limit) as MessageRecord[];
 }
 
+/** Logs a bot activity event to the activity_log table. */
 export function logActivity(eventType: string, details?: string): void {
   const db = getDatabase();
   const stmt = db.prepare(`
@@ -160,6 +173,7 @@ export function logActivity(eventType: string, details?: string): void {
   stmt.run(eventType, details ?? null);
 }
 
+/** Retrieves recent activity log entries, ordered by newest first. */
 export function getRecentActivity(limit: number = 100): Array<{ event_type: string; details: string | null; created_at: string }> {
   const db = getDatabase();
   const stmt = db.prepare(`
@@ -171,12 +185,14 @@ export function getRecentActivity(limit: number = 100): Array<{ event_type: stri
   return stmt.all(limit) as Array<{ event_type: string; details: string | null; created_at: string }>;
 }
 
+/** A user record from the database. */
 export interface UserRecord {
   author_id: string;
   display_name: string | null;
   username: string;
 }
 
+/** Retrieves all users from the database, ordered by username. */
 export function getAllUsers(): UserRecord[] {
   const db = getDatabase();
   const stmt = db.prepare(`
@@ -187,6 +203,7 @@ export function getAllUsers(): UserRecord[] {
   return stmt.all() as UserRecord[];
 }
 
+/** Retrieves messages by a specific user, optionally filtered by channel. */
 export function getMessagesByUser(authorId: string, channelId?: string, limit: number = 100): MessageRecord[] {
   const db = getDatabase();
 
@@ -231,6 +248,7 @@ export function getMessagesByUser(authorId: string, channelId?: string, limit: n
   return stmt.all(authorId, limit) as MessageRecord[];
 }
 
+/** Closes the database connection. */
 export function closeDatabase(): void {
   if (db) {
     db.close();

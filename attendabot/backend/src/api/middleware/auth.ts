@@ -1,3 +1,7 @@
+/**
+ * @fileoverview JWT authentication middleware and utilities for the admin API.
+ */
+
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -6,10 +10,12 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-change-me";
 
+/** Express Request extended with authenticated user data. */
 export interface AuthRequest extends Request {
   user?: { authenticated: boolean };
 }
 
+/** Express middleware that validates JWT from the Authorization header. */
 export function authenticateToken(
   req: AuthRequest,
   res: Response,
@@ -32,10 +38,12 @@ export function authenticateToken(
   }
 }
 
+/** Generates a signed JWT valid for 24 hours. */
 export function generateToken(): string {
   return jwt.sign({ authenticated: true }, JWT_SECRET, { expiresIn: "24h" });
 }
 
+/** Checks if the provided password matches the admin password. */
 export function verifyPassword(password: string): boolean {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Main application component for the attendabot admin panel.
+ */
+
 import { useState, useEffect } from "react";
 import { isLoggedIn, clearToken } from "./api/client";
 import { Login } from "./components/Login";
@@ -6,6 +10,7 @@ import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
 import "./App.css";
 
+/** Root application component with authentication and admin dashboard. */
 function App() {
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
 

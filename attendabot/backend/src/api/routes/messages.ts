@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Routes for fetching messages from Discord channels.
+ */
+
 import { Router, Response } from "express";
 import { AuthRequest, authenticateToken } from "../middleware/auth";
 import {
@@ -6,6 +10,7 @@ import {
   isDiscordReady,
 } from "../../services/discord";
 
+/** Router for message fetching endpoints. */
 export const messagesRouter = Router();
 
 messagesRouter.get(

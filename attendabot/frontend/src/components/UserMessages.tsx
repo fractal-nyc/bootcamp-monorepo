@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getUsers, getUserMessages } from "../api/client";
+import { getUsers, getUserMessages, syncDisplayNames } from "../api/client";
 import type { User, UserMessage } from "../api/client";
 
 export function UserMessages() {
@@ -8,6 +8,7 @@ export function UserMessages() {
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -95,6 +96,20 @@ export function UserMessages() {
     return user.username;
   };
 
+  const handleSyncDisplayNames = async () => {
+    setSyncing(true);
+    setError(null);
+    const result = await syncDisplayNames();
+    if (result.success) {
+      // Refresh the users list to show updated display names
+      const data = await getUsers();
+      setUsers(data);
+    } else {
+      setError(result.error || "Failed to sync display names");
+    }
+    setSyncing(false);
+  };
+
   return (
     <div className="panel user-messages">
       <h2>User EOD Messages</h2>
@@ -117,6 +132,10 @@ export function UserMessages() {
             {loading ? "Loading..." : "Refresh"}
           </button>
         )}
+
+        <button onClick={handleSyncDisplayNames} disabled={syncing}>
+          {syncing ? "Syncing..." : "Sync Names"}
+        </button>
       </div>
 
       {error && <p className="error">{error}</p>}

@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import { AuthRequest, authenticateToken } from "../middleware/auth";
 import { getAllUsers, getMessagesByUser } from "../../services/db";
+import { syncUserDisplayNames } from "../../services/discord";
 
 export const usersRouter = Router();
 
@@ -50,6 +51,21 @@ usersRouter.get(
     } catch (error) {
       console.error(`Error fetching messages for user ${userId}:`, error);
       res.status(500).json({ error: "Failed to fetch user messages" });
+    }
+  }
+);
+
+// Sync display names from Discord
+usersRouter.post(
+  "/sync-display-names",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const updatedCount = await syncUserDisplayNames();
+      res.json({ success: true, updatedCount });
+    } catch (error) {
+      console.error("Error syncing display names:", error);
+      res.status(500).json({ error: "Failed to sync display names" });
     }
   }
 );

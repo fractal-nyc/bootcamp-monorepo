@@ -6,7 +6,7 @@ import {
   TextChannel,
 } from "discord.js";
 import dotenv from "dotenv";
-import { logMessage, getMessageCount } from "./db";
+import { logMessage, getMessageCount, getAllUsers, upsertUser } from "./db";
 import { EOD_CHANNEL_ID } from "../bot/constants";
 
 dotenv.config();
@@ -23,6 +23,7 @@ export function getDiscordClient(): Client {
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
       ],
     });
   }
@@ -53,7 +54,11 @@ export async function initializeDiscord(): Promise<Client> {
   readyPromise = new Promise<void>((resolve, reject) => {
     discordClient.once("ready", () => {
       isReady = true;
-      console.log(`Discord client logged in as ${discordClient.user?.tag ?? "unknown user"}`);
+      console.log(
+        `Discord client logged in as ${
+          discordClient.user?.tag ?? "unknown user"
+        }`
+      );
 
       // Register messageCreate listener for EOD channel logging
       discordClient.on("messageCreate", (message) => {
@@ -80,7 +85,7 @@ export async function initializeDiscord(): Promise<Client> {
 
       // Run backfill after ready
       backfillEodMessages(discordClient).catch((error) => {
-        console.error("Failed to backfill EOD messages:", error);
+        console.error("Failed to backfill EOD messages", error);
       });
 
       resolve();
@@ -96,11 +101,15 @@ export async function initializeDiscord(): Promise<Client> {
   return discordClient;
 }
 
-export async function fetchTextChannel(channelId: string): Promise<TextChannel> {
+export async function fetchTextChannel(
+  channelId: string
+): Promise<TextChannel> {
   const discordClient = getDiscordClient();
 
   if (!isReady) {
-    throw new Error("Discord client is not ready. Call initializeDiscord() first.");
+    throw new Error(
+      "Discord client is not ready. Call initializeDiscord() first."
+    );
   }
 
   const channel = await discordClient.channels.fetch(channelId);
@@ -215,4 +224,48 @@ async function backfillEodMessages(discordClient: Client): Promise<void> {
   }
 
   console.log(`Backfilled ${insertedCount} messages from EOD channel`);
+}
+
+export async function syncUserDisplayNames(): Promise<number> {
+  const discordClient = getDiscordClient();
+
+  if (!isReady) {
+    throw new Error(
+      "Discord client is not ready. Call initializeDiscord() first."
+    );
+  }
+
+  // Get the guild from the EOD channel
+  const channel = await discordClient.channels.fetch(EOD_CHANNEL_ID);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    throw new Error("Could not fetch EOD channel to get guild");
+  }
+
+  const guild = (channel as TextChannel).guild;
+
+  // Fetch all guild members
+  console.log("Fetching guild members to sync display names...");
+  const members = await guild.members.fetch();
+
+  // Get all users from our database
+  const dbUsers = getAllUsers();
+  let updatedCount = 0;
+
+  for (const dbUser of dbUsers) {
+    const member = members.get(dbUser.author_id);
+    if (member) {
+      const displayName = member.displayName;
+      // Only update if display name is different or was null
+      if (displayName && displayName !== dbUser.display_name) {
+        upsertUser(dbUser.author_id, displayName, member.user.username);
+        updatedCount++;
+        console.log(
+          `Updated display name for ${member.user.username}: ${displayName}`
+        );
+      }
+    }
+  }
+
+  console.log(`Synced display names for ${updatedCount} users`);
+  return updatedCount;
 }

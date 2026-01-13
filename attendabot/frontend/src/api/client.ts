@@ -196,3 +196,20 @@ export async function getUserMessages(
     return null;
   }
 }
+
+export async function syncDisplayNames(): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/users/sync-display-names`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      return { success: false, error: data.error || "Sync failed" };
+    }
+    const data = await res.json();
+    return { success: true, updatedCount: data.updatedCount };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Network error" };
+  }
+}

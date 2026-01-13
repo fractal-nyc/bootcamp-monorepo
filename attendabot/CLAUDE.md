@@ -19,3 +19,7 @@
 
 - Deploy with `./update-bot.sh`
 - Backend serves frontend static files on port 3001
+
+# Style guide
+
+- Add relevant comments to TS file's following Google's guide: https://google.github.io/styleguide/tsguide.html#comments-documentation

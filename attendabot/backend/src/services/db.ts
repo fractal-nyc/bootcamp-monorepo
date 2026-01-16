@@ -192,13 +192,13 @@ export interface UserRecord {
   username: string;
 }
 
-/** Retrieves all users from the database, ordered by username. */
+/** Retrieves all users from the database, ordered by display name (or username if no display name). */
 export function getAllUsers(): UserRecord[] {
   const db = getDatabase();
   const stmt = db.prepare(`
     SELECT author_id, display_name, username
     FROM users
-    ORDER BY username ASC
+    ORDER BY COALESCE(display_name, username) COLLATE NOCASE ASC
   `);
   return stmt.all() as UserRecord[];
 }

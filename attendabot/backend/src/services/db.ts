@@ -119,6 +119,14 @@ export function getMessageCount(): number {
   return result.count;
 }
 
+/** Returns the count of messages for a specific channel. */
+export function getMessageCountByChannel(channelId: string): number {
+  const db = getDatabase();
+  const stmt = db.prepare("SELECT COUNT(*) as count FROM messages WHERE channel_id = ?");
+  const result = stmt.get(channelId) as { count: number };
+  return result.count;
+}
+
 /** Logs a Discord message to the database, upserting channel and user first. */
 export function logMessage(message: MessageRecord): void {
   const db = getDatabase();

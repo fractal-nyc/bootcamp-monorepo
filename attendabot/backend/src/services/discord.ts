@@ -11,7 +11,7 @@ import {
   TextChannel,
 } from "discord.js";
 import dotenv from "dotenv";
-import { logMessage, getMessageCount, getAllUsers, upsertUser } from "./db";
+import { logMessage, getMessageCountByChannel, getAllUsers, upsertUser } from "./db";
 import { MONITORED_CHANNEL_IDS } from "../bot/constants";
 
 dotenv.config();
@@ -187,19 +187,16 @@ export async function fetchMessagesSince(
 }
 
 /**
- * Backfills all monitored channels if the database is empty.
- * Only runs if no messages exist in the database.
+ * Backfills monitored channels that have no messages in the database.
+ * Checks each channel individually so new channels get backfilled.
  */
 async function backfillMonitoredChannels(discordClient: Client): Promise<void> {
-  const count = getMessageCount();
-  if (count > 0) {
-    console.log(`Skipping backfill, ${count} messages already in database`);
-    return;
-  }
-
-  console.log("Messages table empty, starting backfill for all monitored channels...");
-
   for (const channelId of MONITORED_CHANNEL_IDS) {
+    const count = getMessageCountByChannel(channelId);
+    if (count > 0) {
+      console.log(`Skipping backfill for channel ${channelId}, ${count} messages already in database`);
+      continue;
+    }
     await backfillChannelMessages(discordClient, channelId);
   }
 }

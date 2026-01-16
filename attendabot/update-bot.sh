@@ -29,7 +29,8 @@ ssh -i "$SSH_KEY" ec2-user@$INSTANCE_IP << 'EOF'
     cd ~/bootcamp-monorepo
     echo "Pulling latest code..."
     git stash
-    git pull
+    git fetch origin
+    git reset --hard origin/main
 
     cd attendabot
 

@@ -1,15 +1,23 @@
 /**
- * @fileoverview User messages component for viewing EOD messages by user.
+ * @fileoverview User messages component for viewing messages by user,
+ * with optional channel filtering.
  */
 
 import { useEffect, useState } from "react";
 import { getUsers, getUserMessages, syncDisplayNames } from "../api/client";
 import type { User, UserMessage } from "../api/client";
 
-/** Displays EOD messages for a selected user with display name sync. */
+/** Monitored channels available for filtering. */
+const MONITORED_CHANNELS = [
+  { id: "1336123201968935006", name: "eod" },
+  { id: "1418329701658792046", name: "attendance" },
+];
+
+/** Displays messages for a selected user with optional channel filtering. */
 export function UserMessages() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +45,7 @@ export function UserMessages() {
       setLoading(true);
       setError(null);
 
-      const data = await getUserMessages(selectedUser);
+      const data = await getUserMessages(selectedUser, selectedChannel || undefined);
       if (!isMounted) return;
 
       if (data) {
@@ -57,13 +65,13 @@ export function UserMessages() {
     return () => {
       isMounted = false;
     };
-  }, [selectedUser, users]);
+  }, [selectedUser, selectedChannel, users]);
 
   const handleRefresh = async () => {
     if (!selectedUser) return;
     setLoading(true);
     setError(null);
-    const data = await getUserMessages(selectedUser);
+    const data = await getUserMessages(selectedUser, selectedChannel || undefined);
     if (data) {
       setMessages(data.messages);
     } else {
@@ -117,7 +125,7 @@ export function UserMessages() {
 
   return (
     <div className="panel user-messages">
-      <h2>User EOD Messages</h2>
+      <h2>User Messages</h2>
 
       <div className="channel-selector">
         <select
@@ -128,6 +136,18 @@ export function UserMessages() {
           {users.map((user) => (
             <option key={user.author_id} value={user.author_id}>
               {getUserDisplayName(user)}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedChannel}
+          onChange={(e) => setSelectedChannel(e.target.value)}
+        >
+          <option value="">All channels</option>
+          {MONITORED_CHANNELS.map((channel) => (
+            <option key={channel.id} value={channel.id}>
+              #{channel.name}
             </option>
           ))}
         </select>
@@ -147,13 +167,14 @@ export function UserMessages() {
 
       {selectedUser && userName && (
         <p className="channel-info">
-          Showing {messages.length} EOD messages from {userName}
+          Showing {messages.length} messages from {userName}
+          {selectedChannel && ` in #${MONITORED_CHANNELS.find(c => c.id === selectedChannel)?.name}`}
         </p>
       )}
 
       <div className="messages-list">
         {messages.length === 0 && selectedUser && !loading && (
-          <p className="no-messages">No EOD messages found for this user</p>
+          <p className="no-messages">No messages found for this user</p>
         )}
 
         {messages.map((msg) => (

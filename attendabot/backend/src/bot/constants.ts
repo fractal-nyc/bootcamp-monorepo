@@ -24,6 +24,9 @@ export const EOD_CHANNEL_ID = "1336123201968935006";
 /** Discord channel ID for attendance check-ins. */
 export const ATTENDANCE_CHANNEL_ID = "1418329701658792046";
 
+/** Array of channel IDs to monitor and log messages from. */
+export const MONITORED_CHANNEL_IDS = [EOD_CHANNEL_ID, ATTENDANCE_CHANNEL_ID];
+
 /** Discord role ID for the current active cohort (empty if disabled). */
 export const CURRENT_COHORT_ROLE_ID = "";
 

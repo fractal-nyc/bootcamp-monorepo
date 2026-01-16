@@ -202,14 +202,19 @@ export interface UserMessagesResponse {
   messages: UserMessage[];
 }
 
-/** Fetches messages by a specific user. */
+/** Fetches messages by a specific user, optionally filtered by channel. */
 export async function getUserMessages(
   userId: string,
+  channelId?: string,
   limit: number = 100
 ): Promise<UserMessagesResponse | null> {
   try {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (channelId) {
+      params.append("channelId", channelId);
+    }
     const res = await fetchWithAuth(
-      `${API_BASE}/users/${userId}/messages?limit=${limit}`
+      `${API_BASE}/users/${userId}/messages?${params.toString()}`
     );
     if (!res.ok) return null;
     return res.json();

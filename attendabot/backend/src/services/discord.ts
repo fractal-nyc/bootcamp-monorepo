@@ -12,7 +12,7 @@ import {
 } from "discord.js";
 import dotenv from "dotenv";
 import { logMessage, getMessageCount, getAllUsers, upsertUser } from "./db";
-import { EOD_CHANNEL_ID } from "../bot/constants";
+import { MONITORED_CHANNEL_IDS } from "../bot/constants";
 
 dotenv.config();
 
@@ -78,9 +78,9 @@ export async function initializeDiscord(): Promise<Client> {
           .catch((error) => console.error("Failed to send startup DM:", error));
       }
 
-      // Register messageCreate listener for EOD channel logging
+      // Register messageCreate listener for monitored channels
       discordClient.on("messageCreate", (message) => {
-        if (message.channelId !== EOD_CHANNEL_ID) return;
+        if (!MONITORED_CHANNEL_IDS.includes(message.channelId)) return;
         if (message.author.bot) return;
 
         try {
@@ -95,15 +95,15 @@ export async function initializeDiscord(): Promise<Client> {
             content: message.content,
             created_at: message.createdAt.toISOString(),
           });
-          console.log(`Logged EOD message from ${message.author.username}`);
+          console.log(`Logged message from ${message.author.username} in #${channel.name}`);
         } catch (error) {
           console.error("Failed to log message:", error);
         }
       });
 
       // Run backfill after ready
-      backfillEodMessages(discordClient).catch((error) => {
-        console.error("Failed to backfill EOD messages", error);
+      backfillMonitoredChannels(discordClient).catch((error) => {
+        console.error("Failed to backfill monitored channels", error);
       });
 
       resolve();
@@ -186,22 +186,42 @@ export async function fetchMessagesSince(
   return collected;
 }
 
-async function backfillEodMessages(discordClient: Client): Promise<void> {
+/**
+ * Backfills all monitored channels if the database is empty.
+ * Only runs if no messages exist in the database.
+ */
+async function backfillMonitoredChannels(discordClient: Client): Promise<void> {
   const count = getMessageCount();
   if (count > 0) {
     console.log(`Skipping backfill, ${count} messages already in database`);
     return;
   }
 
-  console.log("Messages table empty, starting backfill...");
+  console.log("Messages table empty, starting backfill for all monitored channels...");
 
-  const channel = await discordClient.channels.fetch(EOD_CHANNEL_ID);
+  for (const channelId of MONITORED_CHANNEL_IDS) {
+    await backfillChannelMessages(discordClient, channelId);
+  }
+}
+
+/**
+ * Backfills messages from a specific channel.
+ * @param discordClient - The Discord client instance.
+ * @param channelId - The channel ID to backfill from.
+ */
+async function backfillChannelMessages(
+  discordClient: Client,
+  channelId: string
+): Promise<void> {
+  const channel = await discordClient.channels.fetch(channelId);
   if (!channel || channel.type !== ChannelType.GuildText) {
-    console.error("Could not fetch EOD channel for backfill");
+    console.error(`Could not fetch channel ${channelId} for backfill`);
     return;
   }
 
   const textChannel = channel as TextChannel;
+  console.log(`Starting backfill for #${textChannel.name}...`);
+
   let insertedCount = 0;
   let before: string | undefined;
 
@@ -244,10 +264,10 @@ async function backfillEodMessages(discordClient: Client): Promise<void> {
     before = lastMessage.id;
 
     // Log progress every batch
-    console.log(`Backfill progress: ${insertedCount} messages...`);
+    console.log(`Backfill progress for #${textChannel.name}: ${insertedCount} messages...`);
   }
 
-  console.log(`Backfilled ${insertedCount} messages from EOD channel`);
+  console.log(`Backfilled ${insertedCount} messages from #${textChannel.name}`);
 }
 
 /** Syncs display names from Discord guild members to the database. */
@@ -260,10 +280,10 @@ export async function syncUserDisplayNames(): Promise<number> {
     );
   }
 
-  // Get the guild from the EOD channel
-  const channel = await discordClient.channels.fetch(EOD_CHANNEL_ID);
+  // Get the guild from the first monitored channel
+  const channel = await discordClient.channels.fetch(MONITORED_CHANNEL_IDS[0]);
   if (!channel || channel.type !== ChannelType.GuildText) {
-    throw new Error("Could not fetch EOD channel to get guild");
+    throw new Error("Could not fetch channel to get guild");
   }
 
   const guild = (channel as TextChannel).guild;

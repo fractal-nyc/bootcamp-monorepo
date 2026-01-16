@@ -97,14 +97,14 @@ export function upsertChannel(channelId: string, channelName: string): void {
   stmt.run(channelId, channelName);
 }
 
-/** Inserts or updates a user record. */
+/** Inserts or updates a user record. Only overwrites display_name if new value is non-null. */
 export function upsertUser(authorId: string, displayName: string | null, username: string): void {
   const db = getDatabase();
   const stmt = db.prepare(`
     INSERT INTO users (author_id, display_name, username, updated_at)
     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(author_id) DO UPDATE SET
-      display_name = excluded.display_name,
+      display_name = COALESCE(excluded.display_name, display_name),
       username = excluded.username,
       updated_at = CURRENT_TIMESTAMP
   `);

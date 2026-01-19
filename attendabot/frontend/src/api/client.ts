@@ -123,18 +123,20 @@ export async function getChannels(): Promise<Channel[]> {
   }
 }
 
-/** A Discord message with author info and attachments. */
+/** A message with author info, channel info, and optional attachments. */
 export interface Message {
   id: string;
+  channelId: string;
+  channelName: string;
   author: {
     id: string;
     username: string;
-    displayName: string;
-    avatar: string | null;
+    displayName: string | null;
+    avatar?: string | null;
   };
   content: string;
   createdAt: string;
-  attachments: Array<{ name: string; url: string }>;
+  attachments?: Array<{ name: string; url: string }>;
 }
 
 /** Response containing messages from a specific channel. */
@@ -144,14 +146,19 @@ export interface ChannelMessages {
   messages: Message[];
 }
 
-/** Fetches recent messages from a channel. */
+/** Fetches recent messages from a channel. Defaults to DB; use source="discord" to fetch live from Discord. */
 export async function getMessages(
   channelId: string,
-  limit: number = 50
+  limit: number = 50,
+  source?: "discord" | "db"
 ): Promise<ChannelMessages | null> {
   try {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (source) {
+      params.append("source", source);
+    }
     const res = await fetchWithAuth(
-      `${API_BASE}/messages/${channelId}?limit=${limit}`
+      `${API_BASE}/messages/${channelId}?${params.toString()}`
     );
     if (!res.ok) return null;
     return res.json();
@@ -181,25 +188,11 @@ export async function getUsers(): Promise<User[]> {
   }
 }
 
-/** A message from the user messages endpoint. */
-export interface UserMessage {
-  id: string;
-  channelId: string;
-  channelName: string;
-  author: {
-    id: string;
-    username: string;
-    displayName: string | null;
-  };
-  content: string;
-  createdAt: string;
-}
-
 /** Response containing messages from a specific user. */
 export interface UserMessagesResponse {
   userId: string;
   channelId: string | null;
-  messages: UserMessage[];
+  messages: Message[];
 }
 
 /** Fetches messages by a specific user, optionally filtered by channel. */

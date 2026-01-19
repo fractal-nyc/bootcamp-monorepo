@@ -211,6 +211,33 @@ export function getAllUsers(): UserRecord[] {
   return stmt.all() as UserRecord[];
 }
 
+/** Retrieves recent messages from a channel within a specified number of days. */
+export function getRecentChannelMessages(channelId: string, daysBack: number = 7, limit: number = 500): MessageRecord[] {
+  const db = getDatabase();
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+  const cutoffIso = cutoffDate.toISOString();
+
+  const stmt = db.prepare(`
+    SELECT
+      m.discord_message_id,
+      m.channel_id,
+      c.channel_name,
+      m.author_id,
+      u.display_name,
+      u.username,
+      m.content,
+      m.created_at
+    FROM messages m
+    JOIN channels c ON m.channel_id = c.channel_id
+    JOIN users u ON m.author_id = u.author_id
+    WHERE m.channel_id = ? AND m.created_at >= ?
+    ORDER BY m.created_at DESC
+    LIMIT ?
+  `);
+  return stmt.all(channelId, cutoffIso, limit) as MessageRecord[];
+}
+
 /** Retrieves messages by a specific user, optionally filtered by channel. */
 export function getMessagesByUser(authorId: string, channelId?: string, limit: number = 100): MessageRecord[] {
   const db = getDatabase();

@@ -4,8 +4,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { getUsers, getUserMessages, syncDisplayNames } from "../api/client";
-import type { User, UserMessage } from "../api/client";
+import { getUsers, getUserMessages, getMessages, syncDisplayNames } from "../api/client";
+import type { User, Message } from "../api/client";
 
 /** Monitored channels available for filtering. */
 const MONITORED_CHANNELS = [
@@ -18,7 +18,7 @@ export function UserMessages() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedChannel, setSelectedChannel] = useState<string>("");
-  const [messages, setMessages] = useState<UserMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -37,7 +37,12 @@ export function UserMessages() {
   }, []);
 
   useEffect(() => {
-    if (!selectedUser) return;
+    // Need either a user or a channel selected
+    if (!selectedUser && !selectedChannel) {
+      setMessages([]);
+      setUserName("");
+      return;
+    }
 
     let isMounted = true;
 
@@ -45,17 +50,31 @@ export function UserMessages() {
       setLoading(true);
       setError(null);
 
-      const data = await getUserMessages(selectedUser, selectedChannel || undefined);
-      if (!isMounted) return;
+      if (selectedUser) {
+        // Fetch messages for a specific user
+        const data = await getUserMessages(selectedUser, selectedChannel || undefined);
+        if (!isMounted) return;
 
-      if (data) {
-        setMessages(data.messages);
-        // Find the user's display name
-        const user = users.find((u) => u.author_id === selectedUser);
-        setUserName(user?.display_name || user?.username || selectedUser);
+        if (data) {
+          setMessages(data.messages);
+          const user = users.find((u) => u.author_id === selectedUser);
+          setUserName(user?.display_name || user?.username || selectedUser);
+        } else {
+          setError("Failed to fetch messages");
+          setMessages([]);
+        }
       } else {
-        setError("Failed to fetch messages");
-        setMessages([]);
+        // No user selected - fetch all channel messages from last 7 days
+        const data = await getMessages(selectedChannel, 100);
+        if (!isMounted) return;
+
+        if (data) {
+          setMessages(data.messages);
+          setUserName("");
+        } else {
+          setError("Failed to fetch channel messages");
+          setMessages([]);
+        }
       }
       setLoading(false);
     };
@@ -68,15 +87,26 @@ export function UserMessages() {
   }, [selectedUser, selectedChannel, users]);
 
   const handleRefresh = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser && !selectedChannel) return;
     setLoading(true);
     setError(null);
-    const data = await getUserMessages(selectedUser, selectedChannel || undefined);
-    if (data) {
-      setMessages(data.messages);
+
+    if (selectedUser) {
+      const data = await getUserMessages(selectedUser, selectedChannel || undefined);
+      if (data) {
+        setMessages(data.messages);
+      } else {
+        setError("Failed to fetch messages");
+        setMessages([]);
+      }
     } else {
-      setError("Failed to fetch messages");
-      setMessages([]);
+      const data = await getMessages(selectedChannel, 100);
+      if (data) {
+        setMessages(data.messages);
+      } else {
+        setError("Failed to fetch channel messages");
+        setMessages([]);
+      }
     }
     setLoading(false);
   };
@@ -152,7 +182,7 @@ export function UserMessages() {
           ))}
         </select>
 
-        {selectedUser && (
+        {(selectedUser || selectedChannel) && (
           <button onClick={handleRefresh} disabled={loading}>
             {loading ? "Loading..." : "Refresh"}
           </button>
@@ -165,21 +195,27 @@ export function UserMessages() {
 
       {error && <p className="error">{error}</p>}
 
-      {selectedUser && userName && (
+      {(selectedUser || selectedChannel) && (
         <p className="channel-info">
-          Showing {messages.length} messages from {userName}
-          {selectedChannel && ` in #${MONITORED_CHANNELS.find(c => c.id === selectedChannel)?.name}`}
+          {selectedUser && userName
+            ? `Showing ${messages.length} messages from ${userName}${selectedChannel ? ` in #${MONITORED_CHANNELS.find(c => c.id === selectedChannel)?.name}` : ""}`
+            : `Showing ${messages.length} messages in #${MONITORED_CHANNELS.find(c => c.id === selectedChannel)?.name} (last 7 days)`}
         </p>
       )}
 
       <div className="messages-list">
-        {messages.length === 0 && selectedUser && !loading && (
-          <p className="no-messages">No messages found for this user</p>
+        {messages.length === 0 && (selectedUser || selectedChannel) && !loading && (
+          <p className="no-messages">
+            {selectedUser ? "No messages found for this user" : "No messages found in this channel"}
+          </p>
         )}
 
         {messages.map((msg) => (
           <div key={msg.id} className="message">
             <div className="message-header">
+              {!selectedUser && (
+                <span className="author">{msg.author.displayName || msg.author.username}</span>
+              )}
               <span className="author">#{msg.channelName}</span>
               <span className="timestamp">{formatTime(msg.createdAt)}</span>
             </div>

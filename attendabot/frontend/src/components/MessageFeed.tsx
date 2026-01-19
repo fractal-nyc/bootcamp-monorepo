@@ -140,7 +140,7 @@ export function MessageFeed() {
             <div className="message-content">
               {msg.content ? renderWithLinks(msg.content) : <em>(no text content)</em>}
             </div>
-            {msg.attachments.length > 0 && (
+            {msg.attachments && msg.attachments.length > 0 && (
               <div className="attachments">
                 {msg.attachments.map((att, i) => (
                   <a

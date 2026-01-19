@@ -15,7 +15,7 @@ import {
   EOD_VERIFICATION_CRON,
   USER_ID_TO_NAME_MAP,
 } from "./constants";
-import { fetchTextChannel, fetchMessagesSince } from "../services/discord";
+import { fetchTextChannel, fetchMessagesSince, sendDirectMessage } from "../services/discord";
 import {
   incrementMessagesSent,
   incrementRemindersTriggered,
@@ -23,7 +23,7 @@ import {
   incrementErrors,
 } from "../services/stats";
 
-const USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
+const CURRENT_COHORT_USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
 
 /** Validates that required channel IDs are configured. */
 function validateConfig(): void {
@@ -179,7 +179,7 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
 
   for (const message of messages) {
     const authorId = message.author.id;
-    if (USER_IDS.includes(authorId)) {
+    if (CURRENT_COHORT_USER_IDS.includes(authorId)) {
       usersWhoPosted.add(message.author.id);
 
       const prCount = countPrsInMessage(message.content);
@@ -192,44 +192,55 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
   }
 
   if (channelId == EOD_CHANNEL_ID) {
-    const prCountStrings: string[] = [];
-    for (const [userId, count] of userPullRequestCounts.entries()) {
-      const userName = USER_ID_TO_NAME_MAP.get(userId) ?? "Unknown User";
-      prCountStrings.push(`${userName}: ${count}`);
+    // Sort by PR count descending
+    const sorted = Array.from(userPullRequestCounts.entries())
+      .map(([userId, count]) => ({
+        name: USER_ID_TO_NAME_MAP.get(userId) ?? "Unknown User",
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Get top 3 places (include ties)
+    const top3: typeof sorted = [];
+    let currentRank = 0;
+    let lastCount = -1;
+
+    for (const entry of sorted) {
+      if (entry.count !== lastCount) {
+        currentRank++;
+        if (currentRank > 3) break;
+        lastCount = entry.count;
+      }
+      top3.push(entry);
     }
 
-    prCountStrings.sort((a, b) => {
-      const countA = parseInt(a.split(": ")[1], 10);
-      const countB = parseInt(b.split(": ")[1], 10);
-      return countB - countA;
-    });
-
-    const prCountString =
-      `PR Leaderboard for ${getCurrentMonthDay()}:\n` +
-      prCountStrings.join("\n");
-    await channel.send({
-      content: prCountString,
-    });
-    incrementMessagesSent();
+    if (top3.length > 0) {
+      const leaderboard = top3.map((e) => `${e.name}: ${e.count}`).join("\n");
+      await channel.send({
+        content: `PR Leaderboard for ${getCurrentMonthDay()} (Top 3):\n${leaderboard}`,
+      });
+      incrementMessagesSent();
+    }
   }
 
-  const missingUsers = USER_IDS.filter((id) => !usersWhoPosted.has(id));
+  const missingUsers = CURRENT_COHORT_USER_IDS.filter((id) => !usersWhoPosted.has(id));
 
   if (missingUsers.length === 0) {
-    console.log(
-      `All users completed their ${label} posts in #${channel.name}.`
-    );
+    console.log(`All users completed their ${label} posts in #${channel.name}.`);
   } else {
-    const mentionList = missingUsers.map((id) => `<@${id}>`).join(", ");
-    await channel.send({
-      content: `The following engineers still need to post their ${label} update for ${getCurrentMonthDay()}: ${mentionList}`,
-    });
-    incrementMessagesSent();
-    console.warn(
-      `Missing ${label} updates from ${missingUsers.length} users in #${
-        channel.name
-      }: ${missingUsers.join(", ")}`
-    );
+    // DM each late user individually
+    let dmsSent = 0;
+    for (const userId of missingUsers) {
+      const sent = await sendDirectMessage(
+        userId,
+        `Reminder: You still need to post your ${label} update for ${getCurrentMonthDay()} in #${channel.name}.`
+      );
+      if (sent) {
+        incrementMessagesSent();
+        dmsSent++;
+      }
+    }
+    console.log(`Sent ${label} reminder DMs to ${dmsSent}/${missingUsers.length} users`);
   }
 }
 

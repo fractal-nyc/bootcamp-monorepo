@@ -41,6 +41,26 @@ export function isDiscordReady(): boolean {
   return isReady;
 }
 
+/**
+ * Sends a direct message to a user.
+ * @param userId - The Discord user ID to send the message to.
+ * @param message - The message content to send.
+ * @returns True if the message was sent successfully, false otherwise.
+ */
+export async function sendDirectMessage(userId: string, message: string): Promise<boolean> {
+  const discordClient = getDiscordClient();
+  if (!isReady) return false;
+
+  try {
+    const user = await discordClient.users.fetch(userId);
+    await user.send(message);
+    return true;
+  } catch (error) {
+    console.error(`Failed to send DM to user ${userId}:`, error);
+    return false;
+  }
+}
+
 /** Initializes and logs in the Discord client, setting up event listeners. */
 export async function initializeDiscord(): Promise<Client> {
   const discordClient = getDiscordClient();

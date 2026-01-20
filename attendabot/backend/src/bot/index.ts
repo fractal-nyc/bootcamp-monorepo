@@ -359,6 +359,7 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   // Categorize students
   const lateStudents: string[] = [];
   const absentStudents: string[] = [];
+  const goodPrStudents: string[] = [];
   const lowPrStudents: string[] = [];
   const noEodStudents: string[] = [];
 
@@ -378,7 +379,9 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
       noEodStudents.push(student.name);
     } else {
       const prCount = eodPrCountByUser.get(discordId) ?? 0;
-      if (prCount < 3) {
+      if (prCount >= 3) {
+        goodPrStudents.push(`${student.name} (${prCount} PRs)`);
+      } else {
         lowPrStudents.push(`${student.name} (${prCount} PRs)`);
       }
     }
@@ -404,6 +407,11 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   // Absent students
   briefing += `**Absent (no attendance):**\n`;
   briefing += absentStudents.length > 0 ? absentStudents.join(", ") : "None";
+  briefing += "\n\n";
+
+  // Good PR count (3+)
+  briefing += `**3+ PRs in EOD:**\n`;
+  briefing += goodPrStudents.length > 0 ? goodPrStudents.join(", ") : "None";
   briefing += "\n\n";
 
   // Low PR count

@@ -15,6 +15,9 @@ export const ATTENDANCE_REMINDER_CRON = "0 9 * * *";
 /** Cron expression for attendance verification (9:15 AM EST). */
 export const ATTENDANCE_VERIFICATION_CRON = "15 9 * * *";
 
+/** Cron expression for daily briefing (8 AM EST). */
+export const DAILY_BRIEFING_CRON = "0 8 * * *";
+
 /** Timezone for all cron schedules. */
 export const CRON_TIMEZONE = "America/New_York";
 
@@ -23,6 +26,9 @@ export const EOD_CHANNEL_ID = "1336123201968935006";
 
 /** Discord channel ID for attendance check-ins. */
 export const ATTENDANCE_CHANNEL_ID = "1418329701658792046";
+
+/** Discord channel ID for daily briefing messages. */
+export const DAILY_BRIEFING_CHANNEL_ID = "1463280393888333884";
 
 /** Array of channel IDs to monitor and log messages from. */
 export const MONITORED_CHANNEL_IDS = [EOD_CHANNEL_ID, ATTENDANCE_CHANNEL_ID];

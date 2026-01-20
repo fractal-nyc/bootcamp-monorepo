@@ -490,3 +490,33 @@ export async function createNote(studentId: number, content: string): Promise<bo
     return false;
   }
 }
+
+// ============================================================================
+// Testing API
+// ============================================================================
+
+/**
+ * Sends a test briefing for a given cohort and simulated date.
+ * The briefing is sent as a DM to David instead of the briefing channel.
+ * @param cohortId - The cohort to generate the briefing for.
+ * @param simulatedDate - The simulated "today" date (YYYY-MM-DD). Briefing shows previous day's data.
+ */
+export async function sendTestBriefing(
+  cohortId: number,
+  simulatedDate: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/testing/briefing`, {
+      method: "POST",
+      body: JSON.stringify({ cohortId, simulatedDate }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, message: data.error || "Failed to send briefing" };
+    }
+    return { success: true, message: data.message || "Briefing sent successfully" };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Network error" };
+  }
+}

@@ -10,9 +10,10 @@ import { StatusPanel } from "./components/StatusPanel";
 import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
 import { StudentCohortPanel } from "./components/StudentCohortPanel";
+import { TestingPanel } from "./components/TestingPanel";
 import "./App.css";
 
-type Tab = "students" | "messages";
+type Tab = "students" | "messages" | "testing";
 
 /** Root application component with authentication and admin dashboard. */
 function App() {
@@ -63,17 +64,25 @@ function App() {
         >
           Messages
         </button>
+        <button
+          className={`tab-btn ${activeTab === "testing" ? "active" : ""}`}
+          onClick={() => setActiveTab("testing")}
+        >
+          Testing
+        </button>
       </nav>
 
       <main>
         {activeTab === "students" ? (
           <StudentCohortPanel />
-        ) : (
+        ) : activeTab === "messages" ? (
           <>
             <MessageFeed />
             <UserMessages />
             <StatusPanel />
           </>
+        ) : (
+          <TestingPanel />
         )}
       </main>
     </div>

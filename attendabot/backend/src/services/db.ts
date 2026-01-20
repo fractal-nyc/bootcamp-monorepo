@@ -591,3 +591,113 @@ export function getStudentFeed(studentId: number, limit: number = 50): FeedItem[
 
   return combined.slice(0, limit);
 }
+
+// ============================================================================
+// Daily Briefing queries
+// ============================================================================
+
+/** A message record with timestamp for daily briefing. */
+export interface BriefingMessageRecord {
+  author_id: string;
+  content: string;
+  created_at: string;
+}
+
+/**
+ * Gets messages from a specific channel for a specific date range.
+ * @param channelName - The channel name to query (e.g., "attendance", "eod")
+ * @param startDate - Start of the date range (inclusive)
+ * @param endDate - End of the date range (exclusive)
+ */
+export function getMessagesByChannelAndDateRange(
+  channelName: string,
+  startDate: string,
+  endDate: string
+): BriefingMessageRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT m.author_id, m.content, m.created_at
+    FROM messages m
+    JOIN channels c ON m.channel_id = c.channel_id
+    WHERE c.channel_name = ?
+      AND m.created_at >= ?
+      AND m.created_at < ?
+    ORDER BY m.created_at ASC
+  `);
+  return stmt.all(channelName, startDate, endDate) as BriefingMessageRecord[];
+}
+
+/**
+ * Gets all students in a cohort with their last check-in time, sorted by last check-in (oldest first).
+ * Students with no check-ins appear first (NULL sorts first).
+ */
+export function getStudentsByLastCheckIn(cohortId: number): StudentRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT
+      s.id,
+      s.name,
+      s.discord_user_id,
+      u.username as discord_handle,
+      s.cohort_id,
+      s.status,
+      s.current_internship,
+      MAX(n.created_at) as last_check_in,
+      s.created_at,
+      s.updated_at
+    FROM students s
+    LEFT JOIN users u ON s.discord_user_id = u.author_id
+    LEFT JOIN instructor_notes n ON s.id = n.student_id
+    WHERE s.cohort_id = ?
+    GROUP BY s.id
+    ORDER BY last_check_in ASC NULLS FIRST
+  `);
+  return stmt.all(cohortId) as StudentRecord[];
+}
+
+/**
+ * Gets all active students in a cohort that have a linked Discord user ID.
+ */
+export function getActiveStudentsWithDiscord(cohortId: number): StudentRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT
+      s.id,
+      s.name,
+      s.discord_user_id,
+      u.username as discord_handle,
+      s.cohort_id,
+      s.status,
+      s.current_internship,
+      MAX(n.created_at) as last_check_in,
+      s.created_at,
+      s.updated_at
+    FROM students s
+    LEFT JOIN users u ON s.discord_user_id = u.author_id
+    LEFT JOIN instructor_notes n ON s.id = n.student_id
+    WHERE s.cohort_id = ? AND s.status = 'active' AND s.discord_user_id IS NOT NULL
+    GROUP BY s.id
+    ORDER BY s.name ASC
+  `);
+  return stmt.all(cohortId) as StudentRecord[];
+}
+
+/**
+ * Gets the current cohort ID for the daily briefing.
+ * Uses CURRENT_COHORT_ID env var if set, otherwise falls back to the first cohort.
+ */
+export function getDefaultCohortId(): number | null {
+  const envCohortId = process.env.CURRENT_COHORT_ID;
+  if (envCohortId) {
+    const parsed = parseInt(envCohortId, 10);
+    if (!isNaN(parsed)) {
+      return parsed;
+    }
+  }
+
+  // Fallback: return the first cohort
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT id FROM cohorts ORDER BY id ASC LIMIT 1`);
+  const result = stmt.get() as { id: number } | undefined;
+  return result?.id ?? null;
+}

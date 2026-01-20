@@ -10,6 +10,8 @@ import {
   ATTENDANCE_VERIFICATION_CRON,
   CRON_TIMEZONE,
   CURRENT_COHORT_ROLE_ID,
+  DAILY_BRIEFING_CHANNEL_ID,
+  DAILY_BRIEFING_CRON,
   EOD_CHANNEL_ID,
   EOD_REMINDER_CRON,
   EOD_VERIFICATION_CRON,
@@ -22,6 +24,12 @@ import {
   incrementVerificationsRun,
   incrementErrors,
 } from "../services/stats";
+import {
+  getMessagesByChannelAndDateRange,
+  getStudentsByLastCheckIn,
+  getActiveStudentsWithDiscord,
+  getDefaultCohortId,
+} from "../services/db";
 
 const CURRENT_COHORT_USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
 
@@ -62,6 +70,12 @@ function scheduleJobs(): void {
     ATTENDANCE_VERIFICATION_CRON,
     () => verifyAttendancePost(),
     "Attendance verification"
+  );
+
+  scheduleTask(
+    DAILY_BRIEFING_CRON,
+    () => sendDailyBriefing(),
+    "Daily briefing"
   );
 }
 
@@ -259,4 +273,187 @@ function roleMention(roleId: string) {
 export function countPrsInMessage(messageContent: string): number {
   const re = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   return (messageContent.match(re) || []).length;
+}
+
+// ============================================================================
+// Daily Briefing
+// ============================================================================
+
+/**
+ * Returns start/end ISO strings for the day before the given date (or yesterday if not provided).
+ * @param simulatedToday - Optional YYYY-MM-DD string representing "today". If not provided, uses actual today.
+ */
+function getPreviousDayRangeET(simulatedToday?: string): { start: string; end: string } {
+  let targetDate: Date;
+
+  if (simulatedToday) {
+    // Parse the simulated date and get the previous day
+    const [year, month, day] = simulatedToday.split("-").map(Number);
+    targetDate = new Date(year, month - 1, day - 1); // month is 0-indexed, subtract 1 day
+  } else {
+    // Get yesterday in ET
+    const now = new Date();
+    const etFormatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const [month, day, year] = etFormatter.format(yesterday).split("/");
+    targetDate = new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  // Format as YYYY-MM-DD for consistent parsing
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+  const day = String(targetDate.getDate()).padStart(2, "0");
+
+  // Create UTC timestamps for midnight ET boundaries
+  const startET = new Date(`${year}-${month}-${day}T00:00:00-05:00`);
+  const endET = new Date(`${year}-${month}-${day}T23:59:59-05:00`);
+
+  return { start: startET.toISOString(), end: endET.toISOString() };
+}
+
+/** Returns the ISO timestamp for 10 AM ET on a given date string (YYYY-MM-DD). */
+function getTenAmET(dateStr: string): string {
+  return new Date(`${dateStr}T10:00:00-05:00`).toISOString();
+}
+
+/**
+ * Generates the daily briefing content for a cohort.
+ * @param cohortId - The cohort ID to generate the briefing for.
+ * @param simulatedToday - Optional YYYY-MM-DD string representing "today" (the cron run date).
+ * @returns The briefing message content, or null if no data.
+ */
+export function generateDailyBriefing(cohortId: number, simulatedToday?: string): string | null {
+  const students = getActiveStudentsWithDiscord(cohortId);
+  if (students.length === 0) {
+    return null;
+  }
+
+  const { start, end } = getPreviousDayRangeET(simulatedToday);
+  const previousDayStr = start.split("T")[0];
+  const tenAm = getTenAmET(previousDayStr);
+
+  // Get messages from previous day
+  const attendanceMessages = getMessagesByChannelAndDateRange("attendance", start, end);
+  const eodMessages = getMessagesByChannelAndDateRange("eod", start, end);
+
+  // Build sets for quick lookup
+  const attendanceByUser = new Map<string, string>(); // discord_id -> first message timestamp
+  for (const msg of attendanceMessages) {
+    if (!attendanceByUser.has(msg.author_id)) {
+      attendanceByUser.set(msg.author_id, msg.created_at);
+    }
+  }
+
+  const eodPrCountByUser = new Map<string, number>(); // discord_id -> PR count
+  for (const msg of eodMessages) {
+    const prCount = countPrsInMessage(msg.content ?? "");
+    eodPrCountByUser.set(msg.author_id, (eodPrCountByUser.get(msg.author_id) ?? 0) + prCount);
+  }
+  const eodPostedUsers = new Set(eodMessages.map((m) => m.author_id));
+
+  // Categorize students
+  const lateStudents: string[] = [];
+  const absentStudents: string[] = [];
+  const lowPrStudents: string[] = [];
+  const noEodStudents: string[] = [];
+
+  for (const student of students) {
+    const discordId = student.discord_user_id!;
+
+    // Check attendance
+    const attendanceTime = attendanceByUser.get(discordId);
+    if (!attendanceTime) {
+      absentStudents.push(student.name);
+    } else if (attendanceTime > tenAm) {
+      lateStudents.push(student.name);
+    }
+
+    // Check EOD
+    if (!eodPostedUsers.has(discordId)) {
+      noEodStudents.push(student.name);
+    } else {
+      const prCount = eodPrCountByUser.get(discordId) ?? 0;
+      if (prCount < 3) {
+        lowPrStudents.push(`${student.name} (${prCount} PRs)`);
+      }
+    }
+  }
+
+  // Get students sorted by last check-in
+  const studentsByCheckIn = getStudentsByLastCheckIn(cohortId);
+
+  // Build briefing message
+  const dateStr = new Date(start).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+
+  let briefing = `**Daily Briefing for ${dateStr}**\n\n`;
+
+  // Late students
+  briefing += `**Late to Attendance (after 10 AM):**\n`;
+  briefing += lateStudents.length > 0 ? lateStudents.join(", ") : "None";
+  briefing += "\n\n";
+
+  // Absent students
+  briefing += `**Absent (no attendance):**\n`;
+  briefing += absentStudents.length > 0 ? absentStudents.join(", ") : "None";
+  briefing += "\n\n";
+
+  // Low PR count
+  briefing += `**Less than 3 PRs in EOD:**\n`;
+  briefing += lowPrStudents.length > 0 ? lowPrStudents.join(", ") : "None";
+  briefing += "\n\n";
+
+  // No EOD
+  briefing += `**No EOD submitted:**\n`;
+  briefing += noEodStudents.length > 0 ? noEodStudents.join(", ") : "None";
+  briefing += "\n\n";
+
+  // Sentiment placeholder
+  briefing += `**Cohort Sentiment:**\n`;
+  briefing += "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Overall morale appears stable.";
+  briefing += "\n\n";
+
+  // Students by last check-in
+  briefing += `**Students by Last Check-in (oldest first):**\n`;
+  const checkInList = studentsByCheckIn
+    .filter((s) => s.status === "active")
+    .map((s) => {
+      const checkIn = s.last_check_in
+        ? new Date(s.last_check_in).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        : "Never";
+      return `• ${s.name}: ${checkIn}`;
+    })
+    .join("\n");
+  briefing += checkInList || "No students";
+
+  return briefing;
+}
+
+/** Sends the daily briefing to the designated channel. */
+async function sendDailyBriefing(): Promise<void> {
+  const cohortId = getDefaultCohortId();
+  if (!cohortId) {
+    console.log("No cohort found. Skipping daily briefing.");
+    return;
+  }
+
+  const briefing = generateDailyBriefing(cohortId);
+  if (!briefing) {
+    console.log("No active students with Discord. Skipping daily briefing.");
+    return;
+  }
+
+  // Send to channel
+  const channel = await fetchTextChannel(DAILY_BRIEFING_CHANNEL_ID);
+  await channel.send({ content: briefing });
+  incrementMessagesSent();
+  console.log(`Sent daily briefing to #${channel.name}`);
 }

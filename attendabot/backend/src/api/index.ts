@@ -12,6 +12,7 @@ import { messagesRouter } from "./routes/messages";
 import { channelsRouter } from "./routes/channels";
 import { usersRouter } from "./routes/users";
 import { studentsRouter, cohortsRouter } from "./routes/students";
+import { testingRouter } from "./routes/testing";
 
 /** Express application instance. */
 const app = express();
@@ -28,6 +29,7 @@ app.use("/api/channels", channelsRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/students", studentsRouter);
 app.use("/api/cohorts", cohortsRouter);
+app.use("/api/testing", testingRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {

@@ -1,26 +1,44 @@
 /**
  * @fileoverview Authentication routes for admin login.
+ * Supports multi-user login with username and password.
  */
 
 import { Router, Request, Response } from "express";
-import { generateToken, verifyPassword } from "../middleware/auth";
+import {
+  generateToken,
+  verifyCredentials,
+  getValidUsernames,
+  verifyPassword,
+} from "../middleware/auth";
 
 /** Router for authentication endpoints. */
 export const authRouter = Router();
 
+/** POST /api/auth/login - Authenticate with username and password. */
 authRouter.post("/login", (req: Request, res: Response) => {
-  const { password } = req.body;
+  const { username, password } = req.body;
 
   if (!password) {
     res.status(400).json({ error: "Password required" });
     return;
   }
 
-  if (!verifyPassword(password)) {
-    res.status(401).json({ error: "Invalid password" });
+  if (!username) {
+    res.status(400).json({ error: "Username required" });
     return;
   }
 
-  const token = generateToken();
-  res.json({ token });
+  if (!verifyCredentials(username, password)) {
+    res.status(401).json({ error: "Invalid username or password" });
+    return;
+  }
+  const token = generateToken(username);
+  res.json({ token, username });
+  return;
+});
+
+/** GET /api/auth/usernames - Get list of valid usernames for login dropdown. */
+authRouter.get("/usernames", (_req: Request, res: Response) => {
+  const usernames = getValidUsernames();
+  res.json({ usernames });
 });

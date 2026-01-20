@@ -1,45 +1,80 @@
 /**
  * @fileoverview Main application component for the attendabot admin panel.
+ * Features tab navigation between Students and Messages views.
  */
 
 import { useState, useEffect } from "react";
-import { isLoggedIn, clearToken } from "./api/client";
+import { isLoggedIn, clearToken, getUsername } from "./api/client";
 import { Login } from "./components/Login";
 import { StatusPanel } from "./components/StatusPanel";
 import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
+import { StudentCohortPanel } from "./components/StudentCohortPanel";
 import "./App.css";
+
+type Tab = "students" | "messages";
 
 /** Root application component with authentication and admin dashboard. */
 function App() {
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
+  const [activeTab, setActiveTab] = useState<Tab>("students");
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
+    setUsername(getUsername());
   }, []);
 
   const handleLogout = () => {
     clearToken();
     setLoggedIn(false);
+    setUsername(null);
   };
 
   if (!loggedIn) {
-    return <Login onLogin={() => setLoggedIn(true)} />;
+    return <Login onLogin={() => {
+      setLoggedIn(true);
+      setUsername(getUsername());
+    }} />;
   }
 
   return (
     <div className="app">
       <header>
         <h1>Attendabot Admin</h1>
-        <button onClick={handleLogout} className="logout-btn">
-          Logout
-        </button>
+        <div className="header-right">
+          {username && <span className="username">Logged in as {username}</span>}
+          <button onClick={handleLogout} className="logout-btn">
+            Logout
+          </button>
+        </div>
       </header>
 
+      <nav className="tab-navigation">
+        <button
+          className={`tab-btn ${activeTab === "students" ? "active" : ""}`}
+          onClick={() => setActiveTab("students")}
+        >
+          Students
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "messages" ? "active" : ""}`}
+          onClick={() => setActiveTab("messages")}
+        >
+          Messages
+        </button>
+      </nav>
+
       <main>
-        <StatusPanel />
-        <MessageFeed />
-        <UserMessages />
+        {activeTab === "students" ? (
+          <StudentCohortPanel />
+        ) : (
+          <>
+            <MessageFeed />
+            <UserMessages />
+            <StatusPanel />
+          </>
+        )}
       </main>
     </div>
   );

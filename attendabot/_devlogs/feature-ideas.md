@@ -1,11 +1,19 @@
 # Features
 
+- Be able to keep track of instructor notes.
+- Priority ranking system of who we haven't talked to lately.
+- Internships and status.
+- Be more heavy handed with the internship process.
+- Students' statuses.
+- Unified view of EODs and instructor notes.
+- Render student contact information for the cohort.
+- TODOs for each student, or maybe
+- Last checkin time.
 - Read people's EOD messages, follow links to their PRs, ingest their contents, store them somewhere, analyze them.
 - Prepare a morning briefing for the instructors on the status of each student (e.g. who was late, who didn't write their EOD, who didn't do enough PRs) and an overall temperature check of the cohort.
 - Keep a dossier on every student (stored in Airtable?) based on their Discord and Github activity.
 - Be able to read instructor notes on a per student basis from Airtable.
 - Send other reminders to students (e.g. upcoming workshops, demo prep).
-- Show server logs in the panel (maybe).
 - ...
 
 # Bug fixes

@@ -1,5 +1,6 @@
 /**
  * @fileoverview JWT authentication middleware and utilities for the admin API.
+ * Supports multi-user authentication with predefined instructor accounts.
  */
 
 import { Request, Response, NextFunction } from "express";
@@ -10,9 +11,16 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-change-me";
 
+/** Predefined instructor credentials from environment variables. */
+const INSTRUCTORS: Record<string, string | undefined> = {
+  David: process.env.INSTRUCTOR_DAVID_PASSWORD,
+  Paris: process.env.INSTRUCTOR_PARIS_PASSWORD,
+  Andrew: process.env.INSTRUCTOR_ANDREW_PASSWORD,
+};
+
 /** Express Request extended with authenticated user data. */
 export interface AuthRequest extends Request {
-  user?: { authenticated: boolean };
+  user?: { authenticated: boolean; username: string };
 }
 
 /** Express middleware that validates JWT from the Authorization header. */
@@ -30,7 +38,7 @@ export function authenticateToken(
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { authenticated: boolean };
+    const decoded = jwt.verify(token, JWT_SECRET) as { authenticated: boolean; username: string };
     req.user = decoded;
     next();
   } catch (error) {
@@ -38,12 +46,37 @@ export function authenticateToken(
   }
 }
 
-/** Generates a signed JWT valid for 24 hours. */
-export function generateToken(): string {
-  return jwt.sign({ authenticated: true }, JWT_SECRET, { expiresIn: "24h" });
+/** Generates a signed JWT valid for 24 hours, including the username. */
+export function generateToken(username: string): string {
+  return jwt.sign({ authenticated: true, username }, JWT_SECRET, { expiresIn: "24h" });
 }
 
-/** Checks if the provided password matches the admin password. */
+/**
+ * Verifies credentials for a given username and password.
+ * Checks instructor-specific passwords first, then falls back to admin password.
+ */
+export function verifyCredentials(username: string, password: string): boolean {
+  // Check if this is a known instructor with a configured password
+  const instructorPassword = INSTRUCTORS[username];
+  if (instructorPassword && password === instructorPassword) {
+    return true;
+  }
+
+  // Fall back to admin password for backwards compatibility
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminPassword && password === adminPassword) {
+    return true;
+  }
+
+  return false;
+}
+
+/** Returns the list of valid instructor usernames. */
+export function getValidUsernames(): string[] {
+  return Object.keys(INSTRUCTORS);
+}
+
+/** Checks if the provided password matches the admin password. (Legacy support) */
 export function verifyPassword(password: string): boolean {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {

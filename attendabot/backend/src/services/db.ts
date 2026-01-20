@@ -69,7 +69,56 @@ function initializeTables(): void {
     )
   `);
 
+  // Cohorts table (Fa2025, Sp2026, etc.)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cohorts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Students table (linked optionally to Discord users, belongs to one cohort)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS students (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      discord_user_id TEXT REFERENCES users(author_id),
+      cohort_id INTEGER NOT NULL REFERENCES cohorts(id),
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'graduated', 'withdrawn')),
+      current_internship TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Instructor notes table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS instructor_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      author TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Indexes for performance
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_instructor_notes_student ON instructor_notes(student_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_students_cohort ON students(cohort_id)`);
+
+  // Seed default cohorts if they don't exist
+  seedDefaultCohorts();
+
   console.log("Database tables initialized");
+}
+
+/** Seeds default cohorts (Fa2025, Sp2026) if they don't already exist. */
+function seedDefaultCohorts(): void {
+  if (!db) return;
+  const stmt = db.prepare(`INSERT OR IGNORE INTO cohorts (name) VALUES (?)`);
+  stmt.run("Fa2025");
+  stmt.run("Sp2026");
 }
 
 /** A message record from the database with joined channel and user data. */
@@ -289,4 +338,256 @@ export function closeDatabase(): void {
     db.close();
     db = null;
   }
+}
+
+// ============================================================================
+// Cohort, Student, and Instructor Notes functions
+// ============================================================================
+
+/** A cohort record from the database. */
+export interface CohortRecord {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+/** Retrieves all cohorts from the database, ordered by name. */
+export function getCohorts(): CohortRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT id, name, created_at FROM cohorts ORDER BY name ASC`);
+  return stmt.all() as CohortRecord[];
+}
+
+/** Creates a new cohort and returns the created record. */
+export function createCohort(name: string): CohortRecord {
+  const db = getDatabase();
+  const stmt = db.prepare(`INSERT INTO cohorts (name) VALUES (?)`);
+  const result = stmt.run(name);
+  return {
+    id: result.lastInsertRowid as number,
+    name,
+    created_at: new Date().toISOString(),
+  };
+}
+
+/** A student record from the database with computed lastCheckIn. */
+export interface StudentRecord {
+  id: number;
+  name: string;
+  discord_user_id: string | null;
+  discord_handle: string | null;
+  cohort_id: number;
+  status: "active" | "inactive" | "graduated" | "withdrawn";
+  current_internship: string | null;
+  last_check_in: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Retrieves students for a given cohort, with computed lastCheckIn from instructor notes. */
+export function getStudentsByCohort(cohortId: number): StudentRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT
+      s.id,
+      s.name,
+      s.discord_user_id,
+      u.username as discord_handle,
+      s.cohort_id,
+      s.status,
+      s.current_internship,
+      MAX(n.created_at) as last_check_in,
+      s.created_at,
+      s.updated_at
+    FROM students s
+    LEFT JOIN users u ON s.discord_user_id = u.author_id
+    LEFT JOIN instructor_notes n ON s.id = n.student_id
+    WHERE s.cohort_id = ?
+    GROUP BY s.id
+    ORDER BY s.name ASC
+  `);
+  return stmt.all(cohortId) as StudentRecord[];
+}
+
+/** Retrieves a single student by ID with computed lastCheckIn. */
+export function getStudent(id: number): StudentRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT
+      s.id,
+      s.name,
+      s.discord_user_id,
+      u.username as discord_handle,
+      s.cohort_id,
+      s.status,
+      s.current_internship,
+      MAX(n.created_at) as last_check_in,
+      s.created_at,
+      s.updated_at
+    FROM students s
+    LEFT JOIN users u ON s.discord_user_id = u.author_id
+    LEFT JOIN instructor_notes n ON s.id = n.student_id
+    WHERE s.id = ?
+    GROUP BY s.id
+  `);
+  return (stmt.get(id) as StudentRecord) || null;
+}
+
+/** Input for creating a new student. */
+export interface CreateStudentInput {
+  name: string;
+  cohortId: number;
+  discordUserId?: string;
+  status?: "active" | "inactive" | "graduated" | "withdrawn";
+  currentInternship?: string;
+}
+
+/** Creates a new student and returns the created record. */
+export function createStudent(input: CreateStudentInput): StudentRecord {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO students (name, discord_user_id, cohort_id, status, current_internship)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    input.name,
+    input.discordUserId ?? null,
+    input.cohortId,
+    input.status ?? "active",
+    input.currentInternship ?? null
+  );
+  return getStudent(result.lastInsertRowid as number)!;
+}
+
+/** Input for updating a student. */
+export interface UpdateStudentInput {
+  name?: string;
+  discordUserId?: string | null;
+  cohortId?: number;
+  status?: "active" | "inactive" | "graduated" | "withdrawn";
+  currentInternship?: string | null;
+}
+
+/** Updates a student and returns the updated record. */
+export function updateStudent(id: number, input: UpdateStudentInput): StudentRecord | null {
+  const db = getDatabase();
+  const existing = getStudent(id);
+  if (!existing) return null;
+
+  const stmt = db.prepare(`
+    UPDATE students SET
+      name = ?,
+      discord_user_id = ?,
+      cohort_id = ?,
+      status = ?,
+      current_internship = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+  stmt.run(
+    input.name ?? existing.name,
+    input.discordUserId !== undefined ? input.discordUserId : existing.discord_user_id,
+    input.cohortId ?? existing.cohort_id,
+    input.status ?? existing.status,
+    input.currentInternship !== undefined ? input.currentInternship : existing.current_internship,
+    id
+  );
+  return getStudent(id);
+}
+
+/** Deletes a student by ID. Returns true if deleted, false if not found. */
+export function deleteStudent(id: number): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`DELETE FROM students WHERE id = ?`);
+  const result = stmt.run(id);
+  return result.changes > 0;
+}
+
+/** An instructor note record from the database. */
+export interface InstructorNoteRecord {
+  id: number;
+  student_id: number;
+  author: string;
+  content: string;
+  created_at: string;
+}
+
+/** Creates an instructor note for a student. */
+export function createInstructorNote(
+  studentId: number,
+  author: string,
+  content: string
+): InstructorNoteRecord {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO instructor_notes (student_id, author, content)
+    VALUES (?, ?, ?)
+  `);
+  const result = stmt.run(studentId, author, content);
+  return {
+    id: result.lastInsertRowid as number,
+    student_id: studentId,
+    author,
+    content,
+    created_at: new Date().toISOString(),
+  };
+}
+
+/** A feed item that can be either an EOD message or an instructor note. */
+export interface FeedItem {
+  type: "eod" | "note";
+  id: string;
+  content: string;
+  author: string;
+  created_at: string;
+}
+
+/**
+ * Gets an interleaved feed of EOD messages and instructor notes for a student.
+ * EOD messages are pulled from the messages table if the student has a discord_user_id.
+ * Results are sorted by created_at DESC.
+ */
+export function getStudentFeed(studentId: number, limit: number = 50): FeedItem[] {
+  const db = getDatabase();
+  const student = getStudent(studentId);
+  if (!student) return [];
+
+  // Get instructor notes
+  const notesStmt = db.prepare(`
+    SELECT
+      'note' as type,
+      'note_' || id as id,
+      content,
+      author,
+      created_at
+    FROM instructor_notes
+    WHERE student_id = ?
+  `);
+  const notes = notesStmt.all(studentId) as FeedItem[];
+
+  // Get EOD messages if student is linked to a Discord user
+  // Excludes messages from the #attendance channel
+  let messages: FeedItem[] = [];
+  if (student.discord_user_id) {
+    const messagesStmt = db.prepare(`
+      SELECT
+        'eod' as type,
+        'eod_' || m.discord_message_id as id,
+        m.content,
+        u.username as author,
+        m.created_at
+      FROM messages m
+      JOIN users u ON m.author_id = u.author_id
+      JOIN channels c ON m.channel_id = c.channel_id
+      WHERE m.author_id = ?
+        AND c.channel_name != 'attendance'
+    `);
+    messages = messagesStmt.all(student.discord_user_id) as FeedItem[];
+  }
+
+  // Combine and sort by created_at DESC
+  const combined = [...notes, ...messages];
+  combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  return combined.slice(0, limit);
 }

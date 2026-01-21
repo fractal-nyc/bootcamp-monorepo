@@ -3,7 +3,7 @@
  * Detects URLs in text and wraps them in anchor tags.
  */
 
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 /** Regex pattern for detecting HTTP/HTTPS URLs. */
 const URL_REGEX = /(https?:\/\/[^\s<]+)/g;

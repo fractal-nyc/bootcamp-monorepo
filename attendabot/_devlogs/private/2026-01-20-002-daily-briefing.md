@@ -8,7 +8,7 @@ Added a daily briefing that runs at 8 AM ET, summarizing the previous day's coho
 
 Instructors needed a daily summary of cohort activity to quickly identify:
 - Students who were late or absent
-- Students not meeting PR quotas
+- Students meeting or not meeting PR quotas
 - Students who haven't been checked in on recently
 
 Additionally, testing the briefing required waiting for the cron job to run or manually triggering it.
@@ -97,8 +97,8 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   const attendanceMessages = getMessagesByChannelAndDateRange("attendance", start, end);
   const eodMessages = getMessagesByChannelAndDateRange("eod", start, end);
 
-  // Categorize students...
-  // Build briefing message...
+  // Categorize students into: late, absent, 3+ PRs, <3 PRs, no EOD
+  // Build briefing message with all sections
   return briefing;
 }
 
@@ -186,6 +186,7 @@ export const DAILY_BRIEFING_CHANNEL_ID = "1463280393888333884";
 ## Results
 
 - Daily briefing automatically sent at 8 AM ET
+- Briefing sections: Late, Absent, 3+ PRs, <3 PRs, No EOD, Sentiment, Last Check-in
 - Instructors can preview briefings for any date via the Testing tab
 - Clean separation allows easy testing and future modifications
 - Configurable cohort via environment variable

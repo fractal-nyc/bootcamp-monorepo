@@ -11,6 +11,7 @@ Added a daily briefing that runs at 8 AM ET, summarizing the previous day's coho
 The briefing includes:
 - **Late students**: Posted to #attendance after 10 AM ET
 - **Absent students**: No #attendance message at all
+- **3+ PRs**: Students who met the PR quota (3 or more PRs)
 - **PR deficient students**: Less than 3 PRs in their #eod message
 - **EOD missing students**: No #eod message posted
 - **Cohort sentiment**: Placeholder for future LLM integration

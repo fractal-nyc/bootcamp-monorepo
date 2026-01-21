@@ -4,8 +4,9 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import type { Student, FeedItem } from "../api/client";
-import { getStudentFeed, createNote } from "../api/client";
+import Markdown from "react-markdown";
+import type { Student, FeedItem, StudentSummaryResponse } from "../api/client";
+import { getStudentFeed, createNote, getStudentSummary } from "../api/client";
 import { NoteInput } from "./NoteInput";
 import { StudentFeed } from "./StudentFeed";
 
@@ -20,6 +21,11 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // AI Summary state
+  const [summary, setSummary] = useState<StudentSummaryResponse | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
   const loadFeed = useCallback(async () => {
     setLoading(true);
     const items = await getStudentFeed(student.id);
@@ -27,9 +33,23 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
     setLoading(false);
   }, [student.id]);
 
+  const loadSummary = useCallback(async () => {
+    setSummaryLoading(true);
+    setSummaryError(null);
+    const today = new Date().toISOString().split("T")[0];
+    const result = await getStudentSummary(student.id, today);
+    if (result) {
+      setSummary(result);
+    } else {
+      setSummaryError("Unable to load summary");
+    }
+    setSummaryLoading(false);
+  }, [student.id]);
+
   useEffect(() => {
     loadFeed();
-  }, [loadFeed]);
+    loadSummary();
+  }, [loadFeed, loadSummary]);
 
   const handleAddNote = async (content: string) => {
     const success = await createNote(student.id, content);
@@ -64,16 +84,63 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
     }
   };
 
+  const formatSummaryDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const handleRegenerateSummary = async () => {
+    setSummaryLoading(true);
+    setSummaryError(null);
+    const today = new Date().toISOString().split("T")[0];
+    const result = await getStudentSummary(student.id, today, true);
+    if (result) {
+      setSummary(result);
+    } else {
+      setSummaryError("Unable to regenerate summary");
+    }
+    setSummaryLoading(false);
+  };
+
   return (
     <div className="student-detail">
-      {/* AI Summary Placeholder */}
+      {/* AI Summary */}
       <div className="student-ai-summary">
-        <h3>Summary</h3>
-        <p className="placeholder-text">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
-          tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-          quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-        </p>
+        <div className="summary-header">
+          <h3>Summary</h3>
+          {summary && !summaryLoading && (
+            <button
+              className="regenerate-btn"
+              onClick={handleRegenerateSummary}
+              disabled={summaryLoading}
+              title="Regenerate summary"
+            >
+              Regenerate
+            </button>
+          )}
+        </div>
+        {summaryLoading ? (
+          <p className="summary-loading">Generating summary...</p>
+        ) : summaryError ? (
+          <p className="summary-error">{summaryError}</p>
+        ) : summary ? (
+          <>
+            <div className="summary-text">
+              <Markdown>{summary.summary}</Markdown>
+            </div>
+            <p className="summary-meta">
+              Generated {formatSummaryDate(summary.generatedAt)}
+              {summary.cached && " (cached)"}
+            </p>
+          </>
+        ) : (
+          <p className="summary-error">No summary available</p>
+        )}
       </div>
 
       {/* Quick Info Section */}

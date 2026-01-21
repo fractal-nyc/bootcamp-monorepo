@@ -36,7 +36,7 @@ testingRouter.post("/briefing", authenticateToken, async (req: AuthRequest, res:
 
   try {
     // Generate the briefing
-    const briefing = generateDailyBriefing(cohortId, simulatedDate);
+    const briefing = await generateDailyBriefing(cohortId, simulatedDate);
 
     if (!briefing) {
       res.status(400).json({ error: "No active students with Discord in this cohort" });

@@ -492,6 +492,46 @@ export async function createNote(studentId: number, content: string): Promise<bo
 }
 
 // ============================================================================
+// LLM API
+// ============================================================================
+
+/** Response from the student summary endpoint. */
+export interface StudentSummaryResponse {
+  summary: string;
+  cached: boolean;
+  generatedAt: string;
+}
+
+/**
+ * Fetches an AI-generated summary for a student.
+ * @param studentId - The student ID.
+ * @param date - The date in YYYY-MM-DD format (cumulative - analyzes all data up to this date).
+ * @param force - If true, bypasses cache and regenerates the summary.
+ * @returns The summary response or null on error.
+ */
+export async function getStudentSummary(
+  studentId: number,
+  date: string,
+  force: boolean = false
+): Promise<StudentSummaryResponse | null> {
+  try {
+    const params = force ? "?force=true" : "";
+    const res = await fetchWithAuth(`${API_BASE}/llm/student/${studentId}/summary/${date}${params}`);
+    if (!res.ok) {
+      if (res.status === 503) {
+        // LLM not configured
+        return null;
+      }
+      return null;
+    }
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+// ============================================================================
 // Testing API
 // ============================================================================
 

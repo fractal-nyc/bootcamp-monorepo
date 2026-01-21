@@ -107,6 +107,30 @@ function initializeTables(): void {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_instructor_notes_student ON instructor_notes(student_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_students_cohort ON students(cohort_id)`);
 
+  // Student AI summaries cache
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS student_summaries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(student_id, date)
+    )
+  `);
+
+  // Cohort sentiment cache
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cohort_sentiments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cohort_id INTEGER NOT NULL REFERENCES cohorts(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      sentiment TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(cohort_id, date)
+    )
+  `);
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
@@ -700,4 +724,78 @@ export function getDefaultCohortId(): number | null {
   const stmt = db.prepare(`SELECT id FROM cohorts ORDER BY id ASC LIMIT 1`);
   const result = stmt.get() as { id: number } | undefined;
   return result?.id ?? null;
+}
+
+// ============================================================================
+// LLM Summary/Sentiment Cache functions
+// ============================================================================
+
+/**
+ * Gets a cached student summary for a specific date.
+ * @param studentId - The student ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @returns The cached summary or null if not found.
+ */
+export function getStudentSummary(studentId: number, date: string): { summary: string; createdAt: string } | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT summary, created_at
+    FROM student_summaries
+    WHERE student_id = ? AND date = ?
+  `);
+  const result = stmt.get(studentId, date) as { summary: string; created_at: string } | undefined;
+  return result ? { summary: result.summary, createdAt: result.created_at } : null;
+}
+
+/**
+ * Saves a student summary for a specific date.
+ * @param studentId - The student ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @param summary - The generated summary text.
+ */
+export function saveStudentSummary(studentId: number, date: string, summary: string): void {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO student_summaries (student_id, date, summary)
+    VALUES (?, ?, ?)
+    ON CONFLICT(student_id, date) DO UPDATE SET
+      summary = excluded.summary,
+      created_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(studentId, date, summary);
+}
+
+/**
+ * Gets a cached cohort sentiment for a specific date.
+ * @param cohortId - The cohort ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @returns The cached sentiment or null if not found.
+ */
+export function getCohortSentiment(cohortId: number, date: string): { sentiment: string; createdAt: string } | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT sentiment, created_at
+    FROM cohort_sentiments
+    WHERE cohort_id = ? AND date = ?
+  `);
+  const result = stmt.get(cohortId, date) as { sentiment: string; created_at: string } | undefined;
+  return result ? { sentiment: result.sentiment, createdAt: result.created_at } : null;
+}
+
+/**
+ * Saves a cohort sentiment for a specific date.
+ * @param cohortId - The cohort ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @param sentiment - The generated sentiment text.
+ */
+export function saveCohortSentiment(cohortId: number, date: string, sentiment: string): void {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO cohort_sentiments (cohort_id, date, sentiment)
+    VALUES (?, ?, ?)
+    ON CONFLICT(cohort_id, date) DO UPDATE SET
+      sentiment = excluded.sentiment,
+      created_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(cohortId, date, sentiment);
 }

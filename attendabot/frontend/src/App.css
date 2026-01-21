@@ -458,7 +458,6 @@ button:disabled {
   position: fixed;
   top: 0;
   right: 0;
-  width: 450px;
   max-width: 90vw;
   height: 100vh;
   background: #16213e;
@@ -472,6 +471,27 @@ button:disabled {
 
 .sidebar.open {
   transform: translateX(0);
+}
+
+.sidebar.resizing {
+  transition: none;
+  user-select: none;
+}
+
+.sidebar-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 10;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar.resizing .sidebar-resize-handle {
+  background: #4f46e5;
 }
 
 .sidebar-header {
@@ -539,6 +559,101 @@ button:disabled {
   color: #888;
   font-style: italic;
   line-height: 1.6;
+  margin: 0;
+}
+
+.student-ai-summary .summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.student-ai-summary .summary-header h3 {
+  margin: 0;
+}
+
+.student-ai-summary .regenerate-btn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.student-ai-summary .regenerate-btn:hover {
+  background: #6366f1;
+}
+
+.student-ai-summary .regenerate-btn:disabled {
+  background: #4b5563;
+  cursor: not-allowed;
+}
+
+.student-ai-summary .summary-loading {
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0;
+}
+
+.student-ai-summary .summary-error {
+  color: #f87171;
+  margin: 0;
+}
+
+.student-ai-summary .summary-text {
+  color: #d1d5db;
+  line-height: 1.6;
+  margin: 0 0 0.5rem 0;
+}
+
+.student-ai-summary .summary-text p {
+  margin: 0 0 0.75rem 0;
+}
+
+.student-ai-summary .summary-text p:last-child {
+  margin-bottom: 0;
+}
+
+.student-ai-summary .summary-text ul,
+.student-ai-summary .summary-text ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.student-ai-summary .summary-text li {
+  margin-bottom: 0.25rem;
+}
+
+.student-ai-summary .summary-text strong {
+  color: #f3f4f6;
+}
+
+.student-ai-summary .summary-text em {
+  color: #a5b4fc;
+}
+
+.student-ai-summary .summary-text h1,
+.student-ai-summary .summary-text h2,
+.student-ai-summary .summary-text h3 {
+  color: #f3f4f6;
+  margin: 0.75rem 0 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.student-ai-summary .summary-text code {
+  background: #1f2937;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+
+.student-ai-summary .summary-meta {
+  color: #6b7280;
+  font-size: 0.75rem;
   margin: 0;
 }
 
@@ -679,6 +794,15 @@ button:disabled {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;
+}
+
+.feed-item-content a {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.feed-item-content a:hover {
+  color: #93c5fd;
 }
 
 .no-feed-items {

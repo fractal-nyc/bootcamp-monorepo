@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { getChannels, getMessages } from "../api/client";
 import type { Channel, Message } from "../api/client";
+import { renderWithLinks } from "../utils/linkify";
 
 /** Displays messages from a selected Discord channel with auto-refresh. */
 export function MessageFeed() {
@@ -76,22 +77,6 @@ export function MessageFeed() {
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleString();
-  };
-
-  const renderWithLinks = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s<]+)/g;
-    const parts = text.split(urlRegex);
-
-    return parts.map((part, i) => {
-      if (urlRegex.test(part)) {
-        return (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer">
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
   };
 
   return (

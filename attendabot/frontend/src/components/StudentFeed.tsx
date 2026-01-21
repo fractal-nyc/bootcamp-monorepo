@@ -4,6 +4,7 @@
 
 import { useState, useMemo } from "react";
 import type { FeedItem } from "../api/client";
+import { renderWithLinks } from "../utils/linkify";
 
 /** Props for the StudentFeed component. */
 interface StudentFeedProps {
@@ -73,7 +74,7 @@ export function StudentFeed({ items, loading }: StudentFeedProps) {
                 <span className="feed-item-author">{item.author}</span>
                 <span className="feed-item-date">{formatDate(item.createdAt)}</span>
               </div>
-              <div className="feed-item-content">{item.content}</div>
+              <div className="feed-item-content">{renderWithLinks(item.content)}</div>
             </div>
           ))}
         </div>

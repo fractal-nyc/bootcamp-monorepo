@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { getUsers, getUserMessages, getMessages, syncDisplayNames } from "../api/client";
 import type { User, Message } from "../api/client";
+import { renderWithLinks } from "../utils/linkify";
 
 /** Monitored channels available for filtering. */
 const MONITORED_CHANNELS = [
@@ -114,22 +115,6 @@ export function UserMessages() {
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleString();
-  };
-
-  const renderWithLinks = (text: string) => {
-    const urlRegex = /(https?:\/\/[^\s<]+)/g;
-    const parts = text.split(urlRegex);
-
-    return parts.map((part, i) => {
-      if (urlRegex.test(part)) {
-        return (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer">
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
   };
 
   const getUserDisplayName = (user: User) => {

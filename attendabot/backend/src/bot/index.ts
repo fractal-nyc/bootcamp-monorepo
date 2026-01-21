@@ -29,7 +29,10 @@ import {
   getStudentsByLastCheckIn,
   getActiveStudentsWithDiscord,
   getDefaultCohortId,
+  getCohortSentiment,
+  saveCohortSentiment,
 } from "../services/db";
+import { isLLMConfigured, generateCohortSentiment } from "../services/llm";
 
 const CURRENT_COHORT_USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
 
@@ -327,7 +330,7 @@ function getTenAmET(dateStr: string): string {
  * @param simulatedToday - Optional YYYY-MM-DD string representing "today" (the cron run date).
  * @returns The briefing message content, or null if no data.
  */
-export function generateDailyBriefing(cohortId: number, simulatedToday?: string): string | null {
+export async function generateDailyBriefing(cohortId: number, simulatedToday?: string): Promise<string | null> {
   const students = getActiveStudentsWithDiscord(cohortId);
   if (students.length === 0) {
     return null;
@@ -424,9 +427,29 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   briefing += noEodStudents.length > 0 ? noEodStudents.join(", ") : "None";
   briefing += "\n\n";
 
-  // Sentiment placeholder
+  // Cohort sentiment (LLM-generated or cached)
   briefing += `**Cohort Sentiment:**\n`;
-  briefing += "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Overall morale appears stable.";
+  let sentimentText = "Sentiment analysis not available.";
+  if (isLLMConfigured()) {
+    // Check for cached sentiment first
+    const cached = getCohortSentiment(cohortId, previousDayStr);
+    if (cached) {
+      sentimentText = cached.sentiment;
+    } else if (eodMessages.length > 0) {
+      try {
+        sentimentText = await generateCohortSentiment(eodMessages);
+        saveCohortSentiment(cohortId, previousDayStr, sentimentText);
+      } catch (error) {
+        console.error("Error generating cohort sentiment:", error);
+        sentimentText = "Unable to generate sentiment analysis.";
+      }
+    } else {
+      sentimentText = "No EOD data available for sentiment analysis.";
+    }
+  } else {
+    sentimentText = "LLM not configured for sentiment analysis.";
+  }
+  briefing += sentimentText;
   briefing += "\n\n";
 
   // Students by last check-in
@@ -453,7 +476,7 @@ async function sendDailyBriefing(): Promise<void> {
     return;
   }
 
-  const briefing = generateDailyBriefing(cohortId);
+  const briefing = await generateDailyBriefing(cohortId);
   if (!briefing) {
     console.log("No active students with Discord. Skipping daily briefing.");
     return;

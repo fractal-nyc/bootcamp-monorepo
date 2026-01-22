@@ -7,6 +7,10 @@ import dotenv from "dotenv";
 import path from "path";
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
+// Initialize logger early to capture all startup logs
+import { initializeLogger } from "./services/logger";
+initializeLogger();
+
 import { initializeDiscord } from "./services/discord";
 import { startApiServer } from "./api";
 import { startBot } from "./bot";

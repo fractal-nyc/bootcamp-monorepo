@@ -6,14 +6,14 @@
 import { useState, useEffect } from "react";
 import { isLoggedIn, clearToken, getUsername } from "./api/client";
 import { Login } from "./components/Login";
-import { StatusPanel } from "./components/StatusPanel";
 import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
 import { StudentCohortPanel } from "./components/StudentCohortPanel";
 import { TestingPanel } from "./components/TestingPanel";
+import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import "./App.css";
 
-type Tab = "students" | "messages" | "testing";
+type Tab = "students" | "messages" | "testing" | "diagnostics";
 
 /** Root application component with authentication and admin dashboard. */
 function App() {
@@ -70,6 +70,12 @@ function App() {
         >
           Testing
         </button>
+        <button
+          className={`tab-btn ${activeTab === "diagnostics" ? "active" : ""}`}
+          onClick={() => setActiveTab("diagnostics")}
+        >
+          Diagnostics
+        </button>
       </nav>
 
       <main>
@@ -79,10 +85,11 @@ function App() {
           <>
             <MessageFeed />
             <UserMessages />
-            <StatusPanel />
           </>
-        ) : (
+        ) : activeTab === "testing" ? (
           <TestingPanel />
+        ) : (
+          <DiagnosticsPanel />
         )}
       </main>
     </div>

@@ -5,7 +5,8 @@
 
 const API_BASE = "/api";
 
-function getToken(): string | null {
+/** Gets the JWT token from localStorage. */
+export function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
@@ -174,17 +175,15 @@ export interface ChannelMessages {
   messages: Message[];
 }
 
-/** Fetches recent messages from a channel. Defaults to DB; use source="discord" to fetch live from Discord. */
+/** Fetches recent messages from a channel. Defaults to Discord; use source="db" to fetch from database. */
 export async function getMessages(
   channelId: string,
   limit: number = 50,
-  source?: "discord" | "db"
+  source: "discord" | "db" = "discord"
 ): Promise<ChannelMessages | null> {
   try {
     const params = new URLSearchParams({ limit: limit.toString() });
-    if (source) {
-      params.append("source", source);
-    }
+    params.append("source", source);
     const res = await fetchWithAuth(
       `${API_BASE}/messages/${channelId}?${params.toString()}`
     );

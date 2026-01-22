@@ -4,6 +4,7 @@
 
 import { Router, Response } from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { noCache } from "../middleware/cache";
 import {
   getStudent,
   getStudentFeed,
@@ -24,12 +25,7 @@ import {
 export const llmRouter = Router();
 
 // Disable browser caching for LLM routes (especially important for force regeneration)
-llmRouter.use((_req, res, next) => {
-  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-  res.set("Pragma", "no-cache");
-  res.set("Expires", "0");
-  next();
-});
+llmRouter.use(noCache);
 
 // All routes require authentication
 llmRouter.use(authenticateToken);

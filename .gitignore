@@ -180,7 +180,7 @@ dist
 .claude
 
 # Private devlogs with sensitive info
-**/attendabot/_devlogs/private/**
+**/_devlogs/private/
 
 # SQLite databases
 **/db/*.db

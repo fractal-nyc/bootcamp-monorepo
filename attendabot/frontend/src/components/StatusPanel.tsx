@@ -6,6 +6,17 @@ import { useEffect, useState } from "react";
 import { getStatus } from "../api/client";
 import type { BotStatus } from "../api/client";
 
+/** Descriptions for each scheduled job, shown in tooltips. */
+const JOB_DESCRIPTIONS: Record<string, string> = {
+  "Daily Briefing": "Sends a summary of yesterday's attendance, PR counts, and cohort sentiment to the briefing channel.",
+  "Attendance Reminder": "Pings the cohort to check in for attendance if they haven't already.",
+  "Attendance Verification": "DMs students who haven't posted in the attendance channel.",
+  "Midday PR Reminder": "Pings the cohort to post their first PR of the day by 1 PM.",
+  "Midday PR Verification": "DMs students who haven't posted a PR since 8 AM.",
+  "EOD Reminder": "Pings the cohort to post their end-of-day update.",
+  "EOD Verification": "DMs students who haven't posted an EOD update and posts the PR leaderboard.",
+};
+
 /** Converts a cron expression to 12-hour time format (e.g., "9:45 AM ET"). */
 function cronToTime(cron: string): string {
   const parts = cron.split(" ");
@@ -157,7 +168,15 @@ export function StatusPanel() {
         <tbody>
           {status.scheduledJobs.map((job) => (
             <tr key={job.name}>
-              <td>{job.name}</td>
+              <td>
+                {job.name}
+                {JOB_DESCRIPTIONS[job.name] && (
+                  <span className="tooltip-wrapper">
+                    <span className="help-icon">?</span>
+                    <span className="tooltip">{JOB_DESCRIPTIONS[job.name]}</span>
+                  </span>
+                )}
+              </td>
               <td><code>{job.cron}</code></td>
               <td>{cronToTime(job.cron)}</td>
             </tr>

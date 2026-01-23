@@ -18,6 +18,12 @@ export const ATTENDANCE_VERIFICATION_CRON = "0 10 * * *";
 /** Cron expression for daily briefing (8 AM EST). */
 export const DAILY_BRIEFING_CRON = "0 8 * * *";
 
+/** Cron expression for midday PR reminder (12:45 PM EST). */
+export const MIDDAY_PR_REMINDER_CRON = "45 12 * * *";
+
+/** Cron expression for midday PR verification (1:00 PM EST). */
+export const MIDDAY_PR_VERIFICATION_CRON = "0 13 * * *";
+
 /** Timezone for all cron schedules. */
 export const CRON_TIMEZONE = "America/New_York";
 

@@ -4,6 +4,7 @@
 
 import { Router, Response } from "express";
 import { AuthRequest, authenticateToken } from "../middleware/auth";
+import { noCache } from "../middleware/cache";
 import {
   fetchTextChannel,
   fetchMessagesSince,
@@ -13,6 +14,9 @@ import { getRecentChannelMessages } from "../../services/db";
 
 /** Router for message fetching endpoints. */
 export const messagesRouter = Router();
+
+// Disable browser caching to ensure fresh data on each request
+messagesRouter.use(noCache);
 
 messagesRouter.get(
   "/:channelId",

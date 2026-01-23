@@ -11,6 +11,7 @@ import {
   EOD_VERIFICATION_CRON,
   ATTENDANCE_REMINDER_CRON,
   ATTENDANCE_VERIFICATION_CRON,
+  DAILY_BRIEFING_CRON,
   CRON_TIMEZONE,
 } from "../../bot/constants";
 
@@ -32,6 +33,7 @@ statusRouter.get("/", authenticateToken, (req: AuthRequest, res: Response) => {
     { name: "EOD Verification", cron: EOD_VERIFICATION_CRON, timezone: CRON_TIMEZONE },
     { name: "Attendance Reminder", cron: ATTENDANCE_REMINDER_CRON, timezone: CRON_TIMEZONE },
     { name: "Attendance Verification", cron: ATTENDANCE_VERIFICATION_CRON, timezone: CRON_TIMEZONE },
+    { name: "Daily Briefing", cron: DAILY_BRIEFING_CRON, timezone: CRON_TIMEZONE },
   ];
 
   res.json({

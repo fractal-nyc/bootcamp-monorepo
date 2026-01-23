@@ -202,7 +202,7 @@ export async function generateStudentSummary(
   ).replace("{feedData}", feedData);
 
   try {
-    const response = await provider.complete({ prompt });
+    const response = await provider.complete({ prompt, maxTokens: 65536 });
     return response.text.trim();
   } catch (error) {
     console.error("Error generating student summary:", error);
@@ -233,7 +233,7 @@ export async function generateCohortSentiment(
   const prompt = COHORT_SENTIMENT_PROMPT.replace("{eodMessages}", messagesText);
 
   try {
-    const response = await provider.complete({ prompt });
+    const response = await provider.complete({ prompt, maxTokens: 65536 });
     return response.text.trim();
   } catch (error) {
     console.error("Error generating cohort sentiment:", error);

@@ -9,11 +9,11 @@ export const EOD_REMINDER_CRON = "0 17 * * *";
 /** Cron expression for EOD verification (11:59 PM EST). */
 export const EOD_VERIFICATION_CRON = "59 23 * * *";
 
-/** Cron expression for daily attendance reminder (9 AM EST). */
-export const ATTENDANCE_REMINDER_CRON = "0 9 * * *";
+/** Cron expression for daily attendance reminder (9:45 AM EST). */
+export const ATTENDANCE_REMINDER_CRON = "45 9 * * *";
 
-/** Cron expression for attendance verification (9:15 AM EST). */
-export const ATTENDANCE_VERIFICATION_CRON = "15 9 * * *";
+/** Cron expression for attendance verification (10:00 AM EST). */
+export const ATTENDANCE_VERIFICATION_CRON = "0 10 * * *";
 
 /** Cron expression for daily briefing (8 AM EST). */
 export const DAILY_BRIEFING_CRON = "0 8 * * *";

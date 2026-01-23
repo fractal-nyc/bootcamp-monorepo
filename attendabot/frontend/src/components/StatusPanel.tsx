@@ -6,6 +6,23 @@ import { useEffect, useState } from "react";
 import { getStatus } from "../api/client";
 import type { BotStatus } from "../api/client";
 
+/** Converts a cron expression to 12-hour time format (e.g., "9:45 AM ET"). */
+function cronToTime(cron: string): string {
+  const parts = cron.split(" ");
+  if (parts.length < 2) return cron;
+
+  const minute = parseInt(parts[0], 10);
+  const hour = parseInt(parts[1], 10);
+
+  if (isNaN(minute) || isNaN(hour)) return cron;
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  const minuteStr = minute.toString().padStart(2, "0");
+
+  return `${hour12}:${minuteStr} ${period} ET`;
+}
+
 /** Formats milliseconds as a human-readable duration string. */
 function formatUptime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -134,7 +151,7 @@ export function StatusPanel() {
           <tr>
             <th>Job</th>
             <th>Schedule</th>
-            <th>Timezone</th>
+            <th>Time</th>
           </tr>
         </thead>
         <tbody>
@@ -142,7 +159,7 @@ export function StatusPanel() {
             <tr key={job.name}>
               <td>{job.name}</td>
               <td><code>{job.cron}</code></td>
-              <td>{job.timezone}</td>
+              <td>{cronToTime(job.cron)}</td>
             </tr>
           ))}
         </tbody>

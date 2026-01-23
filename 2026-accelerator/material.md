@@ -1,0 +1,1 @@
+- how to use claude to build an insanely good technical blog post, and cool project: https://cannoneyed.com/projects/isometric-nyc

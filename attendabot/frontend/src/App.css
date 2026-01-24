@@ -1163,3 +1163,82 @@ button:disabled {
   word-break: break-word;
   white-space: pre-wrap;
 }
+
+/* Testing Panel */
+.testing-panel .panel {
+  margin-bottom: 1.5rem;
+}
+
+.panel-description {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  margin-bottom: 1rem;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.form-row input[type="date"],
+.form-row select {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #0f3460;
+  color: #eee;
+  font-size: 0.9rem;
+}
+
+.primary-btn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  background: #4338ca;
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.result-message {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+.result-message.success {
+  background: #166534;
+  color: #4ade80;
+}
+
+.result-message.error {
+  background: #7f1d1d;
+  color: #f87171;
+}
+
+.preview-box {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #0a0f1a;
+  border-radius: 4px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #d1d5db;
+  overflow-x: auto;
+}

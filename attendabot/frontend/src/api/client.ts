@@ -559,3 +559,31 @@ export async function sendTestBriefing(
     return { success: false, message: "Network error" };
   }
 }
+
+/**
+ * Sends a test EOD assignment preview for a simulated date.
+ * The preview is sent as a DM to David.
+ * @param simulatedDate - The simulated EOD cron run date (YYYY-MM-DD). Preview shows tomorrow's assignment.
+ */
+export async function sendTestEodPreview(
+  simulatedDate: string
+): Promise<{ success: boolean; message: string; preview?: string }> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/testing/eod-preview`, {
+      method: "POST",
+      body: JSON.stringify({ simulatedDate }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, message: data.error || "Failed to get preview" };
+    }
+    return {
+      success: data.success,
+      message: data.message || "Preview generated",
+      preview: data.preview,
+    };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Network error" };
+  }
+}

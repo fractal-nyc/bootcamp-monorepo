@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { getCohorts, sendTestBriefing } from "../api/client";
+import { getCohorts, sendTestBriefing, sendTestEodPreview } from "../api/client";
 import type { Cohort } from "../api/client";
 
 /** Panel for testing bot features like the daily briefing. */
@@ -18,6 +18,18 @@ export function TestingPanel() {
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // EOD Assignment Preview state
+  const [eodSimulatedDate, setEodSimulatedDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  const [eodLoading, setEodLoading] = useState(false);
+  const [eodResult, setEodResult] = useState<{
+    success: boolean;
+    message: string;
+    preview?: string;
+  } | null>(null);
 
   useEffect(() => {
     getCohorts().then((c) => {
@@ -41,6 +53,20 @@ export function TestingPanel() {
       setResult({ success: false, message: "Network error" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEodPreview = async () => {
+    setEodLoading(true);
+    setEodResult(null);
+
+    try {
+      const res = await sendTestEodPreview(eodSimulatedDate);
+      setEodResult(res);
+    } catch {
+      setEodResult({ success: false, message: "Network error" });
+    } finally {
+      setEodLoading(false);
     }
   };
 
@@ -93,6 +119,44 @@ export function TestingPanel() {
         {result && (
           <div className={`result-message ${result.success ? "success" : "error"}`}>
             {result.message}
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <h2>EOD Assignment Preview Test</h2>
+        <p className="panel-description">
+          Preview what tomorrow's assignment message will look like for a given date.
+          The message will be sent as a DM to David.
+        </p>
+
+        <div className="form-row">
+          <label htmlFor="eod-date-select">Simulated Date (EOD cron run date):</label>
+          <input
+            id="eod-date-select"
+            type="date"
+            value={eodSimulatedDate}
+            onChange={(e) => setEodSimulatedDate(e.target.value)}
+            disabled={eodLoading}
+          />
+        </div>
+
+        <div className="form-row">
+          <button
+            onClick={handleEodPreview}
+            disabled={eodLoading}
+            className="primary-btn"
+          >
+            {eodLoading ? "Sending..." : "Send EOD Preview to David"}
+          </button>
+        </div>
+
+        {eodResult && (
+          <div className={`result-message ${eodResult.success ? "success" : "error"}`}>
+            {eodResult.message}
+            {eodResult.preview && (
+              <pre className="preview-box">{eodResult.preview}</pre>
+            )}
           </div>
         )}
       </section>

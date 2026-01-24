@@ -3,8 +3,8 @@
  * cron schedules, channel IDs, and user mappings.
  */
 
-/** Cron expression for daily EOD reminder (5 PM EST). */
-export const EOD_REMINDER_CRON = "0 17 * * *";
+/** Cron expression for daily EOD reminder (5 PM EST, Mon-Sat, skip Sundays). */
+export const EOD_REMINDER_CRON = "0 17 * * 1-6";
 
 /** Cron expression for EOD verification (11:59 PM EST). */
 export const EOD_VERIFICATION_CRON = "59 23 * * *";
@@ -72,3 +72,31 @@ export const FA2025_USER_ID_TO_NAME_MAP = new Map<string, string>([
   ["1052420848918745160", "Mauria"],
   ["621918678191177748", "Valerie"],
 ]);
+
+// ============================================================================
+// Cohort Configuration
+// ============================================================================
+
+/** Configuration for a bootcamp cohort. */
+export interface CohortConfig {
+  id: string;
+  name: string;
+  startDate: string; // YYYY-MM-DD, first Monday
+  breakWeek: number | null; // 1-indexed week number
+  totalWeeks: number;
+}
+
+/** SP2026 cohort configuration */
+export const SP2026_COHORT: CohortConfig = {
+  id: "sp2026",
+  name: "Spring 2026",
+  startDate: "2026-02-02",
+  breakWeek: 5, // Week 5 is break week
+  totalWeeks: 13,
+};
+
+export const CURRENT_COHORT_CONFIG: CohortConfig = SP2026_COHORT;
+
+/** Base GitHub URL for curriculum */
+export const CURRICULUM_GITHUB_URL =
+  "https://github.com/fractal-bootcamp/bootcamp-monorepo/tree/main/curriculum/weeks";

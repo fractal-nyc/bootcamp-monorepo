@@ -20,6 +20,10 @@ import {
   USER_ID_TO_NAME_MAP,
 } from "./constants";
 import {
+  getTomorrowsAssignment,
+  formatAssignmentForDiscord,
+} from "./curriculum";
+import {
   fetchTextChannel,
   fetchMessagesSince,
   sendDirectMessage,
@@ -118,24 +122,26 @@ async function sendAttendanceReminder(): Promise<void> {
 }
 
 async function sendEodReminder(): Promise<void> {
+  let message: string;
+
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
       "CURRENT_COHORT_ROLE_ID is not set. Sending EOD reminder without role mention.",
     );
-    await sendReminder(
-      EOD_CHANNEL_ID,
-      `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`,
-    );
-    incrementRemindersTriggered();
-    return;
+    message = `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`;
+  } else {
+    message = `${roleMention(
+      CURRENT_COHORT_ROLE_ID,
+    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`;
   }
 
-  await sendReminder(
-    EOD_CHANNEL_ID,
-    `${roleMention(
-      CURRENT_COHORT_ROLE_ID,
-    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`,
-  );
+  // Add tomorrow's assignment if available
+  const assignment = getTomorrowsAssignment();
+  if (assignment) {
+    message += `\n\n${formatAssignmentForDiscord(assignment)}`;
+  }
+
+  await sendReminder(EOD_CHANNEL_ID, message);
   incrementRemindersTriggered();
 }
 

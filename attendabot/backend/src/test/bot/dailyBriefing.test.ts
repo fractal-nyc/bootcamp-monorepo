@@ -68,7 +68,9 @@ describe("Daily Briefing - PR Counting", () => {
     });
 
     it("handles null-ish content gracefully", () => {
-      expect(countPrsInMessage(null as unknown as string || "")).toBe(0);
+      const nullContent = null as unknown as string;
+      const content = nullContent || "";
+      expect(countPrsInMessage(content)).toBe(0);
     });
   });
 });

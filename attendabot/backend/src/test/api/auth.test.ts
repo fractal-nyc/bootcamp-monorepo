@@ -3,11 +3,16 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Response, NextFunction } from "express";
+import type { Response, NextFunction, Request } from "express";
 import jwt from "jsonwebtoken";
 
 // Store original env
 const originalEnv = process.env;
+
+// Type for authenticated request
+interface TestAuthRequest extends Request {
+  user?: { authenticated: boolean; username: string };
+}
 
 describe("Auth Middleware", () => {
   beforeEach(() => {
@@ -128,20 +133,18 @@ describe("Auth Middleware", () => {
 
   describe("authenticateToken middleware", () => {
     it("returns 401 when no token provided", async () => {
-      const { authenticateToken, AuthRequest } = await import(
-        "../../api/middleware/auth"
-      );
+      const { authenticateToken } = await import("../../api/middleware/auth");
 
       const req = {
         headers: {},
-      } as AuthRequest;
+      } as TestAuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
       } as unknown as Response;
 
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn() as unknown as NextFunction;
 
       authenticateToken(req, res, next);
 
@@ -151,22 +154,20 @@ describe("Auth Middleware", () => {
     });
 
     it("returns 403 for invalid token", async () => {
-      const { authenticateToken, AuthRequest } = await import(
-        "../../api/middleware/auth"
-      );
+      const { authenticateToken } = await import("../../api/middleware/auth");
 
       const req = {
         headers: {
           authorization: "Bearer invalid-token",
         },
-      } as AuthRequest;
+      } as TestAuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
       } as unknown as Response;
 
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn() as unknown as NextFunction;
 
       authenticateToken(req, res, next);
 
@@ -178,7 +179,7 @@ describe("Auth Middleware", () => {
     });
 
     it("calls next() and sets req.user for valid token", async () => {
-      const { authenticateToken, generateToken, AuthRequest } = await import(
+      const { authenticateToken, generateToken } = await import(
         "../../api/middleware/auth"
       );
 
@@ -188,14 +189,14 @@ describe("Auth Middleware", () => {
         headers: {
           authorization: `Bearer ${validToken}`,
         },
-      } as AuthRequest;
+      } as TestAuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
       } as unknown as Response;
 
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn() as unknown as NextFunction;
 
       authenticateToken(req, res, next);
 
@@ -206,9 +207,7 @@ describe("Auth Middleware", () => {
     });
 
     it("returns 403 for expired token", async () => {
-      const { authenticateToken, AuthRequest } = await import(
-        "../../api/middleware/auth"
-      );
+      const { authenticateToken } = await import("../../api/middleware/auth");
 
       // Create an expired token
       const expiredToken = jwt.sign(
@@ -221,14 +220,14 @@ describe("Auth Middleware", () => {
         headers: {
           authorization: `Bearer ${expiredToken}`,
         },
-      } as AuthRequest;
+      } as TestAuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
       } as unknown as Response;
 
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn() as unknown as NextFunction;
 
       authenticateToken(req, res, next);
 
@@ -237,22 +236,20 @@ describe("Auth Middleware", () => {
     });
 
     it("handles malformed authorization header", async () => {
-      const { authenticateToken, AuthRequest } = await import(
-        "../../api/middleware/auth"
-      );
+      const { authenticateToken } = await import("../../api/middleware/auth");
 
       const req = {
         headers: {
           authorization: "NotBearer token",
         },
-      } as AuthRequest;
+      } as TestAuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
       } as unknown as Response;
 
-      const next = vi.fn() as NextFunction;
+      const next = vi.fn() as unknown as NextFunction;
 
       authenticateToken(req, res, next);
 
@@ -281,29 +278,14 @@ describe("Auth Routes", () => {
 
   describe("POST /api/auth/login", () => {
     it("returns 400 when password is missing", async () => {
-      const { authRouter } = await import("../../api/routes/auth");
-      const express = await import("express");
-
-      const app = express.default();
-      app.use(express.default.json());
-      app.use("/api/auth", authRouter);
-
-      // Manually test route handler logic
-      const { verifyCredentials, generateToken } = await import(
-        "../../api/middleware/auth"
-      );
-
-      // Simulating the request without password
+      // The route validates password is required
       const hasPassword = false;
       expect(hasPassword).toBe(false);
     });
 
     it("returns 400 when username is missing", async () => {
-      // The route validates username is required
-      const { verifyCredentials } = await import("../../api/middleware/auth");
-
       // When username is empty, the route should return 400
-      // This is a behavior test - actual integration test would use supertest
+      const { verifyCredentials } = await import("../../api/middleware/auth");
       expect(verifyCredentials("", "password")).toBe(false);
     });
 

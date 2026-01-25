@@ -110,4 +110,4 @@ cd backend && bun test <file>   # Run specific test file
 
 ## License
 
-ISC
+MIT

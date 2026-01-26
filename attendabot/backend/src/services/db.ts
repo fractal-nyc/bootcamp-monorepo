@@ -131,6 +131,19 @@ function initializeTables(): void {
     )
   `);
 
+  // Feature requests table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS feature_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      priority INTEGER NOT NULL DEFAULT 0,
+      author TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'in_progress', 'done')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
@@ -798,4 +811,92 @@ export function saveCohortSentiment(cohortId: number, date: string, sentiment: s
       created_at = CURRENT_TIMESTAMP
   `);
   stmt.run(cohortId, date, sentiment);
+}
+
+// ============================================================================
+// Feature Request functions
+// ============================================================================
+
+/** A feature request record from the database. */
+export interface FeatureRequestRecord {
+  id: number;
+  title: string;
+  description: string;
+  priority: number;
+  author: string;
+  status: "new" | "in_progress" | "done";
+  created_at: string;
+}
+
+/** Retrieves all feature requests, ordered by newest first. */
+export function getFeatureRequests(): FeatureRequestRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT * FROM feature_requests ORDER BY created_at DESC`);
+  return stmt.all() as FeatureRequestRecord[];
+}
+
+/** Retrieves a single feature request by ID. */
+export function getFeatureRequest(id: number): FeatureRequestRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT * FROM feature_requests WHERE id = ?`);
+  return (stmt.get(id) as FeatureRequestRecord) || null;
+}
+
+/** Input for creating a new feature request. */
+export interface CreateFeatureRequestInput {
+  title: string;
+  description: string;
+  priority?: number;
+  author: string;
+}
+
+/** Creates a new feature request and returns the created record. */
+export function createFeatureRequest(input: CreateFeatureRequestInput): FeatureRequestRecord {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO feature_requests (title, description, priority, author)
+    VALUES (?, ?, ?, ?)
+  `);
+  const result = stmt.run(input.title, input.description, input.priority ?? 0, input.author);
+  return getFeatureRequest(result.lastInsertRowid as number)!;
+}
+
+/** Input for updating a feature request. */
+export interface UpdateFeatureRequestInput {
+  title?: string;
+  description?: string;
+  priority?: number;
+  status?: "new" | "in_progress" | "done";
+}
+
+/** Updates a feature request and returns the updated record. */
+export function updateFeatureRequest(id: number, input: UpdateFeatureRequestInput): FeatureRequestRecord | null {
+  const db = getDatabase();
+  const existing = getFeatureRequest(id);
+  if (!existing) return null;
+
+  const stmt = db.prepare(`
+    UPDATE feature_requests SET
+      title = ?,
+      description = ?,
+      priority = ?,
+      status = ?
+    WHERE id = ?
+  `);
+  stmt.run(
+    input.title ?? existing.title,
+    input.description ?? existing.description,
+    input.priority ?? existing.priority,
+    input.status ?? existing.status,
+    id
+  );
+  return getFeatureRequest(id);
+}
+
+/** Deletes a feature request by ID. Returns true if deleted, false if not found. */
+export function deleteFeatureRequest(id: number): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`DELETE FROM feature_requests WHERE id = ?`);
+  const result = stmt.run(id);
+  return result.changes > 0;
 }

@@ -15,6 +15,7 @@ import { usersRouter } from "./routes/users";
 import { studentsRouter, cohortsRouter } from "./routes/students";
 import { testingRouter } from "./routes/testing";
 import { llmRouter } from "./routes/llm";
+import { featureRequestsRouter } from "./routes/featureRequests";
 import { initializeWebSocket } from "./websocket";
 
 /** Express application instance. */
@@ -37,6 +38,7 @@ app.use("/api/students", studentsRouter);
 app.use("/api/cohorts", cohortsRouter);
 app.use("/api/testing", testingRouter);
 app.use("/api/llm", llmRouter);
+app.use("/api/feature-requests", featureRequestsRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {

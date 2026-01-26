@@ -631,3 +631,126 @@ export async function sendTestEodPreview(
     return { success: false, message: "Network error" };
   }
 }
+
+// ============================================================================
+// Feature Requests API
+// ============================================================================
+
+/** A feature request. */
+export interface FeatureRequest {
+  id: number;
+  title: string;
+  description: string;
+  priority: number;
+  author: string;
+  status: "new" | "in_progress" | "done";
+  createdAt: string;
+}
+
+/** Fetches all feature requests. */
+export async function getFeatureRequests(): Promise<FeatureRequest[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.featureRequests.map((fr: {
+      id: number;
+      title: string;
+      description: string;
+      priority: number;
+      author: string;
+      status: string;
+      created_at: string;
+    }) => ({
+      id: fr.id,
+      title: fr.title,
+      description: fr.description,
+      priority: fr.priority,
+      author: fr.author,
+      status: fr.status as FeatureRequest["status"],
+      createdAt: fr.created_at,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Input for creating a feature request. */
+export interface CreateFeatureRequestInput {
+  title: string;
+  description: string;
+  priority?: number;
+  author: string;
+}
+
+/** Creates a new feature request. */
+export async function createFeatureRequest(input: CreateFeatureRequestInput): Promise<FeatureRequest | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const fr = data.featureRequest;
+    return {
+      id: fr.id,
+      title: fr.title,
+      description: fr.description,
+      priority: fr.priority,
+      author: fr.author,
+      status: fr.status,
+      createdAt: fr.created_at,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Input for updating a feature request. */
+export interface UpdateFeatureRequestInput {
+  title?: string;
+  description?: string;
+  priority?: number;
+  status?: FeatureRequest["status"];
+}
+
+/** Updates a feature request. */
+export async function updateFeatureRequest(id: number, input: UpdateFeatureRequestInput): Promise<FeatureRequest | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const fr = data.featureRequest;
+    return {
+      id: fr.id,
+      title: fr.title,
+      description: fr.description,
+      priority: fr.priority,
+      author: fr.author,
+      status: fr.status,
+      createdAt: fr.created_at,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Deletes a feature request. */
+export async function deleteFeatureRequest(id: number): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests/${id}`, {
+      method: "DELETE",
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}

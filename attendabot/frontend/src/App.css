@@ -1269,3 +1269,205 @@ button:disabled {
   color: #d1d5db;
   overflow-x: auto;
 }
+
+/* Feature Requests Panel */
+.feature-requests-panel {
+  grid-column: span 2;
+}
+
+.fr-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.fr-filter-pills {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.fr-pill {
+  background: transparent;
+  border: 1px solid #333;
+  color: #888;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 9999px;
+  cursor: pointer;
+}
+
+.fr-pill:hover {
+  color: #eee;
+  border-color: #666;
+  background: #333;
+}
+
+.fr-pill.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: white;
+}
+
+.fr-right-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.fr-sort-select {
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #0f3460;
+  color: #eee;
+  font-size: 0.85rem;
+}
+
+/* Feature Requests Table */
+.fr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.fr-table th,
+.fr-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.fr-table th {
+  color: #888;
+  font-weight: normal;
+}
+
+/* Feature Request Status Badges */
+.status-new {
+  background: #1e3a5f;
+  color: #60a5fa;
+}
+
+.status-in-progress {
+  background: #713f12;
+  color: #fbbf24;
+}
+
+.status-done {
+  background: #166534;
+  color: #4ade80;
+}
+
+/* Feature Request Detail */
+.fr-description-box {
+  background: #0f3460;
+  border-radius: 6px;
+  padding: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.fr-inline-select {
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #0f3460;
+  color: #eee;
+  font-size: 0.85rem;
+}
+
+.fr-inline-input {
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #0f3460;
+  color: #eee;
+  font-size: 0.85rem;
+  width: 60px;
+}
+
+.fr-delete-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+/* Feature Request Modal textarea */
+.fr-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #0f3460;
+  color: #eee;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.fr-textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+}
+
+/* Editable text (click to edit) */
+.fr-editable-text {
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.fr-editable-text:hover {
+  border-color: #333;
+  background: #0f3460;
+}
+
+.fr-edit-hint {
+  display: none;
+  font-size: 0.75rem;
+  color: #666;
+  margin-left: 0.5rem;
+}
+
+.fr-editable-text:hover .fr-edit-hint {
+  display: inline;
+}
+
+.fr-edit-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.fr-edit-row-col {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.fr-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.fr-edit-input {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #0f3460;
+  color: #eee;
+  font-size: 0.9rem;
+}
+
+.fr-edit-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+}

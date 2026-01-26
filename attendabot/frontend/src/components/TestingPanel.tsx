@@ -112,7 +112,7 @@ export function TestingPanel() {
             disabled={loading || !selectedCohortId}
             className="primary-btn"
           >
-            {loading ? "Sending..." : "Send Test Briefing to David"}
+            {loading ? "Sending..." : "Send Test Briefing to #bot-test"}
           </button>
         </div>
 
@@ -127,7 +127,7 @@ export function TestingPanel() {
         <h2>EOD Assignment Preview Test</h2>
         <p className="panel-description">
           Preview what tomorrow's assignment message will look like for a given date.
-          The message will be sent as a DM to David.
+          The message will be sent to #bot-test.
         </p>
 
         <div className="form-row">
@@ -147,7 +147,7 @@ export function TestingPanel() {
             disabled={eodLoading}
             className="primary-btn"
           >
-            {eodLoading ? "Sending..." : "Send EOD Preview to David"}
+            {eodLoading ? "Sending..." : "Send EOD Preview to #bot-test"}
           </button>
         </div>
 

@@ -12,7 +12,7 @@ import {
 } from "discord.js";
 import dotenv from "dotenv";
 import { logMessage, getMessageCountByChannel, getAllUsers, upsertUser } from "./db";
-import { MONITORED_CHANNEL_IDS } from "../bot/constants";
+import { MONITORED_CHANNEL_IDS, BOT_TEST_CHANNEL_ID } from "../bot/constants";
 
 dotenv.config();
 
@@ -61,6 +61,30 @@ export async function sendDirectMessage(userId: string, message: string): Promis
   }
 }
 
+/**
+ * Sends a message to a text channel.
+ * @param channelId - The Discord channel ID to send the message to.
+ * @param message - The message content to send.
+ * @returns True if the message was sent successfully, false otherwise.
+ */
+export async function sendChannelMessage(channelId: string, message: string): Promise<boolean> {
+  const discordClient = getDiscordClient();
+  if (!isReady) return false;
+
+  try {
+    const channel = await discordClient.channels.fetch(channelId);
+    if (!channel || channel.type !== ChannelType.GuildText) {
+      console.error(`Channel ${channelId} is not a text channel or not found`);
+      return false;
+    }
+    await (channel as TextChannel).send(message);
+    return true;
+  } catch (error) {
+    console.error(`Failed to send message to channel ${channelId}:`, error);
+    return false;
+  }
+}
+
 /** Initializes and logs in the Discord client, setting up event listeners. */
 export async function initializeDiscord(): Promise<Client> {
   const discordClient = getDiscordClient();
@@ -88,15 +112,13 @@ export async function initializeDiscord(): Promise<Client> {
         }`
       );
 
-      // Send startup DM to David
-      const davidUserId = process.env.DAVID_USER_ID;
-      if (davidUserId) {
-        discordClient.users
-          .fetch(davidUserId)
-          .then((user) => user.send("Attendabot is online!"))
-          .then(() => console.log("Sent startup DM to David"))
-          .catch((error) => console.error("Failed to send startup DM:", error));
-      }
+      // Send startup message to #bot-test channel
+      sendChannelMessage(BOT_TEST_CHANNEL_ID, "Attendabot is online!")
+        .then((sent) => {
+          if (sent) console.log("Sent startup message to #bot-test");
+          else console.error("Failed to send startup message to #bot-test");
+        })
+        .catch((error) => console.error("Failed to send startup message:", error));
 
       // Register messageCreate listener for monitored channels
       discordClient.on("messageCreate", (message) => {

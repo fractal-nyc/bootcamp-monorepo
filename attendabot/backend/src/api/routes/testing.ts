@@ -9,15 +9,15 @@ import {
   getTomorrowsAssignment,
   formatAssignmentForDiscord,
 } from "../../bot/curriculum";
-import { CURRENT_COHORT_ROLE_ID } from "../../bot/constants";
-import { sendDirectMessage } from "../../services/discord";
+import { CURRENT_COHORT_ROLE_ID, BOT_TEST_CHANNEL_ID } from "../../bot/constants";
+import { sendChannelMessage } from "../../services/discord";
 
 /** Router for testing endpoints. */
 export const testingRouter = Router();
 
 /**
  * POST /api/testing/briefing
- * Generates a test briefing and sends it as a DM to David.
+ * Generates a test briefing and sends it to #bot-test channel.
  * Body: { cohortId: number, simulatedDate: string (YYYY-MM-DD) }
  */
 testingRouter.post("/briefing", authenticateToken, async (req: AuthRequest, res: Response) => {
@@ -48,23 +48,16 @@ testingRouter.post("/briefing", authenticateToken, async (req: AuthRequest, res:
       return;
     }
 
-    // Get David's user ID from env
-    const davidUserId = process.env.DAVID_USER_ID;
-    if (!davidUserId) {
-      res.status(500).json({ error: "DAVID_USER_ID not configured in environment" });
-      return;
-    }
-
-    // Send DM to David
+    // Send to #bot-test channel
     const testMessage = `**[TEST BRIEFING]**\nSimulated date: ${simulatedDate}\n\n${briefing}`;
-    const sent = await sendDirectMessage(davidUserId, testMessage);
+    const sent = await sendChannelMessage(BOT_TEST_CHANNEL_ID, testMessage);
 
     if (!sent) {
-      res.status(500).json({ error: "Failed to send DM to David" });
+      res.status(500).json({ error: "Failed to send message to #bot-test" });
       return;
     }
 
-    res.json({ message: "Test briefing sent to David via DM" });
+    res.json({ message: "Test briefing sent to #bot-test" });
   } catch (error) {
     console.error("Error sending test briefing:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -121,25 +114,14 @@ testingRouter.post(
         eodMessage += `\n\n${formatAssignmentForDiscord(assignment)}`;
       }
 
-      // Get David's user ID from env
-      const davidUserId = process.env.DAVID_USER_ID;
-      if (!davidUserId) {
-        res.json({
-          success: true,
-          message: "DAVID_USER_ID not configured - preview only",
-          preview: eodMessage,
-        });
-        return;
-      }
-
-      // Send DM to David for testing
+      // Send to #bot-test channel
       const testMessage = `**[EOD Preview Test]**\nSimulated date: ${simulatedDate}\n\n${eodMessage}`;
-      const sent = await sendDirectMessage(davidUserId, testMessage);
+      const sent = await sendChannelMessage(BOT_TEST_CHANNEL_ID, testMessage);
 
       if (!sent) {
         res.json({
           success: true,
-          message: "Failed to send DM to David - preview only",
+          message: "Failed to send message to #bot-test - preview only",
           preview: eodMessage,
         });
         return;
@@ -147,7 +129,7 @@ testingRouter.post(
 
       res.json({
         success: true,
-        message: "Preview sent to David via DM",
+        message: "Preview sent to #bot-test",
         preview: eodMessage,
       });
     } catch (error) {

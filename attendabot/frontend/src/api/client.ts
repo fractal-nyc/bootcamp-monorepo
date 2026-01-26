@@ -580,7 +580,7 @@ export async function getStudentSummary(
 
 /**
  * Sends a test briefing for a given cohort and simulated date.
- * The briefing is sent as a DM to David instead of the briefing channel.
+ * The briefing is sent to the #bot-test channel.
  * @param cohortId - The cohort to generate the briefing for.
  * @param simulatedDate - The simulated "today" date (YYYY-MM-DD). Briefing shows previous day's data.
  */
@@ -606,7 +606,7 @@ export async function sendTestBriefing(
 
 /**
  * Sends a test EOD assignment preview for a simulated date.
- * The preview is sent as a DM to David.
+ * The preview is sent to the #bot-test channel.
  * @param simulatedDate - The simulated EOD cron run date (YYYY-MM-DD). Preview shows tomorrow's assignment.
  */
 export async function sendTestEodPreview(

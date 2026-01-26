@@ -36,6 +36,9 @@ export const ATTENDANCE_CHANNEL_ID = "1418329701658792046";
 /** Discord channel ID for daily briefing messages. */
 export const DAILY_BRIEFING_CHANNEL_ID = "1463280393888333884";
 
+/** Discord channel ID for bot testing output. */
+export const BOT_TEST_CHANNEL_ID = "1377482428062629978";
+
 /** Array of channel IDs to monitor and log messages from. */
 export const MONITORED_CHANNEL_IDS = [EOD_CHANNEL_ID, ATTENDANCE_CHANNEL_ID];
 

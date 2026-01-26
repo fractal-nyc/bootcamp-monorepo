@@ -16,9 +16,7 @@ COMMAND_ID=$(aws ssm send-command \
   --instance-ids "$INSTANCE_ID" \
   --document-name "AWS-RunShellScript" \
   --parameters 'commands=[
-    "source /home/ec2-user/.bash_profile",
-    "cd /home/ec2-user/bootcamp-monorepo && git fetch origin && git reset --hard origin/main",
-    "cd attendabot && bash deploy-remote.sh"
+    "sudo -iu ec2-user bash -c \"cd ~/bootcamp-monorepo && git fetch origin && git reset --hard origin/main && cd attendabot && bash deploy-remote.sh\""
   ]' \
   --timeout-seconds 300 \
   --query "Command.CommandId" --output text)

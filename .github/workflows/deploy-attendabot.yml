@@ -1,0 +1,51 @@
+# Auto-deploys attendabot to EC2 via AWS SSM when attendabot/ files change on main.
+# Same deploy logic as attendabot/update-bot.sh, but triggered by GitHub Actions
+# instead of a dev running it locally.
+#
+# Requires two repository variables (Settings > Secrets and variables > Actions > Variables):
+#   AWS_ACCOUNT_ID         - 12-digit AWS account ID
+#   ATTENDABOT_INSTANCE_ID - EC2 instance ID (e.g., i-0abc123def456)
+
+name: Deploy Attendabot
+on:
+  push:
+    branches: [main]
+    paths: ['attendabot/**']
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/attendabot-github-deploy
+          aws-region: us-east-1
+
+      - name: Deploy via SSM
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.ATTENDABOT_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=[
+              "source /home/ec2-user/.bash_profile",
+              "cd /home/ec2-user/bootcamp-monorepo && git fetch origin && git reset --hard origin/main",
+              "cd attendabot && bash deploy-remote.sh"
+            ]' \
+            --timeout-seconds 300 \
+            --query "Command.CommandId" --output text)
+
+          echo "Command sent: $COMMAND_ID"
+          echo "Waiting for completion..."
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ vars.ATTENDABOT_INSTANCE_ID }}" 2>/dev/null || true
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ vars.ATTENDABOT_INSTANCE_ID }}"

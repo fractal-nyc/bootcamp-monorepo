@@ -14,7 +14,7 @@ cd backend && bun test         # Run all 148 tests
 cd backend && bun test src/test/services/db.test.ts  # Single file
 
 # Production
-./update-bot.sh                # Deploy to EC2 (pulls, builds, restarts pm2)
+./update-bot.sh                # Deploy to EC2 via SSM (pulls, builds, restarts pm2)
 ```
 
 ## Architecture
@@ -67,8 +67,42 @@ JWT_SECRET=            # Secret for admin panel JWT
 ADMIN_PASSWORD=        # Admin login password
 GEMINI_API_KEY=        # Google Gemini API (optional, for AI features)
 CURRENT_COHORT_ID=     # Active cohort for daily briefings
-EC2_HOST=              # Production server IP
 ```
+
+## Deployment
+
+Deployment uses **AWS SSM Session Manager** (no SSH keys needed) and **AWS Secrets Manager** for environment variables.
+
+### Manual deploy
+
+```bash
+./update-bot.sh
+```
+
+This sends an SSM command to the EC2 instance that pulls the latest code, fetches secrets from Secrets Manager, builds, and restarts PM2. Requires AWS CLI configured with deployer credentials (see below).
+
+### CI/CD (automatic)
+
+Pushing to `main` with changes in `attendabot/` triggers the GitHub Actions workflow (`.github/workflows/deploy-attendabot.yml`), which runs the same SSM deploy process using OIDC-based AWS authentication.
+
+### Updating environment variables
+
+Env vars live in AWS Secrets Manager under the secret `attendabot/env`. To update:
+
+```bash
+# View current values
+aws secretsmanager get-secret-value --secret-id attendabot/env --query SecretString --output text | python3 -m json.tool
+```
+
+The `.env` file on the EC2 instance is regenerated from Secrets Manager on every deploy. Manual edits to the file on the instance will be overwritten.
+
+### Onboarding a new developer
+
+1. An admin creates an IAM user and adds them to the `attendabot-deployers` group
+2. The dev installs [AWS CLI](https://aws.amazon.com/cli/) and runs `aws configure` with their credentials (region: `us-east-1`)
+3. They can now run `./update-bot.sh` to deploy
+
+See `_devlogs/private/aws-setup.md` for full IAM policy details and setup instructions.
 
 ## Bot Cron Schedule (America/New_York)
 

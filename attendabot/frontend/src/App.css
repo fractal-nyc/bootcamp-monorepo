@@ -353,6 +353,33 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* Session Warning Banner */
+.session-warning {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.session-warning-btn {
+  background: none;
+  border: none;
+  color: #fca5a5;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.session-warning-btn:hover {
+  color: #fff;
+  background: none;
+}
+
 /* Tab Navigation */
 .tab-navigation {
   display: flex;

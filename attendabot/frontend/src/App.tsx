@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { isLoggedIn, clearToken, getUsername } from "./api/client";
+import { isLoggedIn, clearToken, getUsername, verifySession, onAuthFailure } from "./api/client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
@@ -20,15 +20,33 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
   const [activeTab, setActiveTab] = useState<Tab>("students");
   const [username, setUsername] = useState<string | null>(null);
+  const [sessionInvalid, setSessionInvalid] = useState(false);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
     setUsername(getUsername());
+
+    // Verify the token is actually valid on mount
+    if (isLoggedIn()) {
+      verifySession().then((valid) => {
+        if (!valid) {
+          setSessionInvalid(true);
+        }
+      });
+    }
+
+    // Listen for auth failures from any API call
+    const unsubscribe = onAuthFailure(() => {
+      setSessionInvalid(true);
+    });
+
+    return unsubscribe;
   }, []);
 
   const handleLogout = () => {
     clearToken();
     setLoggedIn(false);
+    setSessionInvalid(false);
     setUsername(null);
   };
 
@@ -50,6 +68,17 @@ function App() {
           </button>
         </div>
       </header>
+
+      {sessionInvalid && (
+        <div className="session-warning">
+          Your session has expired or is invalid. Data may not load correctly.
+          Please{" "}
+          <button onClick={handleLogout} className="session-warning-btn">
+            log out and log back in
+          </button>{" "}
+          to fix this.
+        </div>
+      )}
 
       <nav className="tab-navigation">
         <button

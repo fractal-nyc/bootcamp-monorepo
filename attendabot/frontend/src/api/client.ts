@@ -36,6 +36,41 @@ export function isLoggedIn(): boolean {
   return !!getToken();
 }
 
+/** Callback invoked when an API call receives a 401/403 response. */
+let authFailureCallback: (() => void) | null = null;
+
+/** Registers a callback to be called when authentication fails during an API request. */
+export function onAuthFailure(callback: () => void): () => void {
+  authFailureCallback = callback;
+  return () => {
+    if (authFailureCallback === callback) {
+      authFailureCallback = null;
+    }
+  };
+}
+
+/**
+ * Verifies the current session token is still valid by making a lightweight API call.
+ * Returns true if the session is valid, false if the token is expired/invalid.
+ */
+export async function verifySession(): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+
+  try {
+    const res = await fetch(`${API_BASE}/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 401 || res.status === 403) {
+      return false;
+    }
+    return res.ok;
+  } catch {
+    // Network error -- can't determine auth state, assume OK
+    return true;
+  }
+}
+
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
@@ -50,7 +85,16 @@ async function fetchWithAuth(
     (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
 
-  return fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401 || res.status === 403) {
+    clearToken();
+    if (authFailureCallback) {
+      authFailureCallback();
+    }
+  }
+
+  return res;
 }
 
 /** Authenticates with the backend and stores the returned JWT token. */

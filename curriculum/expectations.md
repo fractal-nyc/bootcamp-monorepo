@@ -1,4 +1,4 @@
-- Show up at 9AM M-F, 10 AM on Saturdays.
+- Show up at 10AM Mon-Sat
   - Post in the #attendance channel: <Name> checking in on <today's date>
   - Communicate early if you are going to be late.
 - Merge 3-5 PRs per day.
@@ -6,9 +6,6 @@
   - Blockers
   - Wins
   - Links to PRs
-- Schedule weekly 1:1 with one coach. Scheduling links:
-  - David https://calendar.app.google/hL4QdYnTuoywr4EHA
-  - Paris https://calendar.app.google/ynPxDtryUYaiRCVk6
 - Unblock yourself. Loop:
   - Google
   - AI

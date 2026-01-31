@@ -41,6 +41,7 @@ import {
   getDefaultCohortId,
   getCohortSentiment,
   saveCohortSentiment,
+  isFeatureFlagEnabled,
 } from "../services/db";
 import { isLLMConfigured, generateCohortSentiment } from "../services/llm";
 
@@ -121,13 +122,14 @@ async function sendAttendanceReminder(): Promise<void> {
   incrementRemindersTriggered();
 }
 
-async function sendEodReminder(): Promise<void> {
+/**
+ * Builds the EOD reminder message content.
+ * Exported for testing.
+ */
+export function buildEodMessage(): string {
   let message: string;
 
   if (!CURRENT_COHORT_ROLE_ID) {
-    console.log(
-      "CURRENT_COHORT_ROLE_ID is not set. Sending EOD reminder without role mention.",
-    );
     message = `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`;
   } else {
     message = `${roleMention(
@@ -135,12 +137,25 @@ async function sendEodReminder(): Promise<void> {
     )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`;
   }
 
-  // Add tomorrow's assignment if available
-  const assignment = getTomorrowsAssignment();
-  if (assignment) {
-    message += `\n\n${formatAssignmentForDiscord(assignment)}`;
+  // Add tomorrow's assignment if available and feature flag is enabled
+  if (isFeatureFlagEnabled("eod_next_day_content")) {
+    const assignment = getTomorrowsAssignment();
+    if (assignment) {
+      message += `\n\n${formatAssignmentForDiscord(assignment)}`;
+    }
   }
 
+  return message;
+}
+
+async function sendEodReminder(): Promise<void> {
+  if (!CURRENT_COHORT_ROLE_ID) {
+    console.log(
+      "CURRENT_COHORT_ROLE_ID is not set. Sending EOD reminder without role mention.",
+    );
+  }
+
+  const message = buildEodMessage();
   await sendReminder(EOD_CHANNEL_ID, message);
   incrementRemindersTriggered();
 }

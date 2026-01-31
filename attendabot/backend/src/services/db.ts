@@ -144,10 +144,36 @@ function initializeTables(): void {
     )
   `);
 
+  // Feature flags table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS feature_flags (
+      key TEXT PRIMARY KEY,
+      enabled INTEGER NOT NULL DEFAULT 0,
+      description TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
+  // Seed default feature flags
+  seedDefaultFeatureFlags();
+
   console.log("Database tables initialized");
+}
+
+/** Seeds default feature flags if they don't already exist. */
+function seedDefaultFeatureFlags(): void {
+  if (!db) return;
+  const stmt = db.prepare(
+    `INSERT OR IGNORE INTO feature_flags (key, enabled, description) VALUES (?, ?, ?)`
+  );
+  stmt.run(
+    "eod_next_day_content",
+    1,
+    "Include next day's assignment in the EOD reminder message"
+  );
 }
 
 /** Seeds default cohorts (Fa2025, Sp2026) if they don't already exist. */
@@ -899,4 +925,45 @@ export function deleteFeatureRequest(id: number): boolean {
   const stmt = db.prepare(`DELETE FROM feature_requests WHERE id = ?`);
   const result = stmt.run(id);
   return result.changes > 0;
+}
+
+// ============================================================================
+// Feature Flags functions
+// ============================================================================
+
+/** A feature flag record from the database. */
+export interface FeatureFlagRecord {
+  key: string;
+  enabled: boolean;
+  description: string;
+  updated_at: string;
+}
+
+/** Retrieves all feature flags. */
+export function getFeatureFlags(): FeatureFlagRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT key, enabled, description, updated_at FROM feature_flags ORDER BY key ASC`);
+  const rows = stmt.all() as Array<{ key: string; enabled: number; description: string; updated_at: string }>;
+  return rows.map((r) => ({ ...r, enabled: r.enabled === 1 }));
+}
+
+/** Checks whether a specific feature flag is enabled. */
+export function isFeatureFlagEnabled(key: string): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT enabled FROM feature_flags WHERE key = ?`);
+  const row = stmt.get(key) as { enabled: number } | undefined;
+  return row?.enabled === 1;
+}
+
+/** Updates a feature flag's enabled state. Returns the updated record or null if not found. */
+export function updateFeatureFlag(key: string, enabled: boolean): FeatureFlagRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`UPDATE feature_flags SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?`);
+  const result = stmt.run(enabled ? 1 : 0, key);
+  if (result.changes === 0) return null;
+  const row = db.prepare(`SELECT key, enabled, description, updated_at FROM feature_flags WHERE key = ?`).get(key) as
+    | { key: string; enabled: number; description: string; updated_at: string }
+    | undefined;
+  if (!row) return null;
+  return { ...row, enabled: row.enabled === 1 };
 }

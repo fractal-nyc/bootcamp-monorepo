@@ -6,12 +6,14 @@
 import { StatusPanel } from "./StatusPanel";
 import { ServerLogs } from "./ServerLogs";
 import { FeatureRequestsPanel } from "./FeatureRequestsPanel";
+import { FeatureFlagsPanel } from "./FeatureFlagsPanel";
 
 /** Container component for diagnostics tab content. */
 export function DiagnosticsPanel() {
   return (
     <>
       <StatusPanel />
+      <FeatureFlagsPanel />
       <ServerLogs />
       <FeatureRequestsPanel />
     </>

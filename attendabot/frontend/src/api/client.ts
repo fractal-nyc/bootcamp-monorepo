@@ -754,3 +754,63 @@ export async function deleteFeatureRequest(id: number): Promise<boolean> {
     return false;
   }
 }
+
+// ============================================================================
+// Feature Flags API
+// ============================================================================
+
+/** A feature flag. */
+export interface FeatureFlag {
+  key: string;
+  enabled: boolean;
+  description: string;
+  updatedAt: string;
+}
+
+/** Fetches all feature flags. */
+export async function getFeatureFlags(): Promise<FeatureFlag[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-flags`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.featureFlags.map((f: {
+      key: string;
+      enabled: boolean;
+      description: string;
+      updated_at: string;
+    }) => ({
+      key: f.key,
+      enabled: f.enabled,
+      description: f.description,
+      updatedAt: f.updated_at,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Updates a feature flag's enabled state. */
+export async function updateFeatureFlag(
+  key: string,
+  enabled: boolean
+): Promise<FeatureFlag | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-flags/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const f = data.featureFlag;
+    return {
+      key: f.key,
+      enabled: f.enabled,
+      description: f.description,
+      updatedAt: f.updated_at,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}

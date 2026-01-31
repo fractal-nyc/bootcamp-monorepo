@@ -420,16 +420,13 @@ export function getCurriculumPosition(
   date: Date,
   cohort: CohortConfig = CURRENT_COHORT_CONFIG
 ): { week: number; dayOfWeek: number } | null {
-  const startDate = new Date(cohort.startDate + "T00:00:00");
-  const targetDate = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  );
+  // Use UTC noon for both dates to avoid DST-related off-by-one errors
+  const [sy, sm, sd] = cohort.startDate.split("-").map(Number);
+  const startUtcNoon = Date.UTC(sy, sm - 1, sd, 12);
+  const targetUtcNoon = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12);
 
   // Calculate days since start (can be negative if before start)
-  const diffTime = targetDate.getTime() - startDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const diffDays = Math.round((targetUtcNoon - startUtcNoon) / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) {
     return null; // Before cohort starts
@@ -442,8 +439,8 @@ export function getCurriculumPosition(
     return null; // After cohort ends
   }
 
-  // Get day of week (0=Sun through 6=Sat in JS)
-  const jsDayOfWeek = targetDate.getDay();
+  // Get day of week from the input date's local representation (0=Sun through 6=Sat in JS)
+  const jsDayOfWeek = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getDay();
 
   // Convert to 1=Mon through 6=Sat, 0=Sun
   // We only care about Mon-Sat (1-6)

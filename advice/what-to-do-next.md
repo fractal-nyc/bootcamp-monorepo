@@ -95,7 +95,7 @@ Working artifacts: prototypes, tools, or demos that embody what you learned. Eve
 **Pitfalls**  
 - Reading endlessly without building.  
 - Staying abstract instead of proving understanding through working examples.
-
+¡
 ---
 
 ## Option 4: Spearfishing

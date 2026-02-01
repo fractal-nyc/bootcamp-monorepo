@@ -5,7 +5,8 @@
 
 const API_BASE = "/api";
 
-function getToken(): string | null {
+/** Gets the JWT token from localStorage. */
+export function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
@@ -35,6 +36,41 @@ export function isLoggedIn(): boolean {
   return !!getToken();
 }
 
+/** Callback invoked when an API call receives a 401/403 response. */
+let authFailureCallback: (() => void) | null = null;
+
+/** Registers a callback to be called when authentication fails during an API request. */
+export function onAuthFailure(callback: () => void): () => void {
+  authFailureCallback = callback;
+  return () => {
+    if (authFailureCallback === callback) {
+      authFailureCallback = null;
+    }
+  };
+}
+
+/**
+ * Verifies the current session token is still valid by making a lightweight API call.
+ * Returns true if the session is valid, false if the token is expired/invalid.
+ */
+export async function verifySession(): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+
+  try {
+    const res = await fetch(`${API_BASE}/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 401 || res.status === 403) {
+      return false;
+    }
+    return res.ok;
+  } catch {
+    // Network error -- can't determine auth state, assume OK
+    return true;
+  }
+}
+
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
@@ -49,7 +85,16 @@ async function fetchWithAuth(
     (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
 
-  return fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401 || res.status === 403) {
+    clearToken();
+    if (authFailureCallback) {
+      authFailureCallback();
+    }
+  }
+
+  return res;
 }
 
 /** Authenticates with the backend and stores the returned JWT token. */
@@ -174,17 +219,15 @@ export interface ChannelMessages {
   messages: Message[];
 }
 
-/** Fetches recent messages from a channel. Defaults to DB; use source="discord" to fetch live from Discord. */
+/** Fetches recent messages from a channel. Defaults to Discord; use source="db" to fetch from database. */
 export async function getMessages(
   channelId: string,
   limit: number = 50,
-  source?: "discord" | "db"
+  source: "discord" | "db" = "discord"
 ): Promise<ChannelMessages | null> {
   try {
     const params = new URLSearchParams({ limit: limit.toString() });
-    if (source) {
-      params.append("source", source);
-    }
+    params.append("source", source);
     const res = await fetchWithAuth(
       `${API_BASE}/messages/${channelId}?${params.toString()}`
     );
@@ -492,12 +535,52 @@ export async function createNote(studentId: number, content: string): Promise<bo
 }
 
 // ============================================================================
+// LLM API
+// ============================================================================
+
+/** Response from the student summary endpoint. */
+export interface StudentSummaryResponse {
+  summary: string;
+  cached: boolean;
+  generatedAt: string;
+}
+
+/**
+ * Fetches an AI-generated summary for a student.
+ * @param studentId - The student ID.
+ * @param date - The date in YYYY-MM-DD format (cumulative - analyzes all data up to this date).
+ * @param force - If true, bypasses cache and regenerates the summary.
+ * @returns The summary response or null on error.
+ */
+export async function getStudentSummary(
+  studentId: number,
+  date: string,
+  force: boolean = false
+): Promise<StudentSummaryResponse | null> {
+  try {
+    const params = force ? "?force=true" : "";
+    const res = await fetchWithAuth(`${API_BASE}/llm/student/${studentId}/summary/${date}${params}`);
+    if (!res.ok) {
+      if (res.status === 503) {
+        // LLM not configured
+        return null;
+      }
+      return null;
+    }
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+// ============================================================================
 // Testing API
 // ============================================================================
 
 /**
  * Sends a test briefing for a given cohort and simulated date.
- * The briefing is sent as a DM to David instead of the briefing channel.
+ * The briefing is sent to the #bot-test channel.
  * @param cohortId - The cohort to generate the briefing for.
  * @param simulatedDate - The simulated "today" date (YYYY-MM-DD). Briefing shows previous day's data.
  */
@@ -518,5 +601,216 @@ export async function sendTestBriefing(
   } catch (error) {
     console.error(error);
     return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Sends a test EOD assignment preview for a simulated date.
+ * The preview is sent to the #bot-test channel.
+ * @param simulatedDate - The simulated EOD cron run date (YYYY-MM-DD). Preview shows tomorrow's assignment.
+ */
+export async function sendTestEodPreview(
+  simulatedDate: string
+): Promise<{ success: boolean; message: string; preview?: string }> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/testing/eod-preview`, {
+      method: "POST",
+      body: JSON.stringify({ simulatedDate }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, message: data.error || "Failed to get preview" };
+    }
+    return {
+      success: data.success,
+      message: data.message || "Preview generated",
+      preview: data.preview,
+    };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Network error" };
+  }
+}
+
+// ============================================================================
+// Feature Requests API
+// ============================================================================
+
+/** A feature request. */
+export interface FeatureRequest {
+  id: number;
+  title: string;
+  description: string;
+  priority: number;
+  author: string;
+  status: "new" | "in_progress" | "done";
+  createdAt: string;
+}
+
+/** Fetches all feature requests. */
+export async function getFeatureRequests(): Promise<FeatureRequest[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.featureRequests.map((fr: {
+      id: number;
+      title: string;
+      description: string;
+      priority: number;
+      author: string;
+      status: string;
+      created_at: string;
+    }) => ({
+      id: fr.id,
+      title: fr.title,
+      description: fr.description,
+      priority: fr.priority,
+      author: fr.author,
+      status: fr.status as FeatureRequest["status"],
+      createdAt: fr.created_at,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Input for creating a feature request. */
+export interface CreateFeatureRequestInput {
+  title: string;
+  description: string;
+  priority?: number;
+  author: string;
+}
+
+/** Creates a new feature request. */
+export async function createFeatureRequest(input: CreateFeatureRequestInput): Promise<FeatureRequest | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const fr = data.featureRequest;
+    return {
+      id: fr.id,
+      title: fr.title,
+      description: fr.description,
+      priority: fr.priority,
+      author: fr.author,
+      status: fr.status,
+      createdAt: fr.created_at,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Input for updating a feature request. */
+export interface UpdateFeatureRequestInput {
+  title?: string;
+  description?: string;
+  priority?: number;
+  status?: FeatureRequest["status"];
+}
+
+/** Updates a feature request. */
+export async function updateFeatureRequest(id: number, input: UpdateFeatureRequestInput): Promise<FeatureRequest | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const fr = data.featureRequest;
+    return {
+      id: fr.id,
+      title: fr.title,
+      description: fr.description,
+      priority: fr.priority,
+      author: fr.author,
+      status: fr.status,
+      createdAt: fr.created_at,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Deletes a feature request. */
+export async function deleteFeatureRequest(id: number): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-requests/${id}`, {
+      method: "DELETE",
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+// ============================================================================
+// Feature Flags API
+// ============================================================================
+
+/** A feature flag. */
+export interface FeatureFlag {
+  key: string;
+  enabled: boolean;
+  description: string;
+  updatedAt: string;
+}
+
+/** Fetches all feature flags. */
+export async function getFeatureFlags(): Promise<FeatureFlag[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-flags`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.featureFlags.map((f: {
+      key: string;
+      enabled: boolean;
+      description: string;
+      updated_at: string;
+    }) => ({
+      key: f.key,
+      enabled: f.enabled,
+      description: f.description,
+      updatedAt: f.updated_at,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Updates a feature flag's enabled state. */
+export async function updateFeatureFlag(
+  key: string,
+  enabled: boolean
+): Promise<FeatureFlag | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/feature-flags/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const f = data.featureFlag;
+    return {
+      key: f.key,
+      enabled: f.enabled,
+      description: f.description,
+      updatedAt: f.updated_at,
+    };
+  } catch (error) {
+    console.error(error);
+    return null;
   }
 }

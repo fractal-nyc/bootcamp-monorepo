@@ -6,6 +6,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import http from "http";
 import { authRouter } from "./routes/auth";
 import { statusRouter } from "./routes/status";
 import { messagesRouter } from "./routes/messages";
@@ -13,9 +14,16 @@ import { channelsRouter } from "./routes/channels";
 import { usersRouter } from "./routes/users";
 import { studentsRouter, cohortsRouter } from "./routes/students";
 import { testingRouter } from "./routes/testing";
+import { llmRouter } from "./routes/llm";
+import { featureRequestsRouter } from "./routes/featureRequests";
+import { featureFlagsRouter } from "./routes/featureFlags";
+import { initializeWebSocket } from "./websocket";
 
 /** Express application instance. */
 const app = express();
+
+/** HTTP server instance for WebSocket support. */
+const httpServer = http.createServer(app);
 
 // Middleware
 app.use(cors());
@@ -30,6 +38,9 @@ app.use("/api/users", usersRouter);
 app.use("/api/students", studentsRouter);
 app.use("/api/cohorts", cohortsRouter);
 app.use("/api/testing", testingRouter);
+app.use("/api/llm", llmRouter);
+app.use("/api/feature-requests", featureRequestsRouter);
+app.use("/api/feature-flags", featureFlagsRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {
@@ -47,10 +58,14 @@ if (process.env.NODE_ENV === "production") {
 
 /**
  * Starts the Express API server on the specified port.
+ * Initializes WebSocket support for real-time log streaming.
  * @param port - Port number to listen on.
  */
 export function startApiServer(port: number = 3001): void {
-  app.listen(port, () => {
+  // Initialize WebSocket server before starting
+  initializeWebSocket(httpServer);
+
+  httpServer.listen(port, () => {
     console.log(`API server listening on port ${port}`);
   });
 }

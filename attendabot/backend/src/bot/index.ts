@@ -15,9 +15,19 @@ import {
   EOD_CHANNEL_ID,
   EOD_REMINDER_CRON,
   EOD_VERIFICATION_CRON,
+  MIDDAY_PR_REMINDER_CRON,
+  MIDDAY_PR_VERIFICATION_CRON,
   USER_ID_TO_NAME_MAP,
 } from "./constants";
-import { fetchTextChannel, fetchMessagesSince, sendDirectMessage } from "../services/discord";
+import {
+  getTomorrowsAssignment,
+  formatAssignmentForDiscord,
+} from "./curriculum";
+import {
+  fetchTextChannel,
+  fetchMessagesSince,
+  sendDirectMessage,
+} from "../services/discord";
 import {
   incrementMessagesSent,
   incrementRemindersTriggered,
@@ -29,7 +39,11 @@ import {
   getStudentsByLastCheckIn,
   getActiveStudentsWithDiscord,
   getDefaultCohortId,
+  getCohortSentiment,
+  saveCohortSentiment,
+  isFeatureFlagEnabled,
 } from "../services/db";
+import { isLLMConfigured, generateCohortSentiment } from "../services/llm";
 
 const CURRENT_COHORT_USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
 
@@ -57,32 +71,44 @@ function scheduleJobs(): void {
   scheduleTask(
     EOD_VERIFICATION_CRON,
     () => verifyEodPost(),
-    "EOD verification"
+    "EOD verification",
   );
 
   scheduleTask(
     ATTENDANCE_REMINDER_CRON,
     () => sendAttendanceReminder(),
-    "Attendance reminder"
+    "Attendance reminder",
   );
 
   scheduleTask(
     ATTENDANCE_VERIFICATION_CRON,
     () => verifyAttendancePost(),
-    "Attendance verification"
+    "Attendance verification",
   );
 
   scheduleTask(
     DAILY_BRIEFING_CRON,
     () => sendDailyBriefing(),
-    "Daily briefing"
+    "Daily briefing",
+  );
+
+  scheduleTask(
+    MIDDAY_PR_REMINDER_CRON,
+    () => sendMiddayPrReminder(),
+    "Midday PR reminder",
+  );
+
+  scheduleTask(
+    MIDDAY_PR_VERIFICATION_CRON,
+    () => verifyMiddayPrPost(),
+    "Midday PR verification",
   );
 }
 
 async function sendAttendanceReminder(): Promise<void> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
-      "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance reminder."
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance reminder.",
     );
     return;
   }
@@ -90,38 +116,54 @@ async function sendAttendanceReminder(): Promise<void> {
   await sendReminder(
     ATTENDANCE_CHANNEL_ID,
     `Good morning ${roleMention(
-      CURRENT_COHORT_ROLE_ID
-    )}, please check in for ${getCurrentMonthDay()} if you haven't already.`
+      CURRENT_COHORT_ROLE_ID,
+    )}, please check in for ${getCurrentMonthDay()} if you haven't already.`,
   );
   incrementRemindersTriggered();
+}
+
+/**
+ * Builds the EOD reminder message content.
+ * Exported for testing.
+ */
+export function buildEodMessage(): string {
+  let message: string;
+
+  if (!CURRENT_COHORT_ROLE_ID) {
+    message = `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`;
+  } else {
+    message = `${roleMention(
+      CURRENT_COHORT_ROLE_ID,
+    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`;
+  }
+
+  // Add tomorrow's assignment if available and feature flag is enabled
+  if (isFeatureFlagEnabled("eod_next_day_content")) {
+    const assignment = getTomorrowsAssignment();
+    if (assignment) {
+      message += `\n\n${formatAssignmentForDiscord(assignment)}`;
+    }
+  }
+
+  return message;
 }
 
 async function sendEodReminder(): Promise<void> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
-      "CURRENT_COHORT_ROLE_ID is not set. Sending EOD reminder without role mention."
+      "CURRENT_COHORT_ROLE_ID is not set. Sending EOD reminder without role mention.",
     );
-    await sendReminder(
-      EOD_CHANNEL_ID,
-      `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`
-    );
-    incrementRemindersTriggered();
-    return;
   }
 
-  await sendReminder(
-    EOD_CHANNEL_ID,
-    `${roleMention(
-      CURRENT_COHORT_ROLE_ID
-    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`
-  );
+  const message = buildEodMessage();
+  await sendReminder(EOD_CHANNEL_ID, message);
   incrementRemindersTriggered();
 }
 
 async function verifyAttendancePost(): Promise<void> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
-      "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance verification."
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance verification.",
     );
     return;
   }
@@ -133,7 +175,7 @@ async function verifyAttendancePost(): Promise<void> {
 async function verifyEodPost(): Promise<void> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
-      "CURRENT_COHORT_ROLE_ID is not set. Skipping EOD verification."
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping EOD verification.",
     );
     return;
   }
@@ -142,10 +184,75 @@ async function verifyEodPost(): Promise<void> {
   incrementVerificationsRun();
 }
 
+async function sendMiddayPrReminder(): Promise<void> {
+  if (!CURRENT_COHORT_ROLE_ID) {
+    console.log(
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping midday PR reminder.",
+    );
+    return;
+  }
+
+  await sendReminder(
+    EOD_CHANNEL_ID,
+    `${roleMention(CURRENT_COHORT_ROLE_ID)} please post your first PR of the day by 1 PM for ${getCurrentMonthDay()}.`,
+  );
+  incrementRemindersTriggered();
+}
+
+async function verifyMiddayPrPost(): Promise<void> {
+  if (!CURRENT_COHORT_ROLE_ID) {
+    console.log(
+      "CURRENT_COHORT_ROLE_ID is not set. Skipping midday PR verification.",
+    );
+    return;
+  }
+
+  const channel = await fetchTextChannel(EOD_CHANNEL_ID);
+
+  // Get TODAY's messages since 8 AM ET (exclude late-night PRs)
+  const now = new Date();
+  const etFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [month, day, year] = etFormatter.format(now).split("/");
+  const eightAmET = new Date(`${year}-${month}-${day}T08:00:00-05:00`);
+
+  const messages = await fetchMessagesSince(channel, eightAmET);
+
+  // Find users who posted at least one PR
+  const usersWithPr = new Set<string>();
+  for (const message of messages) {
+    if (CURRENT_COHORT_USER_IDS.includes(message.author.id)) {
+      if (countPrsInMessage(message.content) > 0) {
+        usersWithPr.add(message.author.id);
+      }
+    }
+  }
+
+  // DM users without any PR
+  const missingUsers = CURRENT_COHORT_USER_IDS.filter(
+    (id) => !usersWithPr.has(id),
+  );
+  const dateStr = `${year}-${month}-${day}`;
+
+  for (const userId of missingUsers) {
+    await sendDirectMessage(
+      userId,
+      `Could not find a midday PR from you for ${dateStr} in the EOD channel. Please post one ASAP.`,
+    );
+    incrementMessagesSent();
+  }
+
+  incrementVerificationsRun();
+}
+
 function scheduleTask(
   cronExpression: string,
   task: () => Promise<void>,
-  description: string
+  description: string,
 ): void {
   try {
     cron.schedule(
@@ -158,17 +265,17 @@ function scheduleTask(
       },
       {
         timezone: CRON_TIMEZONE,
-      }
+      },
     );
 
     console.log(
       `Scheduled ${description} job with cron expression: ${cronExpression}` +
-        (CRON_TIMEZONE ? ` (timezone: ${CRON_TIMEZONE})` : "")
+        (CRON_TIMEZONE ? ` (timezone: ${CRON_TIMEZONE})` : ""),
     );
   } catch (error) {
     console.error(
       `Failed to schedule ${description} job (${cronExpression}):`,
-      error
+      error,
     );
     incrementErrors();
   }
@@ -200,7 +307,7 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
 
       userPullRequestCounts.set(
         authorId,
-        (userPullRequestCounts.get(message.author.id) ?? 0) + prCount
+        (userPullRequestCounts.get(message.author.id) ?? 0) + prCount,
       );
     }
   }
@@ -237,24 +344,30 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
     }
   }
 
-  const missingUsers = CURRENT_COHORT_USER_IDS.filter((id) => !usersWhoPosted.has(id));
+  const missingUsers = CURRENT_COHORT_USER_IDS.filter(
+    (id) => !usersWhoPosted.has(id),
+  );
 
   if (missingUsers.length === 0) {
-    console.log(`All users completed their ${label} posts in #${channel.name}.`);
+    console.log(
+      `All users completed their ${label} posts in #${channel.name}.`,
+    );
   } else {
     // DM each late user individually
     let dmsSent = 0;
     for (const userId of missingUsers) {
       const sent = await sendDirectMessage(
         userId,
-        `Reminder: You still need to post your ${label} update for ${getCurrentMonthDay()} in #${channel.name}.`
+        `Reminder: You still need to post your ${label} update for ${getCurrentMonthDay()} in #${channel.name}.`,
       );
       if (sent) {
         incrementMessagesSent();
         dmsSent++;
       }
     }
-    console.log(`Sent ${label} reminder DMs to ${dmsSent}/${missingUsers.length} users`);
+    console.log(
+      `Sent ${label} reminder DMs to ${dmsSent}/${missingUsers.length} users`,
+    );
   }
 }
 
@@ -283,7 +396,10 @@ export function countPrsInMessage(messageContent: string): number {
  * Returns start/end ISO strings for the day before the given date (or yesterday if not provided).
  * @param simulatedToday - Optional YYYY-MM-DD string representing "today". If not provided, uses actual today.
  */
-function getPreviousDayRangeET(simulatedToday?: string): { start: string; end: string } {
+function getPreviousDayRangeET(simulatedToday?: string): {
+  start: string;
+  end: string;
+} {
   let targetDate: Date;
 
   if (simulatedToday) {
@@ -321,13 +437,26 @@ function getTenAmET(dateStr: string): string {
   return new Date(`${dateStr}T10:00:00-05:00`).toISOString();
 }
 
+/** Returns the ISO timestamp for 8 AM ET on a given date string (YYYY-MM-DD). */
+function getEightAmET(dateStr: string): string {
+  return new Date(`${dateStr}T08:00:00-05:00`).toISOString();
+}
+
+/** Returns the ISO timestamp for 1 PM ET on a given date string (YYYY-MM-DD). */
+function getOnePmET(dateStr: string): string {
+  return new Date(`${dateStr}T13:00:00-05:00`).toISOString();
+}
+
 /**
  * Generates the daily briefing content for a cohort.
  * @param cohortId - The cohort ID to generate the briefing for.
  * @param simulatedToday - Optional YYYY-MM-DD string representing "today" (the cron run date).
  * @returns The briefing message content, or null if no data.
  */
-export function generateDailyBriefing(cohortId: number, simulatedToday?: string): string | null {
+export async function generateDailyBriefing(
+  cohortId: number,
+  simulatedToday?: string,
+): Promise<string | null> {
   const students = getActiveStudentsWithDiscord(cohortId);
   if (students.length === 0) {
     return null;
@@ -336,9 +465,15 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   const { start, end } = getPreviousDayRangeET(simulatedToday);
   const previousDayStr = start.split("T")[0];
   const tenAm = getTenAmET(previousDayStr);
+  const eightAm = getEightAmET(previousDayStr);
+  const onePm = getOnePmET(previousDayStr);
 
   // Get messages from previous day
-  const attendanceMessages = getMessagesByChannelAndDateRange("attendance", start, end);
+  const attendanceMessages = getMessagesByChannelAndDateRange(
+    "attendance",
+    start,
+    end,
+  );
   const eodMessages = getMessagesByChannelAndDateRange("eod", start, end);
 
   // Build sets for quick lookup
@@ -352,13 +487,27 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   const eodPrCountByUser = new Map<string, number>(); // discord_id -> PR count
   for (const msg of eodMessages) {
     const prCount = countPrsInMessage(msg.content ?? "");
-    eodPrCountByUser.set(msg.author_id, (eodPrCountByUser.get(msg.author_id) ?? 0) + prCount);
+    eodPrCountByUser.set(
+      msg.author_id,
+      (eodPrCountByUser.get(msg.author_id) ?? 0) + prCount,
+    );
   }
   const eodPostedUsers = new Set(eodMessages.map((m) => m.author_id));
+
+  // Track first PR time for each student (only PRs after 8 AM count)
+  const firstPrTimeByUser = new Map<string, string>();
+  for (const msg of eodMessages) {
+    if (msg.created_at >= eightAm && countPrsInMessage(msg.content ?? "") > 0) {
+      if (!firstPrTimeByUser.has(msg.author_id)) {
+        firstPrTimeByUser.set(msg.author_id, msg.created_at);
+      }
+    }
+  }
 
   // Categorize students
   const lateStudents: string[] = [];
   const absentStudents: string[] = [];
+  const lateMiddayPrStudents: string[] = [];
   const goodPrStudents: string[] = [];
   const lowPrStudents: string[] = [];
   const noEodStudents: string[] = [];
@@ -372,6 +521,12 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
       absentStudents.push(student.name);
     } else if (attendanceTime > tenAm) {
       lateStudents.push(student.name);
+    }
+
+    // Check late midday PR (no PR after 8 AM, or first PR was after 1 PM)
+    const firstPrTime = firstPrTimeByUser.get(discordId);
+    if (!firstPrTime || firstPrTime > onePm) {
+      lateMiddayPrStudents.push(student.name);
     }
 
     // Check EOD
@@ -399,6 +554,31 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
 
   let briefing = `**Daily Briefing for ${dateStr}**\n\n`;
 
+  // Cohort sentiment (LLM-generated or cached)
+  briefing += `**Cohort Sentiment:**\n`;
+  let sentimentText = "Sentiment analysis not available.";
+  if (isLLMConfigured()) {
+    // Check for cached sentiment first
+    const cached = getCohortSentiment(cohortId, previousDayStr);
+    if (cached) {
+      sentimentText = cached.sentiment;
+    } else if (eodMessages.length > 0) {
+      try {
+        sentimentText = await generateCohortSentiment(eodMessages);
+        saveCohortSentiment(cohortId, previousDayStr, sentimentText);
+      } catch (error) {
+        console.error("Error generating cohort sentiment:", error);
+        sentimentText = "Unable to generate sentiment analysis.";
+      }
+    } else {
+      sentimentText = "No EOD data available for sentiment analysis.";
+    }
+  } else {
+    sentimentText = "LLM not configured for sentiment analysis.";
+  }
+  briefing += sentimentText;
+  briefing += "\n\n";
+
   // Late students
   briefing += `**Late to Attendance (after 10 AM):**\n`;
   briefing += lateStudents.length > 0 ? lateStudents.join(", ") : "None";
@@ -407,6 +587,12 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   // Absent students
   briefing += `**Absent (no attendance):**\n`;
   briefing += absentStudents.length > 0 ? absentStudents.join(", ") : "None";
+  briefing += "\n\n";
+
+  // Late midday PR
+  briefing += `**Late Midday PR (after 1 PM):**\n`;
+  briefing +=
+    lateMiddayPrStudents.length > 0 ? lateMiddayPrStudents.join(", ") : "None";
   briefing += "\n\n";
 
   // Good PR count (3+)
@@ -424,18 +610,16 @@ export function generateDailyBriefing(cohortId: number, simulatedToday?: string)
   briefing += noEodStudents.length > 0 ? noEodStudents.join(", ") : "None";
   briefing += "\n\n";
 
-  // Sentiment placeholder
-  briefing += `**Cohort Sentiment:**\n`;
-  briefing += "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Overall morale appears stable.";
-  briefing += "\n\n";
-
   // Students by last check-in
   briefing += `**Students by Last Check-in (oldest first):**\n`;
   const checkInList = studentsByCheckIn
     .filter((s) => s.status === "active")
     .map((s) => {
       const checkIn = s.last_check_in
-        ? new Date(s.last_check_in).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        ? new Date(s.last_check_in).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
         : "Never";
       return `• ${s.name}: ${checkIn}`;
     })
@@ -453,7 +637,7 @@ async function sendDailyBriefing(): Promise<void> {
     return;
   }
 
-  const briefing = generateDailyBriefing(cohortId);
+  const briefing = await generateDailyBriefing(cohortId);
   if (!briefing) {
     console.log("No active students with Discord. Skipping daily briefing.");
     return;

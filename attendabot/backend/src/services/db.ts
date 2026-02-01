@@ -107,10 +107,73 @@ function initializeTables(): void {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_instructor_notes_student ON instructor_notes(student_id)`);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_students_cohort ON students(cohort_id)`);
 
+  // Student AI summaries cache
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS student_summaries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(student_id, date)
+    )
+  `);
+
+  // Cohort sentiment cache
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cohort_sentiments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cohort_id INTEGER NOT NULL REFERENCES cohorts(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      sentiment TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(cohort_id, date)
+    )
+  `);
+
+  // Feature requests table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS feature_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      priority INTEGER NOT NULL DEFAULT 0,
+      author TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new', 'in_progress', 'done')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Feature flags table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS feature_flags (
+      key TEXT PRIMARY KEY,
+      enabled INTEGER NOT NULL DEFAULT 0,
+      description TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
+  // Seed default feature flags
+  seedDefaultFeatureFlags();
+
   console.log("Database tables initialized");
+}
+
+/** Seeds default feature flags if they don't already exist. */
+function seedDefaultFeatureFlags(): void {
+  if (!db) return;
+  const stmt = db.prepare(
+    `INSERT OR IGNORE INTO feature_flags (key, enabled, description) VALUES (?, ?, ?)`
+  );
+  stmt.run(
+    "eod_next_day_content",
+    1,
+    "Include next day's assignment in the EOD reminder message"
+  );
 }
 
 /** Seeds default cohorts (Fa2025, Sp2026) if they don't already exist. */
@@ -700,4 +763,207 @@ export function getDefaultCohortId(): number | null {
   const stmt = db.prepare(`SELECT id FROM cohorts ORDER BY id ASC LIMIT 1`);
   const result = stmt.get() as { id: number } | undefined;
   return result?.id ?? null;
+}
+
+// ============================================================================
+// LLM Summary/Sentiment Cache functions
+// ============================================================================
+
+/**
+ * Gets a cached student summary for a specific date.
+ * @param studentId - The student ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @returns The cached summary or null if not found.
+ */
+export function getStudentSummary(studentId: number, date: string): { summary: string; createdAt: string } | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT summary, created_at
+    FROM student_summaries
+    WHERE student_id = ? AND date = ?
+  `);
+  const result = stmt.get(studentId, date) as { summary: string; created_at: string } | undefined;
+  return result ? { summary: result.summary, createdAt: result.created_at } : null;
+}
+
+/**
+ * Saves a student summary for a specific date.
+ * @param studentId - The student ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @param summary - The generated summary text.
+ */
+export function saveStudentSummary(studentId: number, date: string, summary: string): void {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO student_summaries (student_id, date, summary)
+    VALUES (?, ?, ?)
+    ON CONFLICT(student_id, date) DO UPDATE SET
+      summary = excluded.summary,
+      created_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(studentId, date, summary);
+}
+
+/**
+ * Gets a cached cohort sentiment for a specific date.
+ * @param cohortId - The cohort ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @returns The cached sentiment or null if not found.
+ */
+export function getCohortSentiment(cohortId: number, date: string): { sentiment: string; createdAt: string } | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT sentiment, created_at
+    FROM cohort_sentiments
+    WHERE cohort_id = ? AND date = ?
+  `);
+  const result = stmt.get(cohortId, date) as { sentiment: string; created_at: string } | undefined;
+  return result ? { sentiment: result.sentiment, createdAt: result.created_at } : null;
+}
+
+/**
+ * Saves a cohort sentiment for a specific date.
+ * @param cohortId - The cohort ID.
+ * @param date - The date in YYYY-MM-DD format.
+ * @param sentiment - The generated sentiment text.
+ */
+export function saveCohortSentiment(cohortId: number, date: string, sentiment: string): void {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO cohort_sentiments (cohort_id, date, sentiment)
+    VALUES (?, ?, ?)
+    ON CONFLICT(cohort_id, date) DO UPDATE SET
+      sentiment = excluded.sentiment,
+      created_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(cohortId, date, sentiment);
+}
+
+// ============================================================================
+// Feature Request functions
+// ============================================================================
+
+/** A feature request record from the database. */
+export interface FeatureRequestRecord {
+  id: number;
+  title: string;
+  description: string;
+  priority: number;
+  author: string;
+  status: "new" | "in_progress" | "done";
+  created_at: string;
+}
+
+/** Retrieves all feature requests, ordered by newest first. */
+export function getFeatureRequests(): FeatureRequestRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT * FROM feature_requests ORDER BY created_at DESC`);
+  return stmt.all() as FeatureRequestRecord[];
+}
+
+/** Retrieves a single feature request by ID. */
+export function getFeatureRequest(id: number): FeatureRequestRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT * FROM feature_requests WHERE id = ?`);
+  return (stmt.get(id) as FeatureRequestRecord) || null;
+}
+
+/** Input for creating a new feature request. */
+export interface CreateFeatureRequestInput {
+  title: string;
+  description: string;
+  priority?: number;
+  author: string;
+}
+
+/** Creates a new feature request and returns the created record. */
+export function createFeatureRequest(input: CreateFeatureRequestInput): FeatureRequestRecord {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO feature_requests (title, description, priority, author)
+    VALUES (?, ?, ?, ?)
+  `);
+  const result = stmt.run(input.title, input.description, input.priority ?? 0, input.author);
+  return getFeatureRequest(result.lastInsertRowid as number)!;
+}
+
+/** Input for updating a feature request. */
+export interface UpdateFeatureRequestInput {
+  title?: string;
+  description?: string;
+  priority?: number;
+  status?: "new" | "in_progress" | "done";
+}
+
+/** Updates a feature request and returns the updated record. */
+export function updateFeatureRequest(id: number, input: UpdateFeatureRequestInput): FeatureRequestRecord | null {
+  const db = getDatabase();
+  const existing = getFeatureRequest(id);
+  if (!existing) return null;
+
+  const stmt = db.prepare(`
+    UPDATE feature_requests SET
+      title = ?,
+      description = ?,
+      priority = ?,
+      status = ?
+    WHERE id = ?
+  `);
+  stmt.run(
+    input.title ?? existing.title,
+    input.description ?? existing.description,
+    input.priority ?? existing.priority,
+    input.status ?? existing.status,
+    id
+  );
+  return getFeatureRequest(id);
+}
+
+/** Deletes a feature request by ID. Returns true if deleted, false if not found. */
+export function deleteFeatureRequest(id: number): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`DELETE FROM feature_requests WHERE id = ?`);
+  const result = stmt.run(id);
+  return result.changes > 0;
+}
+
+// ============================================================================
+// Feature Flags functions
+// ============================================================================
+
+/** A feature flag record from the database. */
+export interface FeatureFlagRecord {
+  key: string;
+  enabled: boolean;
+  description: string;
+  updated_at: string;
+}
+
+/** Retrieves all feature flags. */
+export function getFeatureFlags(): FeatureFlagRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT key, enabled, description, updated_at FROM feature_flags ORDER BY key ASC`);
+  const rows = stmt.all() as Array<{ key: string; enabled: number; description: string; updated_at: string }>;
+  return rows.map((r) => ({ ...r, enabled: r.enabled === 1 }));
+}
+
+/** Checks whether a specific feature flag is enabled. */
+export function isFeatureFlagEnabled(key: string): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT enabled FROM feature_flags WHERE key = ?`);
+  const row = stmt.get(key) as { enabled: number } | undefined;
+  return row?.enabled === 1;
+}
+
+/** Updates a feature flag's enabled state. Returns the updated record or null if not found. */
+export function updateFeatureFlag(key: string, enabled: boolean): FeatureFlagRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`UPDATE feature_flags SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?`);
+  const result = stmt.run(enabled ? 1 : 0, key);
+  if (result.changes === 0) return null;
+  const row = db.prepare(`SELECT key, enabled, description, updated_at FROM feature_flags WHERE key = ?`).get(key) as
+    | { key: string; enabled: number; description: string; updated_at: string }
+    | undefined;
+  if (!row) return null;
+  return { ...row, enabled: row.enabled === 1 };
 }

@@ -1,25 +1,146 @@
-# Dev tooling
+# Attendabot
 
-- Use `bun` instead of `npm` where possible.
+Discord bot for bootcamp attendance/EOD tracking with React admin dashboard.
 
-# Project structure
+## Commands
 
-- `backend/` - Express API server and Discord bot (port 3001)
-- `frontend/` - React/Vite admin panel
-- `.env` - Environment variables (at project root, shared by backend)
+```bash
+# Development (run in separate terminals)
+cd backend && bun run dev      # API server (port 3001)
+cd frontend && bun run dev     # Vite dev server (port 5173)
 
-# Development
-
-- Backend: `cd backend && bun run dev`
-- Frontend: `cd frontend && bun run dev`
-- Run both in separate terminals
-- Visit http://localhost:5173 for admin panel (Vite proxies API to backend)
+# Testing
+cd backend && bun test         # Run all 148 tests
+cd backend && bun test src/test/services/db.test.ts  # Single file
 
 # Production
+./update-bot.sh                # Deploy to EC2 via SSM (pulls, builds, restarts pm2)
+```
 
-- Deploy with `./update-bot.sh`
-- Backend serves frontend static files on port 3001
+## Architecture
 
-# Style guide
+```
+Browser (localhost:5173)
+    │
+    ├─ REST API ──→ Express (:3001) ──→ SQLite (backend/db/attendabot.db)
+    │                    │
+    └─ WebSocket ────────┴──→ Real-time logs
 
-- Add relevant comments to TS file's following Google's guide: https://google.github.io/styleguide/tsguide.html#comments-documentation
+Discord Bot (cron jobs)
+    │
+    ├─ Discord.js ──→ Discord API (reminders, verifications, DMs)
+    │
+    └─ Gemini API ──→ Cohort sentiment analysis
+```
+
+## Directory Structure
+
+| Directory                  | Purpose                                     |
+| -------------------------- | ------------------------------------------- |
+| `backend/src/api/`         | Express routes, middleware, WebSocket       |
+| `backend/src/bot/`         | Cron scheduler, curriculum, constants       |
+| `backend/src/services/`    | Core logic: db, discord, llm, stats, logger |
+| `backend/src/test/`        | Vitest test suite                           |
+| `frontend/src/components/` | React UI components                         |
+| `frontend/src/api/`        | API client with JWT handling                |
+| `frontend/src/hooks/`      | Custom hooks (useWebSocket)                 |
+
+## Database Tables
+
+| Table               | Purpose                                 |
+| ------------------- | --------------------------------------- |
+| `channels`          | Discord channel metadata                |
+| `users`             | Discord user profiles                   |
+| `messages`          | Logged Discord messages                 |
+| `activity_log`      | Bot activity events                     |
+| `cohorts`           | Student cohorts (Fa2025, Sp2026)        |
+| `students`          | Student records linked to cohorts/users |
+| `instructor_notes`  | Per-student notes (CASCADE on delete)   |
+| `student_summaries` | Cached AI summaries by date             |
+| `cohort_sentiments` | Cached cohort sentiment by date         |
+
+## Environment Variables
+
+```bash
+DISCORD_TOKEN=         # Discord bot token
+JWT_SECRET=            # Secret for admin panel JWT
+ADMIN_PASSWORD=        # Admin login password
+GEMINI_API_KEY=        # Google Gemini API (optional, for AI features)
+CURRENT_COHORT_ID=     # Active cohort for daily briefings
+```
+
+## Deployment
+
+Deployment uses **AWS SSM Session Manager** (no SSH keys needed) and **AWS Secrets Manager** for environment variables.
+
+### Manual deploy
+
+```bash
+./update-bot.sh
+```
+
+This sends an SSM command to the EC2 instance that pulls the latest code, fetches secrets from Secrets Manager, builds, and restarts PM2. Requires AWS CLI configured with deployer credentials (see below).
+
+### CI/CD (automatic)
+
+Pushing to `main` with changes in `attendabot/` triggers the GitHub Actions workflow (`.github/workflows/deploy-attendabot.yml`), which runs the same SSM deploy process using OIDC-based AWS authentication.
+
+### Updating environment variables
+
+Env vars live in AWS Secrets Manager under the secret `attendabot/env`. To update:
+
+```bash
+# View current values
+aws secretsmanager get-secret-value --secret-id attendabot/env --query SecretString --output text | python3 -m json.tool
+```
+
+The `.env` file on the EC2 instance is regenerated from Secrets Manager on every deploy. Manual edits to the file on the instance will be overwritten.
+
+### Onboarding a new developer
+
+1. An admin creates an IAM user and adds them to the `attendabot-deployers` group
+2. The dev installs [AWS CLI](https://aws.amazon.com/cli/) and runs `aws configure` with their credentials (region: `us-east-1`)
+3. They can now run `./update-bot.sh` to deploy
+
+See `_devlogs/private/aws-setup.md` for full IAM policy details and setup instructions.
+
+## Bot Cron Schedule (America/New_York)
+
+| Time     | Job                                            |
+| -------- | ---------------------------------------------- |
+| 8:00 AM  | Daily briefing to instructors                  |
+| 9:45 AM  | Attendance reminder                            |
+| 10:00 AM | Attendance verification (DMs late users)       |
+| 12:45 PM | Midday PR reminder                             |
+| 1:00 PM  | Midday PR verification                         |
+| 5:00 PM  | EOD reminder + tomorrow's assignment (Mon-Sat) |
+| 11:59 PM | EOD verification + PR leaderboard              |
+
+## Testing
+
+- **Framework**: Vitest with in-memory SQLite
+- **Location**: `backend/src/test/`
+- **Utilities**: `test/utils/testUtils.ts` - fixtures, db factory
+- **Pattern**: Direct DB testing, mocked external services
+
+When adding new features or changing existing behavior, add appropriate tests where needed.
+
+## Workflow
+
+Before starting non-trivial changes, enter plan mode and ask the user clarifying questions about requirements, edge cases, and preferred approach. Get explicit confirmation on the plan before writing any code.
+
+After finishing work, run `bun run build` in the `frontend` and `backend` directories to make sure everything builds with no errors. Run `bun test` in the `backend` directory to make sure all tests pass.
+
+## Style Guide
+
+- Use `bun` instead of `npm` or `npx`.
+- Follow [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html)
+- Add JSDoc comments to exported functions
+- Use descriptive variable names
+
+## Gotchas
+
+- **IMPORTANT**: The bot uses `USER_ID_TO_NAME_MAP` in `bot/constants.ts` to track current cohort members. Update this when cohort changes.
+- Frontend dev server proxies `/api/*` to backend - no CORS issues in dev
+- Database file is at `backend/db/attendabot.db` - not in src/
+- Cron jobs only run if `CURRENT_COHORT_ROLE_ID` is set in constants

@@ -4,31 +4,49 @@
  */
 
 import { useState, useEffect } from "react";
-import { isLoggedIn, clearToken, getUsername } from "./api/client";
+import { isLoggedIn, clearToken, getUsername, verifySession, onAuthFailure } from "./api/client";
 import { Login } from "./components/Login";
-import { StatusPanel } from "./components/StatusPanel";
 import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
 import { StudentCohortPanel } from "./components/StudentCohortPanel";
 import { TestingPanel } from "./components/TestingPanel";
+import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import "./App.css";
 
-type Tab = "students" | "messages" | "testing";
+type Tab = "students" | "messages" | "testing" | "diagnostics";
 
 /** Root application component with authentication and admin dashboard. */
 function App() {
   const [loggedIn, setLoggedIn] = useState(isLoggedIn());
   const [activeTab, setActiveTab] = useState<Tab>("students");
   const [username, setUsername] = useState<string | null>(null);
+  const [sessionInvalid, setSessionInvalid] = useState(false);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
     setUsername(getUsername());
+
+    // Verify the token is actually valid on mount
+    if (isLoggedIn()) {
+      verifySession().then((valid) => {
+        if (!valid) {
+          setSessionInvalid(true);
+        }
+      });
+    }
+
+    // Listen for auth failures from any API call
+    const unsubscribe = onAuthFailure(() => {
+      setSessionInvalid(true);
+    });
+
+    return unsubscribe;
   }, []);
 
   const handleLogout = () => {
     clearToken();
     setLoggedIn(false);
+    setSessionInvalid(false);
     setUsername(null);
   };
 
@@ -51,6 +69,17 @@ function App() {
         </div>
       </header>
 
+      {sessionInvalid && (
+        <div className="session-warning">
+          Your session has expired or is invalid. Data may not load correctly.
+          Please{" "}
+          <button onClick={handleLogout} className="session-warning-btn">
+            log out and log back in
+          </button>{" "}
+          to fix this.
+        </div>
+      )}
+
       <nav className="tab-navigation">
         <button
           className={`tab-btn ${activeTab === "students" ? "active" : ""}`}
@@ -70,6 +99,12 @@ function App() {
         >
           Testing
         </button>
+        <button
+          className={`tab-btn ${activeTab === "diagnostics" ? "active" : ""}`}
+          onClick={() => setActiveTab("diagnostics")}
+        >
+          Configuration
+        </button>
       </nav>
 
       <main>
@@ -79,10 +114,11 @@ function App() {
           <>
             <MessageFeed />
             <UserMessages />
-            <StatusPanel />
           </>
-        ) : (
+        ) : activeTab === "testing" ? (
           <TestingPanel />
+        ) : (
+          <DiagnosticsPanel />
         )}
       </main>
     </div>

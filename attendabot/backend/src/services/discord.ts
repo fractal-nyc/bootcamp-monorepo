@@ -12,7 +12,12 @@ import {
 } from "discord.js";
 import dotenv from "dotenv";
 import { logMessage, getMessageCountByChannel, getAllUsers, upsertUser } from "./db";
-import { MONITORED_CHANNEL_IDS, BOT_TEST_CHANNEL_ID } from "../bot/constants";
+import {
+  MONITORED_CHANNEL_IDS,
+  BOT_TEST_CHANNEL_ID,
+  SP2026_COHORT_ROLE_ID,
+  FA2025_COHORT_ROLE_ID,
+} from "../bot/constants";
 
 dotenv.config();
 
@@ -333,8 +338,10 @@ export async function syncUserDisplayNames(): Promise<number> {
 
   // Get all users from our database
   const dbUsers = getAllUsers();
+  const dbUserIds = new Set(dbUsers.map((u) => u.author_id));
   let updatedCount = 0;
 
+  // Update display names for existing DB users
   for (const dbUser of dbUsers) {
     const member = members.get(dbUser.author_id);
     if (member) {
@@ -345,6 +352,25 @@ export async function syncUserDisplayNames(): Promise<number> {
         updatedCount++;
         console.log(
           `Updated display name for ${member.user.username}: ${displayName}`
+        );
+      }
+    }
+  }
+
+  // Also upsert members from cohort roles who may not be in the DB yet
+  const cohortRoleIds = [SP2026_COHORT_ROLE_ID, FA2025_COHORT_ROLE_ID].filter(
+    (id) => id.length > 0
+  );
+  for (const roleId of cohortRoleIds) {
+    const role = guild.roles.cache.get(roleId);
+    if (!role) continue;
+    for (const [memberId, member] of role.members) {
+      if (!dbUserIds.has(memberId)) {
+        upsertUser(memberId, member.displayName, member.user.username);
+        dbUserIds.add(memberId);
+        updatedCount++;
+        console.log(
+          `Added cohort member ${member.user.username}: ${member.displayName}`
         );
       }
     }

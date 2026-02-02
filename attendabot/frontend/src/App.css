@@ -590,7 +590,6 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #333;
 }
 
 .sidebar-header h2 {

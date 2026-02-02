@@ -30,6 +30,7 @@ vi.mock("../../services/discord", () => ({
   fetchTextChannel: vi.fn(),
   fetchMessagesSince: vi.fn(),
   sendDirectMessage: vi.fn(),
+  sendChannelMessage: vi.fn().mockResolvedValue(true),
 }));
 
 // Mock stats service

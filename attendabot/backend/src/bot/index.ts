@@ -8,6 +8,7 @@ import {
   ATTENDANCE_CHANNEL_ID,
   ATTENDANCE_REMINDER_CRON,
   ATTENDANCE_VERIFICATION_CRON,
+  BOT_TEST_CHANNEL_ID,
   CRON_TIMEZONE,
   CURRENT_COHORT_ROLE_ID,
   DAILY_BRIEFING_CHANNEL_ID,
@@ -27,6 +28,7 @@ import {
   fetchTextChannel,
   fetchMessagesSince,
   sendDirectMessage,
+  sendChannelMessage,
 } from "../services/discord";
 import {
   incrementMessagesSent,
@@ -258,10 +260,28 @@ function scheduleTask(
     cron.schedule(
       cronExpression,
       () => {
-        task().catch((error) => {
-          console.error(`Error while running ${description} task:`, error);
-          incrementErrors();
+        const timestamp = new Date().toLocaleString("en-US", {
+          timeZone: CRON_TIMEZONE,
         });
+        sendChannelMessage(
+          BOT_TEST_CHANNEL_ID,
+          `⏰ **Cron running:** ${description} (${timestamp})`,
+        ).catch(() => {});
+        task()
+          .then(() => {
+            sendChannelMessage(
+              BOT_TEST_CHANNEL_ID,
+              `✅ **Cron completed:** ${description}`,
+            ).catch(() => {});
+          })
+          .catch((error) => {
+            console.error(`Error while running ${description} task:`, error);
+            incrementErrors();
+            sendChannelMessage(
+              BOT_TEST_CHANNEL_ID,
+              `❌ **Cron failed:** ${description} — ${error.message}`,
+            ).catch(() => {});
+          });
       },
       {
         timezone: CRON_TIMEZONE,

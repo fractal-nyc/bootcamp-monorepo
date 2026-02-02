@@ -10,7 +10,7 @@ cd backend && bun run dev      # API server (port 3001)
 cd frontend && bun run dev     # Vite dev server (port 5173)
 
 # Testing
-cd backend && bun test         # Run all 148 tests
+cd backend && bun test         # Run all tests
 cd backend && bun test src/test/services/db.test.ts  # Single file
 
 # Production

@@ -4,34 +4,36 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  isLLMConfigured,
+  generateStudentSummary,
+  generateCohortSentiment,
+} from "../../services/llm";
 
-// Store original env
-const originalEnv = process.env;
+// Store originals for restoration
+const originalEnv = { ...process.env };
+const originalFetch = globalThis.fetch;
 
 describe("LLM Service", () => {
   beforeEach(() => {
-    // Reset modules and environment before each test
-    vi.resetModules();
     process.env = { ...originalEnv };
-    vi.stubGlobal("fetch", vi.fn());
+    globalThis.fetch = vi.fn();
   });
 
   afterEach(() => {
-    process.env = originalEnv;
-    vi.unstubAllGlobals();
+    process.env = { ...originalEnv };
+    globalThis.fetch = originalFetch;
   });
 
   describe("isLLMConfigured", () => {
-    it("returns false when GEMINI_API_KEY is not set", async () => {
+    it("returns false when GEMINI_API_KEY is not set", () => {
       delete process.env.GEMINI_API_KEY;
-      const { isLLMConfigured } = await import("../../services/llm");
 
       expect(isLLMConfigured()).toBe(false);
     });
 
-    it("returns true when GEMINI_API_KEY is set", async () => {
+    it("returns true when GEMINI_API_KEY is set", () => {
       process.env.GEMINI_API_KEY = "test-api-key";
-      const { isLLMConfigured } = await import("../../services/llm");
 
       expect(isLLMConfigured()).toBe(true);
     });
@@ -40,7 +42,6 @@ describe("LLM Service", () => {
   describe("generateStudentSummary", () => {
     it("throws when LLM not configured", async () => {
       delete process.env.GEMINI_API_KEY;
-      const { generateStudentSummary } = await import("../../services/llm");
 
       await expect(
         generateStudentSummary("Test Student", [])
@@ -49,7 +50,6 @@ describe("LLM Service", () => {
 
     it("returns default message for empty feed data", async () => {
       process.env.GEMINI_API_KEY = "test-api-key";
-      const { generateStudentSummary } = await import("../../services/llm");
 
       const result = await generateStudentSummary("Test Student", []);
 
@@ -76,9 +76,7 @@ describe("LLM Service", () => {
         }),
       };
 
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
-
-      const { generateStudentSummary } = await import("../../services/llm");
+      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse);
 
       const feedItems = [
         {
@@ -102,7 +100,8 @@ describe("LLM Service", () => {
       expect(result).toBe("Generated summary text");
       expect(fetch).toHaveBeenCalledTimes(1);
 
-      const fetchCall = vi.mocked(fetch).mock.calls[0];
+      const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
+      const fetchCall = mockFetch.mock.calls[0];
       expect(fetchCall[0]).toContain("gemini");
       expect(fetchCall[0]).toContain("test-api-key");
 
@@ -120,9 +119,7 @@ describe("LLM Service", () => {
         text: vi.fn().mockResolvedValue("Internal Server Error"),
       };
 
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
-
-      const { generateStudentSummary } = await import("../../services/llm");
+      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse);
 
       const feedItems = [
         {
@@ -145,9 +142,7 @@ describe("LLM Service", () => {
       const abortError = new Error("Aborted");
       abortError.name = "AbortError";
 
-      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(abortError));
-
-      const { generateStudentSummary } = await import("../../services/llm");
+      globalThis.fetch = vi.fn().mockRejectedValue(abortError);
 
       const feedItems = [
         {
@@ -168,14 +163,12 @@ describe("LLM Service", () => {
   describe("generateCohortSentiment", () => {
     it("throws when LLM not configured", async () => {
       delete process.env.GEMINI_API_KEY;
-      const { generateCohortSentiment } = await import("../../services/llm");
 
       await expect(generateCohortSentiment([])).rejects.toThrow("LLM not configured");
     });
 
     it("returns default message for empty EOD messages", async () => {
       process.env.GEMINI_API_KEY = "test-api-key";
-      const { generateCohortSentiment } = await import("../../services/llm");
 
       const result = await generateCohortSentiment([]);
 
@@ -198,9 +191,7 @@ describe("LLM Service", () => {
         }),
       };
 
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
-
-      const { generateCohortSentiment } = await import("../../services/llm");
+      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse);
 
       const eodMessages = [
         {
@@ -219,7 +210,8 @@ describe("LLM Service", () => {
 
       expect(result).toBe("Overall positive sentiment");
 
-      const fetchCall = vi.mocked(fetch).mock.calls[0];
+      const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
+      const fetchCall = mockFetch.mock.calls[0];
       const body = JSON.parse(fetchCall[1]?.body as string);
       expect(body.contents[0].parts[0].text).toContain("Had a productive day!");
       expect(body.contents[0].parts[0].text).toContain("Struggled with the assignment");
@@ -235,9 +227,7 @@ describe("LLM Service", () => {
         }),
       };
 
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
-
-      const { generateCohortSentiment } = await import("../../services/llm");
+      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse);
 
       const eodMessages = [
         {
@@ -264,15 +254,14 @@ describe("LLM Service", () => {
         }),
       };
 
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
-
-      const { generateCohortSentiment } = await import("../../services/llm");
+      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse);
 
       await generateCohortSentiment([
         { author_id: "1", content: "test", created_at: "2024-01-15T00:00:00Z" },
       ]);
 
-      const url = vi.mocked(fetch).mock.calls[0][0] as string;
+      const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
+      const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain("generativelanguage.googleapis.com");
       expect(url).toContain("gemini");
       expect(url).toContain("generateContent");
@@ -288,15 +277,14 @@ describe("LLM Service", () => {
         }),
       };
 
-      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse));
-
-      const { generateCohortSentiment } = await import("../../services/llm");
+      globalThis.fetch = vi.fn().mockResolvedValue(mockResponse);
 
       await generateCohortSentiment([
         { author_id: "1", content: "test", created_at: "2024-01-15T00:00:00Z" },
       ]);
 
-      const options = vi.mocked(fetch).mock.calls[0][1];
+      const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
+      const options = mockFetch.mock.calls[0][1];
       expect(options?.method).toBe("POST");
       expect(options?.headers).toEqual({ "Content-Type": "application/json" });
 

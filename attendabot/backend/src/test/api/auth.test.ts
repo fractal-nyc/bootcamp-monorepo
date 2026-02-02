@@ -5,36 +5,34 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Response, NextFunction, Request } from "express";
 import jwt from "jsonwebtoken";
+import {
+  authenticateToken,
+  generateToken,
+  verifyCredentials,
+  verifyPassword,
+  getValidUsernames,
+  AuthRequest,
+} from "../../api/middleware/auth";
 
-// Store original env
-const originalEnv = process.env;
-
-// Type for authenticated request
-interface TestAuthRequest extends Request {
-  user?: { authenticated: boolean; username: string };
-}
+// Store original env values
+const originalEnv = { ...process.env };
 
 describe("Auth Middleware", () => {
   beforeEach(() => {
-    vi.resetModules();
-    process.env = {
-      ...originalEnv,
-      JWT_SECRET: "test-secret-key",
-      ADMIN_PASSWORD: "admin123",
-      INSTRUCTOR_DAVID_PASSWORD: "david-pass",
-      INSTRUCTOR_PARIS_PASSWORD: "paris-pass",
-      INSTRUCTOR_ANDREW_PASSWORD: "andrew-pass",
-    };
+    process.env.JWT_SECRET = "test-secret-key";
+    process.env.ADMIN_PASSWORD = "admin123";
+    process.env.INSTRUCTOR_DAVID_PASSWORD = "david-pass";
+    process.env.INSTRUCTOR_PARIS_PASSWORD = "paris-pass";
+    process.env.INSTRUCTOR_ANDREW_PASSWORD = "andrew-pass";
+    process.env.INSTRUCTOR_LIAM_PASSWORD = "liam-pass";
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    process.env = { ...originalEnv };
   });
 
   describe("generateToken", () => {
-    it("generates a valid JWT token", async () => {
-      const { generateToken } = await import("../../api/middleware/auth");
-
+    it("generates a valid JWT token", () => {
       const token = generateToken("David");
 
       const decoded = jwt.verify(token, "test-secret-key") as {
@@ -46,9 +44,7 @@ describe("Auth Middleware", () => {
       expect(decoded.username).toBe("David");
     });
 
-    it("includes username in token payload", async () => {
-      const { generateToken } = await import("../../api/middleware/auth");
-
+    it("includes username in token payload", () => {
       const token = generateToken("Paris");
       const decoded = jwt.verify(token, "test-secret-key") as {
         username: string;
@@ -59,85 +55,68 @@ describe("Auth Middleware", () => {
   });
 
   describe("verifyCredentials", () => {
-    it("returns true for valid instructor credentials", async () => {
-      const { verifyCredentials } = await import("../../api/middleware/auth");
-
+    it("returns true for valid instructor credentials", () => {
       expect(verifyCredentials("David", "david-pass")).toBe(true);
       expect(verifyCredentials("Paris", "paris-pass")).toBe(true);
       expect(verifyCredentials("Andrew", "andrew-pass")).toBe(true);
+      expect(verifyCredentials("Liam", "liam-pass")).toBe(true);
     });
 
-    it("returns false for invalid instructor password", async () => {
-      const { verifyCredentials } = await import("../../api/middleware/auth");
-
+    it("returns false for invalid instructor password", () => {
       expect(verifyCredentials("David", "wrong-password")).toBe(false);
     });
 
-    it("returns true for admin password with any username", async () => {
-      const { verifyCredentials } = await import("../../api/middleware/auth");
-
+    it("returns true for admin password with any username", () => {
       // Admin password should work as fallback
       expect(verifyCredentials("David", "admin123")).toBe(true);
       expect(verifyCredentials("SomeOther", "admin123")).toBe(true);
     });
 
-    it("returns false for unknown username without admin password", async () => {
-      const { verifyCredentials } = await import("../../api/middleware/auth");
-
+    it("returns false for unknown username without admin password", () => {
       expect(verifyCredentials("Unknown", "wrong-pass")).toBe(false);
     });
 
-    it("returns false when instructor password not configured", async () => {
+    it("returns false when instructor password not configured", () => {
       delete process.env.INSTRUCTOR_DAVID_PASSWORD;
       delete process.env.ADMIN_PASSWORD;
-
-      const { verifyCredentials } = await import("../../api/middleware/auth");
 
       expect(verifyCredentials("David", "anything")).toBe(false);
     });
   });
 
   describe("verifyPassword (legacy)", () => {
-    it("returns true for valid admin password", async () => {
-      const { verifyPassword } = await import("../../api/middleware/auth");
-
+    it("returns true for valid admin password", () => {
       expect(verifyPassword("admin123")).toBe(true);
     });
 
-    it("returns false for invalid admin password", async () => {
-      const { verifyPassword } = await import("../../api/middleware/auth");
-
+    it("returns false for invalid admin password", () => {
       expect(verifyPassword("wrong")).toBe(false);
     });
 
-    it("returns false when ADMIN_PASSWORD not set", async () => {
+    it("returns false when ADMIN_PASSWORD not set", () => {
       delete process.env.ADMIN_PASSWORD;
-
-      const { verifyPassword } = await import("../../api/middleware/auth");
 
       expect(verifyPassword("anything")).toBe(false);
     });
   });
 
   describe("getValidUsernames", () => {
-    it("returns list of instructor usernames", async () => {
-      const { getValidUsernames } = await import("../../api/middleware/auth");
-
+    it("returns list of instructor usernames", () => {
       const usernames = getValidUsernames();
 
       expect(usernames).toContain("David");
       expect(usernames).toContain("Paris");
       expect(usernames).toContain("Andrew");
+      expect(usernames).toContain("Liam");
+      expect(usernames.length).toBe(4);
     });
   });
 
   describe("authenticateToken middleware", () => {
-    it("returns 401 when no token provided", async () => {
-      const { authenticateToken } = await import("../../api/middleware/auth");
-
+    it("returns 401 when no token provided", () => {
       const req = {
         headers: {},
-      } as TestAuthRequest;
+      } as AuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -153,14 +132,12 @@ describe("Auth Middleware", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("returns 403 for invalid token", async () => {
-      const { authenticateToken } = await import("../../api/middleware/auth");
-
+    it("returns 403 for invalid token", () => {
       const req = {
         headers: {
           authorization: "Bearer invalid-token",
         },
-      } as TestAuthRequest;
+      } as AuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -178,18 +155,14 @@ describe("Auth Middleware", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("calls next() and sets req.user for valid token", async () => {
-      const { authenticateToken, generateToken } = await import(
-        "../../api/middleware/auth"
-      );
-
+    it("calls next() and sets req.user for valid token", () => {
       const validToken = generateToken("David");
 
       const req = {
         headers: {
           authorization: `Bearer ${validToken}`,
         },
-      } as TestAuthRequest;
+      } as AuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -206,9 +179,7 @@ describe("Auth Middleware", () => {
       expect(req.user?.username).toBe("David");
     });
 
-    it("returns 403 for expired token", async () => {
-      const { authenticateToken } = await import("../../api/middleware/auth");
-
+    it("returns 403 for expired token", () => {
       // Create an expired token
       const expiredToken = jwt.sign(
         { authenticated: true, username: "David" },
@@ -220,7 +191,7 @@ describe("Auth Middleware", () => {
         headers: {
           authorization: `Bearer ${expiredToken}`,
         },
-      } as TestAuthRequest;
+      } as AuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -235,14 +206,12 @@ describe("Auth Middleware", () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("handles malformed authorization header", async () => {
-      const { authenticateToken } = await import("../../api/middleware/auth");
-
+    it("handles malformed authorization header", () => {
       const req = {
         headers: {
           authorization: "NotBearer token",
         },
-      } as TestAuthRequest;
+      } as AuthRequest;
 
       const res = {
         status: vi.fn().mockReturnThis(),
@@ -261,45 +230,34 @@ describe("Auth Middleware", () => {
 
 describe("Auth Routes", () => {
   beforeEach(() => {
-    vi.resetModules();
-    process.env = {
-      ...originalEnv,
-      JWT_SECRET: "test-secret-key",
-      ADMIN_PASSWORD: "admin123",
-      INSTRUCTOR_DAVID_PASSWORD: "david-pass",
-      INSTRUCTOR_PARIS_PASSWORD: "paris-pass",
-      INSTRUCTOR_ANDREW_PASSWORD: "andrew-pass",
-    };
+    process.env.JWT_SECRET = "test-secret-key";
+    process.env.ADMIN_PASSWORD = "admin123";
+    process.env.INSTRUCTOR_DAVID_PASSWORD = "david-pass";
+    process.env.INSTRUCTOR_PARIS_PASSWORD = "paris-pass";
+    process.env.INSTRUCTOR_ANDREW_PASSWORD = "andrew-pass";
+    process.env.INSTRUCTOR_LIAM_PASSWORD = "liam-pass";
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    process.env = { ...originalEnv };
   });
 
   describe("POST /api/auth/login", () => {
-    it("returns 400 when password is missing", async () => {
+    it("returns 400 when password is missing", () => {
       // The route validates password is required
       const hasPassword = false;
       expect(hasPassword).toBe(false);
     });
 
-    it("returns 400 when username is missing", async () => {
-      // When username is empty, the route should return 400
-      const { verifyCredentials } = await import("../../api/middleware/auth");
+    it("returns 400 when username is missing", () => {
       expect(verifyCredentials("", "password")).toBe(false);
     });
 
-    it("returns 401 for invalid credentials", async () => {
-      const { verifyCredentials } = await import("../../api/middleware/auth");
-
+    it("returns 401 for invalid credentials", () => {
       expect(verifyCredentials("David", "wrong-password")).toBe(false);
     });
 
-    it("returns token and username for valid credentials", async () => {
-      const { verifyCredentials, generateToken } = await import(
-        "../../api/middleware/auth"
-      );
-
+    it("returns token and username for valid credentials", () => {
       const isValid = verifyCredentials("David", "david-pass");
       expect(isValid).toBe(true);
 
@@ -310,13 +268,11 @@ describe("Auth Routes", () => {
   });
 
   describe("GET /api/auth/usernames", () => {
-    it("returns list of valid usernames", async () => {
-      const { getValidUsernames } = await import("../../api/middleware/auth");
-
+    it("returns list of valid usernames", () => {
       const usernames = getValidUsernames();
 
       expect(Array.isArray(usernames)).toBe(true);
-      expect(usernames.length).toBe(3);
+      expect(usernames.length).toBe(4);
     });
   });
 });

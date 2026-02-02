@@ -43,9 +43,10 @@ export const BOT_TEST_CHANNEL_ID = "1377482428062629978";
 export const MONITORED_CHANNEL_IDS = [EOD_CHANNEL_ID, ATTENDANCE_CHANNEL_ID];
 
 /** Discord role ID for the current active cohort (empty if disabled). */
-export const CURRENT_COHORT_ROLE_ID = "";
+export const CURRENT_COHORT_ROLE_ID = "1467913673560559768";
 
-/** Discord role ID for the FA2025 cohort. */
+/** Discord role ID for specific cohorts. */
+export const SP2026_COHORT_ROLE_ID = "1467913673560559768";
 export const FA2025_COHORT_ROLE_ID = "1416479282817007797";
 
 /** Discord user ID to name mapping for the current cohort. */

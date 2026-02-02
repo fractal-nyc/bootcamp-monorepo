@@ -72,7 +72,6 @@ attendabot/
 | `JWT_SECRET` | Secret for admin panel authentication |
 | `ADMIN_PASSWORD` | Admin login password |
 | `GEMINI_API_KEY` | Google Gemini API key (optional, for AI features) |
-| `CURRENT_COHORT_ID` | Active cohort ID for daily briefings |
 | `EC2_HOST` | Production server IP for deployment |
 
 See `.env.example` for all options.

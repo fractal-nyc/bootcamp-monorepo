@@ -745,17 +745,16 @@ export function getActiveStudentsWithDiscord(cohortId: number): StudentRecord[] 
   return stmt.all(cohortId) as StudentRecord[];
 }
 
+/** The database ID of the current active cohort. */
+const CURRENT_COHORT_DATABASE_ID: number | null = 2;
+
 /**
  * Gets the current cohort ID for the daily briefing.
- * Uses CURRENT_COHORT_ID env var if set, otherwise falls back to the first cohort.
+ * Uses CURRENT_COHORT_DATABASE_ID, falling back to the first cohort in the database.
  */
 export function getDefaultCohortId(): number | null {
-  const envCohortId = process.env.CURRENT_COHORT_ID;
-  if (envCohortId) {
-    const parsed = parseInt(envCohortId, 10);
-    if (!isNaN(parsed)) {
-      return parsed;
-    }
+  if (CURRENT_COHORT_DATABASE_ID != null) {
+    return CURRENT_COHORT_DATABASE_ID;
   }
 
   // Fallback: return the first cohort

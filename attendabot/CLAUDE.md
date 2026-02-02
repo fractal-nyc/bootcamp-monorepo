@@ -66,7 +66,6 @@ DISCORD_TOKEN=         # Discord bot token
 JWT_SECRET=            # Secret for admin panel JWT
 ADMIN_PASSWORD=        # Admin login password
 GEMINI_API_KEY=        # Google Gemini API (optional, for AI features)
-CURRENT_COHORT_ID=     # Active cohort for daily briefings
 ```
 
 ## Deployment

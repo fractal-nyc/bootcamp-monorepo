@@ -7,6 +7,13 @@ Presentations
 3. Vol 1 Ch 1: Scale from Zero to Millions of Users. [Ties into deployment. ALTERNATIVE: ECS/games?]
 4. Vol 1 Ch 9: Design a Web Crawler
 5. Vol 1 Ch 11: Design a News Feed System
+6. ? [Midterm?]
+7. ?
+8. ?
+9. ?
+10. ?
+11. ?
+12. ?
 
 ## Presentation 1: Communicating system designs
 

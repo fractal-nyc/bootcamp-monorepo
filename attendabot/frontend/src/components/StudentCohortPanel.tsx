@@ -92,7 +92,7 @@ export function StudentCohortPanel() {
 
   return (
     <div className="panel student-cohort-panel">
-      <h2>Students</h2>
+      <h2>Students ({students.length})</h2>
 
       <div className="cohort-controls">
         <select

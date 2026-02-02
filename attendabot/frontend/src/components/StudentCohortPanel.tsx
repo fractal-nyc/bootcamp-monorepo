@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Cohort, Student } from "../api/client";
-import { getCohorts, getStudentsByCohort, createStudent, deleteStudent } from "../api/client";
+import { getCohorts, getStudentsByCohort, createStudent, deleteStudent, updateStudent } from "../api/client";
 import { StudentTable } from "./StudentTable";
 import { StudentDetail } from "./StudentDetail";
 import { AddStudentModal } from "./AddStudentModal";
@@ -90,6 +90,15 @@ export function StudentCohortPanel() {
     loadStudents();
   };
 
+  const handleStudentNameChange = async (newName: string) => {
+    if (!selectedStudent) return;
+    const updated = await updateStudent(selectedStudent.id, { name: newName });
+    if (updated) {
+      setSelectedStudent(updated);
+      loadStudents();
+    }
+  };
+
   return (
     <div className="panel student-cohort-panel">
       <h2>Students ({students.length})</h2>
@@ -125,6 +134,7 @@ export function StudentCohortPanel() {
         isOpen={sidebarOpen}
         onClose={handleCloseSidebar}
         title={selectedStudent?.name || "Student Details"}
+        onTitleChange={handleStudentNameChange}
       >
         {selectedStudent && (
           <StudentDetail student={selectedStudent} onNoteAdded={handleNoteAdded} />

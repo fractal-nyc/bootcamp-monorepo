@@ -27,14 +27,24 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  onTitleChange?: (newTitle: string) => void;
   children: React.ReactNode;
 }
 
 /** A fixed-position sidebar that slides from the right edge of the screen. */
-export function Sidebar({ isOpen, onClose, title, children }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, title, onTitleChange, children }: SidebarProps) {
   const [width, setWidth] = useState(getSavedWidth);
   const [isResizing, setIsResizing] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Sync editedTitle when title prop changes (e.g. selecting a different student)
+  useEffect(() => {
+    setEditedTitle(title);
+    setIsEditingTitle(false);
+  }, [title]);
 
   // Close on Escape key
   useEffect(() => {
@@ -114,7 +124,43 @@ export function Sidebar({ isOpen, onClose, title, children }: SidebarProps) {
           onMouseDown={handleMouseDown}
         />
         <div className="sidebar-header">
-          <h2>{title}</h2>
+          {onTitleChange && isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              className="sidebar-title-input"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onBlur={() => {
+                const trimmed = editedTitle.trim();
+                if (trimmed && trimmed !== title) {
+                  onTitleChange(trimmed);
+                } else {
+                  setEditedTitle(title);
+                }
+                setIsEditingTitle(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                } else if (e.key === "Escape") {
+                  setEditedTitle(title);
+                  setIsEditingTitle(false);
+                }
+              }}
+              autoFocus
+            />
+          ) : (
+            <h2
+              className={onTitleChange ? "sidebar-title-editable" : ""}
+              onClick={() => {
+                if (onTitleChange) {
+                  setIsEditingTitle(true);
+                }
+              }}
+            >
+              {title}
+            </h2>
+          )}
           <button className="sidebar-close" onClick={onClose}>
             &times;
           </button>

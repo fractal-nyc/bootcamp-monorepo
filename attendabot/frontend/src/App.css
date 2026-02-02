@@ -598,6 +598,34 @@ button:disabled {
   font-size: 1.25rem;
 }
 
+.sidebar-title-editable {
+  cursor: pointer;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.2s;
+}
+
+.sidebar-title-editable:hover {
+  border-bottom-color: #666;
+}
+
+.sidebar-title-input {
+  font-size: 1.25rem;
+  font-weight: bold;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 0;
+  width: 100%;
+  font-family: inherit;
+}
+
+.sidebar-title-input:focus {
+  outline: none;
+  border-color: #7c4dff;
+}
+
 .sidebar-close {
   background: none;
   border: none;

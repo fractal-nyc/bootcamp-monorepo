@@ -118,10 +118,11 @@ See `_devlogs/private/aws-setup.md` for full IAM policy details and setup instru
 
 ## Testing
 
-- **Framework**: Vitest with in-memory SQLite
+- **Framework**: Vitest (runs via `bun run test`, NOT `bun test`)
 - **Location**: `backend/src/test/`
 - **Utilities**: `test/utils/testUtils.ts` - fixtures, db factory
 - **Pattern**: Direct DB testing, mocked external services
+- Always use `bun run test` to invoke vitest via the package.json script. `bun test` invokes Bun's built-in test runner which lacks full vitest API support (`vi.mock`, `vi.mocked`) and has different native module resolution.
 
 When adding new features or changing existing behavior, add appropriate tests where needed.
 
@@ -141,6 +142,9 @@ After finishing work, run `bun run build` in the `frontend` and `backend` direct
 ## Gotchas
 
 - **IMPORTANT**: The bot uses `USER_ID_TO_NAME_MAP` in `bot/constants.ts` to track current cohort members. Update this when cohort changes.
+- **IMPORTANT**: Use `bun run test` (vitest) not `bun test` (Bun's built-in runner). Use `bun run build` (tsc) not `bun build` (Bun's bundler). The `bun <cmd>` and `bun run <cmd>` forms are different tools.
 - Frontend dev server proxies `/api/*` to backend - no CORS issues in dev
 - Database file is at `backend/db/attendabot.db` - not in src/
 - Cron jobs only run if `CURRENT_COHORT_ROLE_ID` is set in constants
+- Backend build uses `tsc` (TypeScript compiler), not `bun build`. Bundling would break `__dirname` path resolution, `better-sqlite3` native module, and frontend static file serving.
+- Test files are excluded from `tsconfig.json` (`src/test/**/*` in `exclude`). This prevents `tsc` from trying to compile test files into `dist/` and avoids stale test JS causing issues.

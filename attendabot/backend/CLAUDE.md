@@ -130,9 +130,10 @@ DAILY_BRIEFING_CHANNEL_ID // Where daily briefings go (instructors)
 ## Testing
 
 - **Location**: `src/test/`
-- **Framework**: Vitest
-- **DB Strategy**: In-memory SQLite via `testUtils.ts`
+- **Framework**: Vitest (always run via `bun run test`, never `bun test`)
+- **DB Strategy**: In-memory SQLite via `testUtils.ts` using `better-sqlite3` (same as production)
 - **Mocking**: Use `vi.mock()` for Discord/LLM services
+- Test files are excluded from `tsconfig.json` to prevent stale compiled JS in `dist/`
 
 ```typescript
 import { createTestDatabase, fixtures } from "../utils/testUtils";
@@ -147,9 +148,18 @@ describe("MyService", () => {
 });
 ```
 
+## Build
+
+- `bun run build` runs `tsc` (TypeScript compiler) to emit CommonJS JS into `dist/`
+- Do NOT use `bun build` — it's a bundler that would break `__dirname` paths, `better-sqlite3` native module, and frontend static serving
+- Production runs on Node.js (`node dist/index.js` via PM2), not Bun
+- `src/test/**/*` is excluded from tsconfig to keep test files out of `dist/`
+
 ## Gotchas
 
 - Database singleton in `services/db.ts` - tests must use `createTestDatabase()` for isolation
 - `discord.ts` exports a lazy-initialized client - don't import at module level in tests
 - LLM calls are rate-limited by Gemini - summaries/sentiments are cached in DB by date
 - WebSocket broadcasts all log messages - useful for admin panel real-time logs
+- `bun run test` and `bun test` are different: the former runs vitest (correct), the latter runs Bun's built-in test runner (lacks `vi.mock`/`vi.mocked` support, different native module ABI)
+- Three `__dirname`-relative paths exist in source: `.env` loading (`src/index.ts`), database location (`src/services/db.ts`), frontend static serving (`src/api/index.ts`). These depend on `tsc`'s directory-preserving output.

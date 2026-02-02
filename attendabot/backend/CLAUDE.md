@@ -8,8 +8,8 @@ Express API server + Discord bot + SQLite database.
 bun run dev          # Start dev server with ts-node (port 3001)
 bun run build        # Compile TypeScript to dist/
 bun run start        # Run compiled JS (production)
-bun test             # Run all tests
-bun test <path>      # Run specific test file
+bun run test             # Run all tests
+bun run test <path>      # Run specific test file
 ```
 
 ## Directory Structure

@@ -92,8 +92,8 @@ See `.env.example` for all options.
 ## Testing
 
 ```bash
-cd backend && bun test          # Run all 148 tests
-cd backend && bun test <file>   # Run specific test file
+cd backend && bun run test          # Run all 148 tests
+cd backend && bun run test <file>   # Run specific test file
 ```
 
 ## Deployment

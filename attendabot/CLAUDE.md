@@ -10,8 +10,8 @@ cd backend && bun run dev      # API server (port 3001)
 cd frontend && bun run dev     # Vite dev server (port 5173)
 
 # Testing
-cd backend && bun test         # Run all tests
-cd backend && bun test src/test/services/db.test.ts  # Single file
+cd backend && bun run test         # Run all tests
+cd backend && bun run test src/test/services/db.test.ts  # Single file
 
 # Production
 ./update-bot.sh                # Deploy to EC2 via SSM (pulls, builds, restarts pm2)
@@ -129,7 +129,7 @@ When adding new features or changing existing behavior, add appropriate tests wh
 
 Before starting non-trivial changes, enter plan mode and ask the user clarifying questions about requirements, edge cases, and preferred approach. Get explicit confirmation on the plan before writing any code.
 
-After finishing work, run `bun run build` in the `frontend` and `backend` directories to make sure everything builds with no errors. Run `bun test` in the `backend` directory to make sure all tests pass.
+After finishing work, run `bun run build` in the `frontend` and `backend` directories to make sure everything builds with no errors. Run `bun run test` in the `backend` directory to make sure all tests pass.
 
 ## Style Guide
 

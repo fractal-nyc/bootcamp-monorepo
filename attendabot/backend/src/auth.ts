@@ -12,7 +12,12 @@ import fs from "fs";
 /** Parses the DISCORD_ALLOWED_USER_IDS env var into a Set of allowed Discord user IDs. */
 function getAllowedDiscordUserIds(): Set<string> {
   const raw = process.env.DISCORD_ALLOWED_USER_IDS || "";
-  return new Set(raw.split(",").map((id) => id.trim()).filter(Boolean));
+  return new Set(
+    raw
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean),
+  );
 }
 
 /** Returns the BetterAuth database instance and ensures auth tables exist. */
@@ -94,8 +99,8 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [
-    "http://localhost:5173",
-    process.env.BETTER_AUTH_URL || "http://localhost:3001",
+    "http://localhost:3001",
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
   ],
   databaseHooks: {
     account: {
@@ -105,7 +110,8 @@ export const auth = betterAuth({
             const allowed = getAllowedDiscordUserIds();
             if (allowed.size > 0 && !allowed.has(account.accountId)) {
               throw new APIError("FORBIDDEN", {
-                message: "Your Discord account is not authorized to access this application.",
+                message:
+                  "Your Discord account is not authorized to access this application.",
               });
             }
           }
@@ -121,13 +127,16 @@ export const auth = betterAuth({
           if (allowed.size === 0) return { data: session };
 
           const db = getAuthDatabase();
-          const account = db.prepare(
-            `SELECT "accountId" FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`
-          ).get(session.userId) as { accountId: string } | undefined;
+          const account = db
+            .prepare(
+              `SELECT "accountId" FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`,
+            )
+            .get(session.userId) as { accountId: string } | undefined;
 
           if (account && !allowed.has(account.accountId)) {
             throw new APIError("FORBIDDEN", {
-              message: "Your Discord account is not authorized to access this application.",
+              message:
+                "Your Discord account is not authorized to access this application.",
             });
           }
           return { data: session };

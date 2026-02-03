@@ -5,7 +5,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Cohort, Student } from "../api/client";
-import { getCohorts, getStudentsByCohort, createStudent, deleteStudent, updateStudent } from "../api/client";
+import {
+  getCohorts,
+  getStudentsByCohort,
+  createStudent,
+  deleteStudent,
+  updateStudent,
+} from "../api/client";
 import { StudentTable } from "./StudentTable";
 import { StudentDetail } from "./StudentDetail";
 import { AddStudentModal } from "./AddStudentModal";
@@ -21,12 +27,13 @@ export function StudentCohortPanel() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load cohorts on mount
+  // Load cohorts on mount, sorted in reverse order so the most recent is first
   useEffect(() => {
     getCohorts().then((c) => {
-      setCohorts(c);
-      if (c.length > 0) {
-        setSelectedCohortId(c[0].id);
+      const sorted = [...c].sort((a, b) => b.id - a.id);
+      setCohorts(sorted);
+      if (sorted.length > 0) {
+        setSelectedCohortId(sorted[0].id);
       }
       setLoading(false);
     });
@@ -115,7 +122,10 @@ export function StudentCohortPanel() {
             </option>
           ))}
         </select>
-        <button onClick={() => setModalOpen(true)} disabled={selectedCohortId === null}>
+        <button
+          onClick={() => setModalOpen(true)}
+          disabled={selectedCohortId === null}
+        >
           Add Student
         </button>
       </div>
@@ -137,7 +147,10 @@ export function StudentCohortPanel() {
         onTitleChange={handleStudentNameChange}
       >
         {selectedStudent && (
-          <StudentDetail student={selectedStudent} onNoteAdded={handleNoteAdded} />
+          <StudentDetail
+            student={selectedStudent}
+            onNoteAdded={handleNoteAdded}
+          />
         )}
       </Sidebar>
 

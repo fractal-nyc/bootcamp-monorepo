@@ -782,7 +782,7 @@ button:disabled {
   top: 0;
   right: 0;
   max-width: 90vw;
-  height: 100vh;
+  height: 100dvh;
   background: var(--color-white);
   border-left: 3px solid var(--color-charcoal);
   box-shadow: -6px 0 0 rgba(0, 0, 0, 0.15);

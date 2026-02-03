@@ -702,6 +702,9 @@ export async function generateDailyBriefing(
     })
     .join("\n");
   briefing += checkInList || "No students";
+  briefing += "\n\n";
+
+  briefing += "Don't forget to record all your conversations!";
 
   return briefing;
 }

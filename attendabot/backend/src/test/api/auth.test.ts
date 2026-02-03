@@ -5,6 +5,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Response, NextFunction, Request } from "express";
 import jwt from "jsonwebtoken";
+
+// Mock the BetterAuth module so authenticateToken doesn't try to connect to a real DB
+vi.mock("../../auth", () => ({
+  auth: {
+    api: {
+      getSession: vi.fn().mockResolvedValue(null),
+    },
+  },
+}));
+
+vi.mock("better-auth/node", () => ({
+  fromNodeHeaders: vi.fn((headers: Record<string, string>) => new Headers(headers as Record<string, string>)),
+}));
+
 import {
   authenticateToken,
   generateToken,
@@ -113,7 +127,7 @@ describe("Auth Middleware", () => {
   });
 
   describe("authenticateToken middleware", () => {
-    it("returns 401 when no token provided", () => {
+    it("returns 401 when no token provided", async () => {
       const req = {
         headers: {},
       } as AuthRequest;
@@ -127,12 +141,15 @@ describe("Auth Middleware", () => {
 
       authenticateToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      // Wait for async BetterAuth session check to resolve
+      await vi.waitFor(() => {
+        expect(res.status).toHaveBeenCalledWith(401);
+      });
       expect(res.json).toHaveBeenCalledWith({ error: "Access token required" });
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("returns 403 for invalid token", () => {
+    it("returns 403 for invalid token", async () => {
       const req = {
         headers: {
           authorization: "Bearer invalid-token",
@@ -148,7 +165,10 @@ describe("Auth Middleware", () => {
 
       authenticateToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      // Wait for async BetterAuth session check to resolve
+      await vi.waitFor(() => {
+        expect(res.status).toHaveBeenCalledWith(403);
+      });
       expect(res.json).toHaveBeenCalledWith({
         error: "Invalid or expired token",
       });
@@ -179,7 +199,7 @@ describe("Auth Middleware", () => {
       expect(req.user?.username).toBe("David");
     });
 
-    it("returns 403 for expired token", () => {
+    it("returns 403 for expired token", async () => {
       // Create an expired token
       const expiredToken = jwt.sign(
         { authenticated: true, username: "David" },
@@ -202,11 +222,14 @@ describe("Auth Middleware", () => {
 
       authenticateToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      // Wait for async BetterAuth session check to resolve
+      await vi.waitFor(() => {
+        expect(res.status).toHaveBeenCalledWith(403);
+      });
       expect(next).not.toHaveBeenCalled();
     });
 
-    it("handles malformed authorization header", () => {
+    it("handles malformed authorization header", async () => {
       const req = {
         headers: {
           authorization: "NotBearer token",
@@ -223,7 +246,10 @@ describe("Auth Middleware", () => {
       authenticateToken(req, res, next);
 
       // "NotBearer token".split(" ")[1] = "token", which is invalid
-      expect(res.status).toHaveBeenCalledWith(403);
+      // Wait for async BetterAuth session check to resolve
+      await vi.waitFor(() => {
+        expect(res.status).toHaveBeenCalledWith(403);
+      });
     });
   });
 });

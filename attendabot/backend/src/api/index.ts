@@ -7,6 +7,8 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import http from "http";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "../auth";
 import { authRouter } from "./routes/auth";
 import { statusRouter } from "./routes/status";
 import { messagesRouter } from "./routes/messages";
@@ -26,7 +28,14 @@ const app = express();
 const httpServer = http.createServer(app);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", process.env.BETTER_AUTH_URL || "http://localhost:3001"],
+  credentials: true,
+}));
+
+// BetterAuth handler must be mounted before express.json()
+app.all("/api/auth/better/*", toNodeHandler(auth));
+
 app.use(express.json());
 
 // API routes

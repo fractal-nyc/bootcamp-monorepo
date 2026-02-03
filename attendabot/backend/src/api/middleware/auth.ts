@@ -5,6 +5,8 @@
 
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "../../auth";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -28,7 +30,7 @@ export interface AuthRequest extends Request {
   user?: { authenticated: boolean; username: string };
 }
 
-/** Express middleware that validates JWT from the Authorization header. */
+/** Express middleware that validates JWT or BetterAuth session. */
 export function authenticateToken(
   req: AuthRequest,
   res: Response,
@@ -37,21 +39,43 @@ export function authenticateToken(
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
-  if (!token) {
-    res.status(401).json({ error: "Access token required" });
-    return;
+  // Try JWT first (existing auth)
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, getJwtSecret()) as {
+        authenticated: boolean;
+        username: string;
+      };
+      req.user = decoded;
+      next();
+      return;
+    } catch {
+      // JWT invalid — fall through to try BetterAuth session
+    }
   }
 
-  try {
-    const decoded = jwt.verify(token, getJwtSecret()) as {
-      authenticated: boolean;
-      username: string;
-    };
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(403).json({ error: "Invalid or expired token" });
-  }
+  // Try BetterAuth session (cookie-based)
+  auth.api.getSession({
+    headers: fromNodeHeaders(req.headers),
+  }).then((session) => {
+    if (session?.user) {
+      req.user = {
+        authenticated: true,
+        username: session.user.name || session.user.email || "Discord User",
+      };
+      next();
+    } else if (!token) {
+      res.status(401).json({ error: "Access token required" });
+    } else {
+      res.status(403).json({ error: "Invalid or expired token" });
+    }
+  }).catch(() => {
+    if (!token) {
+      res.status(401).json({ error: "Access token required" });
+    } else {
+      res.status(403).json({ error: "Invalid or expired token" });
+    }
+  });
 }
 
 /** Generates a signed JWT valid for 24 hours, including the username. */

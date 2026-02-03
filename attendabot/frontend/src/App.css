@@ -455,6 +455,59 @@ button:disabled {
 }
 
 /* ========================================
+   Login — Discord OAuth
+   ======================================== */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-7);
+  color: var(--color-slate);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: var(--color-line);
+}
+
+.login-social {
+  padding: var(--space-4) var(--space-7) var(--space-7);
+}
+
+.discord-login-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: #5865F2;
+  color: var(--color-white);
+  border: 3px solid #4752C4;
+  box-shadow: 4px 4px 0 #4752C4;
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-base);
+}
+
+.discord-login-btn:hover {
+  background: #4752C4;
+  color: var(--color-white);
+}
+
+.discord-login-btn:disabled {
+  background: #8891F2;
+  border-color: #7881E0;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ========================================
    Errors
    ======================================== */
 .error {

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { isLoggedIn, clearToken, getUsername, verifySession, onAuthFailure } from "./api/client";
+import { authClient } from "./lib/auth-client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
@@ -23,14 +24,22 @@ function App() {
   const [sessionInvalid, setSessionInvalid] = useState(false);
 
   useEffect(() => {
-    setLoggedIn(isLoggedIn());
-    setUsername(getUsername());
-
-    // Verify the token is actually valid on mount
+    // Check JWT-based login first
     if (isLoggedIn()) {
+      setLoggedIn(true);
+      setUsername(getUsername());
+
       verifySession().then((valid) => {
         if (!valid) {
           setSessionInvalid(true);
+        }
+      });
+    } else {
+      // Check for BetterAuth session (Discord OAuth)
+      authClient.getSession().then((result) => {
+        if (result.data?.user) {
+          setLoggedIn(true);
+          setUsername(result.data.user.name || result.data.user.email || "Discord User");
         }
       });
     }
@@ -43,7 +52,13 @@ function App() {
     return unsubscribe;
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Sign out from BetterAuth (clears session cookie)
+    try {
+      await authClient.signOut();
+    } catch {
+      // Ignore errors if no BetterAuth session exists
+    }
     clearToken();
     setLoggedIn(false);
     setSessionInvalid(false);
@@ -53,7 +68,17 @@ function App() {
   if (!loggedIn) {
     return <Login onLogin={() => {
       setLoggedIn(true);
-      setUsername(getUsername());
+      // Check JWT username first, then BetterAuth session
+      const jwtUser = getUsername();
+      if (jwtUser) {
+        setUsername(jwtUser);
+      } else {
+        authClient.getSession().then((result) => {
+          if (result.data?.user) {
+            setUsername(result.data.user.name || result.data.user.email || "Discord User");
+          }
+        });
+      }
     }} />;
   }
 

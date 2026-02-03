@@ -162,6 +162,26 @@ export function isLLMConfigured(): boolean {
 }
 
 // ============================================================================
+// Test / Diagnostic Functions
+// ============================================================================
+
+/**
+ * Sends an arbitrary prompt to the LLM and returns the full response.
+ * Intended for diagnostics from the Testing panel.
+ */
+export async function testLlmCompletion(
+  message: string,
+): Promise<LLMResponse> {
+  const provider = getProvider();
+  if (!provider) {
+    throw new Error(
+      "LLM not configured: GEMINI_API_KEY environment variable is not set",
+    );
+  }
+  return provider.complete({ prompt: message, maxTokens: 1024 });
+}
+
+// ============================================================================
 // High-Level Functions
 // ============================================================================
 

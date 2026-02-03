@@ -648,6 +648,45 @@ export async function sendTestEodPreview(
   }
 }
 
+/**
+ * Sends a test message to the LLM endpoint and returns the response or error details.
+ * @param message - The prompt to send to the LLM.
+ */
+export async function sendTestLlmMessage(
+  message: string
+): Promise<{
+  success: boolean;
+  text?: string;
+  usage?: { promptTokens: number; completionTokens: number } | null;
+  elapsedMs?: number;
+  error?: string;
+  detail?: { name?: string; message?: string; stack?: string };
+}> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/testing/llm-test`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || "LLM request failed",
+        detail: data.detail,
+      };
+    }
+    return {
+      success: true,
+      text: data.text,
+      usage: data.usage,
+      elapsedMs: data.elapsedMs,
+    };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Network error — could not reach the server" };
+  }
+}
+
 // ============================================================================
 // Feature Requests API
 // ============================================================================

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { getCohorts, sendTestBriefing, sendTestEodPreview } from "../api/client";
+import { getCohorts, sendTestBriefing, sendTestEodPreview, sendTestLlmMessage } from "../api/client";
 import type { Cohort } from "../api/client";
 
 /** Panel for testing bot features like the daily briefing. */
@@ -31,6 +31,18 @@ export function TestingPanel() {
     preview?: string;
   } | null>(null);
 
+  // LLM Test state
+  const [llmMessage, setLlmMessage] = useState("Say hello in one sentence.");
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [llmResult, setLlmResult] = useState<{
+    success: boolean;
+    text?: string;
+    usage?: { promptTokens: number; completionTokens: number } | null;
+    elapsedMs?: number;
+    error?: string;
+    detail?: { name?: string; message?: string; stack?: string };
+  } | null>(null);
+
   useEffect(() => {
     getCohorts().then((c) => {
       setCohorts(c);
@@ -53,6 +65,20 @@ export function TestingPanel() {
       setResult({ success: false, message: "Network error" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLlmTest = async () => {
+    if (!llmMessage.trim()) return;
+    setLlmLoading(true);
+    setLlmResult(null);
+    try {
+      const res = await sendTestLlmMessage(llmMessage.trim());
+      setLlmResult(res);
+    } catch {
+      setLlmResult({ success: false, error: "Unexpected error" });
+    } finally {
+      setLlmLoading(false);
     }
   };
 
@@ -156,6 +182,65 @@ export function TestingPanel() {
             {eodResult.message}
             {eodResult.preview && (
               <pre className="preview-box">{eodResult.preview}</pre>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="panel">
+        <h2>LLM Connectivity Test</h2>
+        <p className="panel-description">
+          Send a prompt directly to the Gemini LLM endpoint. Use this to verify
+          the API key is valid and the model is reachable.
+        </p>
+
+        <div className="form-row">
+          <label htmlFor="llm-message">Prompt:</label>
+          <textarea
+            id="llm-message"
+            value={llmMessage}
+            onChange={(e) => setLlmMessage(e.target.value)}
+            disabled={llmLoading}
+            rows={3}
+            style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+          />
+        </div>
+
+        <div className="form-row">
+          <button
+            onClick={handleLlmTest}
+            disabled={llmLoading || !llmMessage.trim()}
+            className="primary-btn"
+          >
+            {llmLoading ? "Sending..." : "Send to LLM"}
+          </button>
+        </div>
+
+        {llmResult && (
+          <div className={`result-message ${llmResult.success ? "success" : "error"}`}>
+            {llmResult.success ? (
+              <>
+                <pre className="preview-box" style={{ whiteSpace: "pre-wrap" }}>
+                  {llmResult.text}
+                </pre>
+                <p style={{ fontSize: "0.85em", opacity: 0.7, marginTop: "0.5em" }}>
+                  {llmResult.elapsedMs != null && `${llmResult.elapsedMs}ms`}
+                  {llmResult.usage && (
+                    <> · {llmResult.usage.promptTokens} prompt tokens · {llmResult.usage.completionTokens} completion tokens</>
+                  )}
+                </p>
+              </>
+            ) : (
+              <>
+                <strong>Error: </strong>{llmResult.error}
+                {llmResult.detail && (
+                  <pre className="preview-box" style={{ whiteSpace: "pre-wrap", marginTop: "0.5em" }}>
+                    {llmResult.detail.name && `${llmResult.detail.name}: `}
+                    {llmResult.detail.message}
+                    {llmResult.detail.stack && `\n\nStack trace:\n${llmResult.detail.stack}`}
+                  </pre>
+                )}
+              </>
             )}
           </div>
         )}

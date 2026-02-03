@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { isLoggedIn, clearToken, getUsername, verifySession, onAuthFailure } from "./api/client";
+import { isLoggedIn, clearToken, getUsername, setUsername as storeUsername, verifySession, onAuthFailure } from "./api/client";
 import { authClient } from "./lib/auth-client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
@@ -38,8 +38,10 @@ function App() {
       // Check for BetterAuth session (Discord OAuth)
       authClient.getSession().then((result) => {
         if (result.data?.user) {
+          const name = result.data.user.name || result.data.user.email || "Discord User";
+          storeUsername(name);
           setLoggedIn(true);
-          setUsername(result.data.user.name || result.data.user.email || "Discord User");
+          setUsername(name);
         }
       });
     }
@@ -75,7 +77,9 @@ function App() {
       } else {
         authClient.getSession().then((result) => {
           if (result.data?.user) {
-            setUsername(result.data.user.name || result.data.user.email || "Discord User");
+            const name = result.data.user.name || result.data.user.email || "Discord User";
+            storeUsername(name);
+            setUsername(name);
           }
         });
       }

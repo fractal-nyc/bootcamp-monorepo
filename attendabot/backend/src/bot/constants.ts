@@ -49,9 +49,6 @@ export const CURRENT_COHORT_ROLE_ID = "1467913673560559768";
 export const SP2026_COHORT_ROLE_ID = "1467913673560559768";
 export const FA2025_COHORT_ROLE_ID = "1416479282817007797";
 
-/** Discord user ID to name mapping for the current cohort. */
-export const USER_ID_TO_NAME_MAP = new Map<string, string>([]);
-
 /** Discord user ID to name mapping for FA2025 cohort members. */
 export const FA2025_USER_ID_TO_NAME_MAP = new Map<string, string>([
   ["800099563767726100", "Aarti"],

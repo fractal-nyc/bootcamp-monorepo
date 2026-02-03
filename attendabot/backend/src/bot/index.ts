@@ -18,7 +18,6 @@ import {
   EOD_VERIFICATION_CRON,
   MIDDAY_PR_REMINDER_CRON,
   MIDDAY_PR_VERIFICATION_CRON,
-  USER_ID_TO_NAME_MAP,
 } from "./constants";
 import {
   getTomorrowsAssignment,
@@ -47,7 +46,25 @@ import {
 } from "../services/db";
 import { isLLMConfigured, generateCohortSentiment } from "../services/llm";
 
-const CURRENT_COHORT_USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
+/**
+ * Fetches active cohort students from the DB and returns their Discord user IDs
+ * and a user ID to name mapping. Called at cron execution time for fresh data.
+ */
+function getCurrentCohortUsers(): {
+  userIds: string[];
+  nameMap: Map<string, string>;
+} {
+  const cohortId = getDefaultCohortId();
+  if (!cohortId) {
+    return { userIds: [], nameMap: new Map() };
+  }
+  const students = getActiveStudentsWithDiscord(cohortId);
+  const userIds = students.map((s) => s.discord_user_id!);
+  const nameMap = new Map<string, string>(
+    students.map((s) => [s.discord_user_id!, s.name]),
+  );
+  return { userIds, nameMap };
+}
 
 /** Validates that required channel IDs are configured. */
 function validateConfig(): void {
@@ -211,6 +228,12 @@ async function verifyMiddayPrPost(): Promise<string[]> {
     return [];
   }
 
+  const { userIds, nameMap } = getCurrentCohortUsers();
+  if (userIds.length === 0) {
+    console.log("No active students with Discord IDs. Skipping midday PR verification.");
+    return [];
+  }
+
   const channel = await fetchTextChannel(EOD_CHANNEL_ID);
 
   // Get TODAY's messages since 8 AM ET (exclude late-night PRs)
@@ -229,7 +252,7 @@ async function verifyMiddayPrPost(): Promise<string[]> {
   // Find users who posted at least one PR
   const usersWithPr = new Set<string>();
   for (const message of messages) {
-    if (CURRENT_COHORT_USER_IDS.includes(message.author.id)) {
+    if (userIds.includes(message.author.id)) {
       if (countPrsInMessage(message.content) > 0) {
         usersWithPr.add(message.author.id);
       }
@@ -237,7 +260,7 @@ async function verifyMiddayPrPost(): Promise<string[]> {
   }
 
   // DM users without any PR
-  const missingUsers = CURRENT_COHORT_USER_IDS.filter(
+  const missingUsers = userIds.filter(
     (id) => !usersWithPr.has(id),
   );
   const dateStr = `${year}-${month}-${day}`;
@@ -249,7 +272,7 @@ async function verifyMiddayPrPost(): Promise<string[]> {
       `Could not find a midday PR from you for ${dateStr} in the EOD channel. Please post one ASAP.`,
     );
     if (sent) {
-      dmedUserNames.push(USER_ID_TO_NAME_MAP.get(userId) ?? `<@${userId}>`);
+      dmedUserNames.push(nameMap.get(userId) ?? `<@${userId}>`);
     }
     incrementMessagesSent();
   }
@@ -322,6 +345,12 @@ async function verifyPosts(
   channelId: string,
   label: string,
 ): Promise<string[]> {
+  const { userIds, nameMap } = getCurrentCohortUsers();
+  if (userIds.length === 0) {
+    console.log(`No active students with Discord IDs. Skipping ${label} verification.`);
+    return [];
+  }
+
   const channel = await fetchTextChannel(channelId);
   const since = new Date(Date.now() - 12 * 60 * 60 * 1000);
   const messages = await fetchMessagesSince(channel, since);
@@ -331,7 +360,7 @@ async function verifyPosts(
 
   for (const message of messages) {
     const authorId = message.author.id;
-    if (CURRENT_COHORT_USER_IDS.includes(authorId)) {
+    if (userIds.includes(authorId)) {
       usersWhoPosted.add(message.author.id);
 
       const prCount = countPrsInMessage(message.content);
@@ -347,7 +376,7 @@ async function verifyPosts(
     // Sort by PR count descending
     const sorted = Array.from(userPullRequestCounts.entries())
       .map(([userId, count]) => ({
-        name: USER_ID_TO_NAME_MAP.get(userId) ?? "Unknown User",
+        name: nameMap.get(userId) ?? "Unknown User",
         count,
       }))
       .sort((a, b) => b.count - a.count);
@@ -375,7 +404,7 @@ async function verifyPosts(
     }
   }
 
-  const missingUsers = CURRENT_COHORT_USER_IDS.filter(
+  const missingUsers = userIds.filter(
     (id) => !usersWhoPosted.has(id),
   );
 
@@ -397,7 +426,7 @@ async function verifyPosts(
         incrementMessagesSent();
         dmsSent++;
         dmedUserNames.push(
-          USER_ID_TO_NAME_MAP.get(userId) ?? `<@${userId}>`,
+          nameMap.get(userId) ?? `<@${userId}>`,
         );
       }
     }

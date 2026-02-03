@@ -162,28 +162,30 @@ async function sendEodReminder(): Promise<void> {
   incrementRemindersTriggered();
 }
 
-async function verifyAttendancePost(): Promise<void> {
+async function verifyAttendancePost(): Promise<string[]> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
       "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance verification.",
     );
-    return;
+    return [];
   }
 
-  await verifyPosts(ATTENDANCE_CHANNEL_ID, "attendance");
+  const dmedUsers = await verifyPosts(ATTENDANCE_CHANNEL_ID, "attendance");
   incrementVerificationsRun();
+  return dmedUsers;
 }
 
-async function verifyEodPost(): Promise<void> {
+async function verifyEodPost(): Promise<string[]> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
       "CURRENT_COHORT_ROLE_ID is not set. Skipping EOD verification.",
     );
-    return;
+    return [];
   }
 
-  await verifyPosts(EOD_CHANNEL_ID, "EOD");
+  const dmedUsers = await verifyPosts(EOD_CHANNEL_ID, "EOD");
   incrementVerificationsRun();
+  return dmedUsers;
 }
 
 async function sendMiddayPrReminder(): Promise<void> {
@@ -201,12 +203,12 @@ async function sendMiddayPrReminder(): Promise<void> {
   incrementRemindersTriggered();
 }
 
-async function verifyMiddayPrPost(): Promise<void> {
+async function verifyMiddayPrPost(): Promise<string[]> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
       "CURRENT_COHORT_ROLE_ID is not set. Skipping midday PR verification.",
     );
-    return;
+    return [];
   }
 
   const channel = await fetchTextChannel(EOD_CHANNEL_ID);
@@ -239,21 +241,26 @@ async function verifyMiddayPrPost(): Promise<void> {
     (id) => !usersWithPr.has(id),
   );
   const dateStr = `${year}-${month}-${day}`;
+  const dmedUserNames: string[] = [];
 
   for (const userId of missingUsers) {
-    await sendDirectMessage(
+    const sent = await sendDirectMessage(
       userId,
       `Could not find a midday PR from you for ${dateStr} in the EOD channel. Please post one ASAP.`,
     );
+    if (sent) {
+      dmedUserNames.push(USER_ID_TO_NAME_MAP.get(userId) ?? `<@${userId}>`);
+    }
     incrementMessagesSent();
   }
 
   incrementVerificationsRun();
+  return dmedUserNames;
 }
 
 function scheduleTask(
   cronExpression: string,
-  task: () => Promise<void>,
+  task: () => Promise<string[] | void>,
   description: string,
 ): void {
   try {
@@ -268,11 +275,12 @@ function scheduleTask(
           `⏰ **Cron running:** ${description} (${timestamp})`,
         ).catch(() => {});
         task()
-          .then(() => {
-            sendChannelMessage(
-              BOT_TEST_CHANNEL_ID,
-              `✅ **Cron completed:** ${description}`,
-            ).catch(() => {});
+          .then((dmedUsers) => {
+            let message = `✅ **Cron completed:** ${description}`;
+            if (dmedUsers && dmedUsers.length > 0) {
+              message += `\n📬 **DM'd:** ${dmedUsers.join(", ")}`;
+            }
+            sendChannelMessage(BOT_TEST_CHANNEL_ID, message).catch(() => {});
           })
           .catch((error) => {
             console.error(`Error while running ${description} task:`, error);
@@ -310,7 +318,10 @@ async function sendReminder(channelId: string, message: string): Promise<void> {
   incrementMessagesSent();
 }
 
-async function verifyPosts(channelId: string, label: string): Promise<void> {
+async function verifyPosts(
+  channelId: string,
+  label: string,
+): Promise<string[]> {
   const channel = await fetchTextChannel(channelId);
   const since = new Date(Date.now() - 12 * 60 * 60 * 1000);
   const messages = await fetchMessagesSince(channel, since);
@@ -368,6 +379,8 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
     (id) => !usersWhoPosted.has(id),
   );
 
+  const dmedUserNames: string[] = [];
+
   if (missingUsers.length === 0) {
     console.log(
       `All users completed their ${label} posts in #${channel.name}.`,
@@ -383,12 +396,17 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
       if (sent) {
         incrementMessagesSent();
         dmsSent++;
+        dmedUserNames.push(
+          USER_ID_TO_NAME_MAP.get(userId) ?? `<@${userId}>`,
+        );
       }
     }
     console.log(
       `Sent ${label} reminder DMs to ${dmsSent}/${missingUsers.length} users`,
     );
   }
+
+  return dmedUserNames;
 }
 
 function getCurrentMonthDay(): string {

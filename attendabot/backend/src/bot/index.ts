@@ -18,6 +18,7 @@ import {
   EOD_VERIFICATION_CRON,
   MIDDAY_PR_REMINDER_CRON,
   MIDDAY_PR_VERIFICATION_CRON,
+  DB_BACKUP_CRON,
 } from "./constants";
 import {
   getTomorrowsAssignment,
@@ -45,6 +46,7 @@ import {
   isFeatureFlagEnabled,
 } from "../services/db";
 import { isLLMConfigured, generateCohortSentiment } from "../services/llm";
+import { backupDatabaseToS3 } from "../services/s3backup";
 
 /**
  * Fetches active cohort students from the DB and returns their Discord user IDs
@@ -121,6 +123,12 @@ function scheduleJobs(): void {
     MIDDAY_PR_VERIFICATION_CRON,
     () => verifyMiddayPrPost(),
     "Midday PR verification",
+  );
+
+  scheduleTask(
+    DB_BACKUP_CRON,
+    () => backupDatabaseToS3(),
+    "Database backup to S3",
   );
 }
 

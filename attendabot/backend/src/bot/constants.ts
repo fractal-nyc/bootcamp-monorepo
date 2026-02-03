@@ -24,6 +24,9 @@ export const MIDDAY_PR_REMINDER_CRON = "45 12 * * *";
 /** Cron expression for midday PR verification (1:00 PM EST). */
 export const MIDDAY_PR_VERIFICATION_CRON = "0 13 * * *";
 
+/** Cron expression for nightly database backup to S3 (2:00 AM EST). */
+export const DB_BACKUP_CRON = "0 2 * * *";
+
 /** Timezone for all cron schedules. */
 export const CRON_TIMEZONE = "America/New_York";
 

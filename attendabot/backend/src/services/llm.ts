@@ -71,7 +71,7 @@ Provide your sentiment analysis:`;
 
 const GEMINI_API_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview";
+const GEMINI_DEFAULT_MODEL = "gemini-3-pro";
 const GEMINI_TIMEOUT_MS = 30000;
 
 /** Gemini LLM provider using the REST API. */

@@ -1,3 +1,25 @@
+MY PROMPT:
+> Can you research and investigate the "correct hierachy" of context
+  engineering for Claude Code as a harness? Break down the harness for me,
+  and turn it into a system diagram. You can write all this in a
+  UNDERSTANDING_HARNESSES.md. Please include every source that you pulled
+  from at the top of the file. Some core questions I want you to answer: what
+   is the role of CLAUDE.md? what is the role of global vs. project
+  configuration? What are all the different parts I can configure? What are
+  skills? What are the tradeoffs between Skills and CLAUDE.md files? What are
+   plugins? When would I use a plugin, vs a skill, vs a CLAUDE.md? What about
+   just storing context in files in the project? When are those files
+  referenced, and what is included in context by default when working with
+  Claude Code? I really want a COMPLETE guide to Context management in Claude
+   Code, and I want you to do a lot of research to answer these questions
+  thoroughly, ideally by referring directly to Claude Code documentation,
+  written by Anthropic. Anyway, you're always great at tasks like these, so
+  I'm sure you'll figure it out. If there any skills that might help you
+  improve at tasks like this, please keep a note of that, whether we need to
+  develop them ourselves or find them from others. Good luck, let me know
+  when you have something for me to review.
+
+
 # Complete Guide to Context Engineering in Claude Code
 
 > A comprehensive breakdown of how Claude Code manages context, configuration, and extensibility.

@@ -477,6 +477,11 @@ button:disabled {
   background: var(--color-line);
 }
 
+.login-error {
+  padding: 0 var(--space-7);
+  margin: 0;
+}
+
 .login-social {
   padding: var(--space-4) var(--space-7) var(--space-7);
 }

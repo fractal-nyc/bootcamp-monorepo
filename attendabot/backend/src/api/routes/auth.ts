@@ -10,6 +10,7 @@ import {
   getValidUsernames,
   verifyPassword,
 } from "../middleware/auth";
+import { isFeatureFlagEnabled } from "../../services/db";
 
 /** Router for authentication endpoints. */
 export const authRouter = Router();
@@ -41,4 +42,11 @@ authRouter.post("/login", (req: Request, res: Response) => {
 authRouter.get("/usernames", (_req: Request, res: Response) => {
   const usernames = getValidUsernames();
   res.json({ usernames });
+});
+
+/** GET /api/auth/login-config - Get public login page configuration. */
+authRouter.get("/login-config", (_req: Request, res: Response) => {
+  res.json({
+    passwordLoginEnabled: isFeatureFlagEnabled("password_login_enabled"),
+  });
 });

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { login, getUsernames } from "../api/client";
+import { login, getUsernames, getLoginConfig } from "../api/client";
 import { authClient } from "../lib/auth-client";
 
 /** Props for the Login component. */
@@ -19,8 +19,12 @@ export function Login({ onLogin }: LoginProps) {
   const [usernames, setUsernames] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [passwordLoginEnabled, setPasswordLoginEnabled] = useState(true);
 
   useEffect(() => {
+    getLoginConfig().then((config) => {
+      setPasswordLoginEnabled(config.passwordLoginEnabled);
+    });
     getUsernames().then((names) => {
       setUsernames(names);
       if (names.length > 0) {
@@ -61,35 +65,39 @@ export function Login({ onLogin }: LoginProps) {
   return (
     <div className="login-container">
       <h1>Attendabot Admin</h1>
-      <form onSubmit={handleSubmit}>
-        {usernames.length > 0 && (
-          <select
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            disabled={loading}
-          >
-            {usernames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        )}
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-        {error && <p className="error">{error}</p>}
-      </form>
-      <div className="login-divider">
-        <span>or</span>
-      </div>
+      {passwordLoginEnabled && (
+        <>
+          <form onSubmit={handleSubmit}>
+            {usernames.length > 0 && (
+              <select
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+              >
+                {usernames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+            <button type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+          <div className="login-divider">
+            <span>or</span>
+          </div>
+        </>
+      )}
+      {error && <p className="login-error error">{error}</p>}
       <div className="login-social">
         <button
           type="button"

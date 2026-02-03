@@ -139,6 +139,22 @@ export async function getUsernames(): Promise<string[]> {
   }
 }
 
+/** Login page configuration from the server. */
+export interface LoginConfig {
+  passwordLoginEnabled: boolean;
+}
+
+/** Fetches login page configuration (public, no auth required). */
+export async function getLoginConfig(): Promise<LoginConfig> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/login-config`);
+    if (!res.ok) return { passwordLoginEnabled: true };
+    return await res.json();
+  } catch {
+    return { passwordLoginEnabled: true };
+  }
+}
+
 /** Bot status including connection state, stats, and scheduled jobs. */
 export interface BotStatus {
   discordConnected: boolean;

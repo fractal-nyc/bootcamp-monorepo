@@ -159,9 +159,13 @@ export function buildEodMessage(): string {
   if (!CURRENT_COHORT_ROLE_ID) {
     message = `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`;
   } else {
-    message = `${roleMention(
-      CURRENT_COHORT_ROLE_ID,
-    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`;
+    message =
+      `${roleMention(
+        CURRENT_COHORT_ROLE_ID,
+      )} reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.\n` +
+      `Also, please provide:\n` +
+      `- Anonymous feedback (1 sentence): https://forms.gle/SgzMsfX29CF5noZ1A\n` +
+      `- Flow check (1 multiple choice): https://forms.gle/TE9NNsXhhQVfayo96.`;
   }
 
   // Add tomorrow's assignment if available and feature flag is enabled
@@ -238,7 +242,9 @@ async function verifyMiddayPrPost(): Promise<string[]> {
 
   const { userIds, nameMap } = getCurrentCohortUsers();
   if (userIds.length === 0) {
-    console.log("No active students with Discord IDs. Skipping midday PR verification.");
+    console.log(
+      "No active students with Discord IDs. Skipping midday PR verification.",
+    );
     return [];
   }
 
@@ -268,9 +274,7 @@ async function verifyMiddayPrPost(): Promise<string[]> {
   }
 
   // DM users without any PR
-  const missingUsers = userIds.filter(
-    (id) => !usersWithPr.has(id),
-  );
+  const missingUsers = userIds.filter((id) => !usersWithPr.has(id));
   const dateStr = `${year}-${month}-${day}`;
   const dmedUserNames: string[] = [];
 
@@ -355,7 +359,9 @@ async function verifyPosts(
 ): Promise<string[]> {
   const { userIds, nameMap } = getCurrentCohortUsers();
   if (userIds.length === 0) {
-    console.log(`No active students with Discord IDs. Skipping ${label} verification.`);
+    console.log(
+      `No active students with Discord IDs. Skipping ${label} verification.`,
+    );
     return [];
   }
 
@@ -412,9 +418,7 @@ async function verifyPosts(
     }
   }
 
-  const missingUsers = userIds.filter(
-    (id) => !usersWhoPosted.has(id),
-  );
+  const missingUsers = userIds.filter((id) => !usersWhoPosted.has(id));
 
   const dmedUserNames: string[] = [];
 
@@ -433,9 +437,7 @@ async function verifyPosts(
       if (sent) {
         incrementMessagesSent();
         dmsSent++;
-        dmedUserNames.push(
-          nameMap.get(userId) ?? `<@${userId}>`,
-        );
+        dmedUserNames.push(nameMap.get(userId) ?? `<@${userId}>`);
       }
     }
     console.log(

@@ -43,9 +43,10 @@ If you'd like a challenge or more creativity, you don't _have_ to do Tic Tac Toe
  - Run `bun test` and notice that all the tests in `tic-tac-toe.test.ts` are failing!
  - Create a new branch called `implement-tic-tac-toe`
  - Implement the functions in `tic-tac-toe.ts` -- work on them until the tests pass
+    - Claude can _help you understand_, but do not let it write code for you!!
  - make a PR for `implement-tic-tac-toe` and merge to branch `main`
  - Create a new branch called `display-game`
- - Add a generic tic-tac-toe display to `App.tsx`
+ - Display the `gameState` variable in `App.tsx` using React
     - Use a [`<Table>`](https://www.w3schools.com/html/html_tables.asp) so the game shows up as a 3 x 3 table
  - Add interactivity; when you click an empty cell, call `makeMove` and update the `gameState`
  - Display the current player and the winner (if there is one) based on the game state

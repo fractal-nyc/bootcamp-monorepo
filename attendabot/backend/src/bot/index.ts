@@ -390,24 +390,12 @@ async function verifyPosts(
     // Sort by PR count descending
     const sorted = Array.from(userPullRequestCounts.entries())
       .map(([userId, count]) => ({
-        name: nameMap.get(userId) ?? "Unknown User",
+        name: `<@${userId}>`,
         count,
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Get top 3 places (include ties)
-    const top3: typeof sorted = [];
-    let currentRank = 0;
-    let lastCount = -1;
-
-    for (const entry of sorted) {
-      if (entry.count !== lastCount) {
-        currentRank++;
-        if (currentRank > 3) break;
-        lastCount = entry.count;
-      }
-      top3.push(entry);
-    }
+    const top3 = getTopLeaderboard(sorted);
 
     if (top3.length > 0) {
       const leaderboard = top3.map((e) => `${e.name}: ${e.count}`).join("\n");
@@ -457,6 +445,29 @@ function getCurrentMonthDay(): string {
 
 function roleMention(roleId: string) {
   return `<@&${roleId}>`;
+}
+
+/**
+ * Selects the top entries for the PR leaderboard from a pre-sorted (descending) list.
+ * Includes ties for any included rank, but stops adding new ranks once 3+ people
+ * are already included from higher ranks.
+ * Always allows up to 3 distinct ranks if the cumulative count stays under 3.
+ */
+export function getTopLeaderboard(sorted: Array<{ name: string; count: number }>): Array<{ name: string; count: number }> {
+  const result: Array<{ name: string; count: number }> = [];
+  let currentRank = 0;
+  let lastCount = -1;
+
+  for (const entry of sorted) {
+    if (entry.count !== lastCount) {
+      currentRank++;
+      if (currentRank > 3 || (currentRank > 1 && result.length >= 3)) break;
+      lastCount = entry.count;
+    }
+    result.push(entry);
+  }
+
+  return result;
 }
 
 /** Counts the number of GitHub pull request URLs in a message. */

@@ -557,6 +557,19 @@ export async function createNote(studentId: number, content: string): Promise<bo
   }
 }
 
+/** Deletes an instructor note. Returns true if deleted. */
+export async function deleteNote(studentId: number, noteId: number): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes/${noteId}`, {
+      method: "DELETE",
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
 // ============================================================================
 // LLM API
 // ============================================================================

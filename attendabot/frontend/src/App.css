@@ -719,6 +719,31 @@ button:disabled {
   color: var(--color-white);
 }
 
+.delete-note-btn {
+  margin-left: auto;
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  box-shadow: none;
+  color: var(--color-slate);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.delete-note-btn:hover {
+  background: var(--color-platinum);
+  color: var(--color-charcoal);
+  transform: none;
+}
+
+.delete-note-btn.confirm {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-white);
+}
+
 .observer-select {
   padding: var(--space-1) var(--space-2);
   font-size: var(--text-sm);

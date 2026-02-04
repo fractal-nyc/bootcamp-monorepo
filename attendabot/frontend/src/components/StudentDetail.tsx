@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Markdown from "react-markdown";
 import type { Student, FeedItem, StudentSummaryResponse } from "../api/client";
-import { getStudentFeed, createNote, getStudentSummary } from "../api/client";
+import { getStudentFeed, createNote, deleteNote, getStudentSummary } from "../api/client";
 import { NoteInput } from "./NoteInput";
 import { StudentFeed } from "./StudentFeed";
 
@@ -53,6 +53,14 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
 
   const handleAddNote = async (content: string) => {
     const success = await createNote(student.id, content);
+    if (success) {
+      await loadFeed();
+      onNoteAdded?.();
+    }
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    const success = await deleteNote(student.id, noteId);
     if (success) {
       await loadFeed();
       onNoteAdded?.();
@@ -178,7 +186,7 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
       {/* Feed */}
       <div className="student-feed-section">
         <h3>Activity Feed</h3>
-        <StudentFeed items={feed} loading={loading} />
+        <StudentFeed items={feed} loading={loading} onDeleteNote={handleDeleteNote} />
       </div>
     </div>
   );

@@ -625,6 +625,14 @@ export function createInstructorNote(
   };
 }
 
+/** Deletes an instructor note by ID. Returns true if deleted, false if not found. */
+export function deleteInstructorNote(noteId: number): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`DELETE FROM instructor_notes WHERE id = ?`);
+  const result = stmt.run(noteId);
+  return result.changes > 0;
+}
+
 /** A feed item that can be either an EOD message or an instructor note. */
 export interface FeedItem {
   type: "eod" | "note";

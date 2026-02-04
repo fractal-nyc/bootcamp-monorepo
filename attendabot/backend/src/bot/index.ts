@@ -227,7 +227,7 @@ async function sendMiddayPrReminder(): Promise<void> {
 
   await sendReminder(
     EOD_CHANNEL_ID,
-    `${roleMention(CURRENT_COHORT_ROLE_ID)} please post your first PR of the day by 1 PM for ${getCurrentMonthDay()}.`,
+    `${roleMention(CURRENT_COHORT_ROLE_ID)} please post your first PR of the day by 2 PM for ${getCurrentMonthDay()}.`,
   );
   incrementRemindersTriggered();
 }
@@ -453,7 +453,9 @@ function roleMention(roleId: string) {
  * are already included from higher ranks.
  * Always allows up to 3 distinct ranks if the cumulative count stays under 3.
  */
-export function getTopLeaderboard(sorted: Array<{ name: string; count: number }>): Array<{ name: string; count: number }> {
+export function getTopLeaderboard(
+  sorted: Array<{ name: string; count: number }>,
+): Array<{ name: string; count: number }> {
   const result: Array<{ name: string; count: number }> = [];
   let currentRank = 0;
   let lastCount = -1;

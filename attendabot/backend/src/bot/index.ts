@@ -530,9 +530,9 @@ function getEightAmET(dateStr: string): string {
   return new Date(`${dateStr}T08:00:00-05:00`).toISOString();
 }
 
-/** Returns the ISO timestamp for 1 PM ET on a given date string (YYYY-MM-DD). */
-function getOnePmET(dateStr: string): string {
-  return new Date(`${dateStr}T13:00:00-05:00`).toISOString();
+/** Returns the ISO timestamp for 2 PM ET on a given date string (YYYY-MM-DD). */
+function getTwoPmET(dateStr: string): string {
+  return new Date(`${dateStr}T14:00:00-05:00`).toISOString();
 }
 
 /**
@@ -554,7 +554,7 @@ export async function generateDailyBriefing(
   const previousDayStr = start.split("T")[0];
   const tenAm = getTenAmET(previousDayStr);
   const eightAm = getEightAmET(previousDayStr);
-  const onePm = getOnePmET(previousDayStr);
+  const twoPm = getTwoPmET(previousDayStr);
 
   // Get messages from previous day
   const attendanceMessages = getMessagesByChannelAndDateRange(
@@ -611,9 +611,9 @@ export async function generateDailyBriefing(
       lateStudents.push(student.name);
     }
 
-    // Check late midday PR (no PR after 8 AM, or first PR was after 1 PM)
+    // Check late midday PR (no PR after 8 AM, or first PR was after 2 PM)
     const firstPrTime = firstPrTimeByUser.get(discordId);
-    if (!firstPrTime || firstPrTime > onePm) {
+    if (!firstPrTime || firstPrTime > twoPm) {
       lateMiddayPrStudents.push(student.name);
     }
 
@@ -678,7 +678,7 @@ export async function generateDailyBriefing(
   briefing += "\n\n";
 
   // Late midday PR
-  briefing += `**Late Midday PR (after 1 PM):**\n`;
+  briefing += `**Late Midday PR (after 2 PM):**\n`;
   briefing +=
     lateMiddayPrStudents.length > 0 ? lateMiddayPrStudents.join(", ") : "None";
   briefing += "\n\n";

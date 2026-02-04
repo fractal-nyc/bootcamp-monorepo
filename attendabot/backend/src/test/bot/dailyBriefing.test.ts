@@ -111,9 +111,9 @@ describe("Daily Briefing - Date Utilities", () => {
       expect(eightAm.getUTCHours()).toBe(13); // 8 AM ET = 1 PM UTC
     });
 
-    it("calculates 1 PM ET correctly", () => {
-      const onePm = new Date("2024-01-15T13:00:00-05:00");
-      expect(onePm.getUTCHours()).toBe(18); // 1 PM ET = 6 PM UTC
+    it("calculates 2 PM ET correctly", () => {
+      const twoPm = new Date("2024-01-15T14:00:00-05:00");
+      expect(twoPm.getUTCHours()).toBe(19); // 2 PM ET = 7 PM UTC
     });
   });
 
@@ -188,19 +188,19 @@ describe("Daily Briefing - Student Categorization Logic", () => {
       expect(isLowPr).toBe(true);
     });
 
-    it("categorizes as late midday PR when first PR after 1 PM", () => {
-      const onePmET = "2024-01-15T18:00:00Z"; // 1 PM ET in UTC
-      const firstPrTime = "2024-01-15T19:00:00Z"; // 2 PM ET
+    it("categorizes as late midday PR when first PR after 2 PM", () => {
+      const twoPmET = "2024-01-15T19:00:00Z"; // 2 PM ET in UTC
+      const firstPrTime = "2024-01-15T20:00:00Z"; // 3 PM ET
 
-      const isLatePr = firstPrTime > onePmET;
+      const isLatePr = firstPrTime > twoPmET;
       expect(isLatePr).toBe(true);
     });
 
-    it("categorizes as on-time PR when first PR before 1 PM", () => {
-      const onePmET = "2024-01-15T18:00:00Z";
-      const firstPrTime = "2024-01-15T17:00:00Z"; // 12 PM ET
+    it("categorizes as on-time PR when first PR before 2 PM", () => {
+      const twoPmET = "2024-01-15T19:00:00Z";
+      const firstPrTime = "2024-01-15T18:00:00Z"; // 1 PM ET
 
-      const isLatePr = firstPrTime > onePmET;
+      const isLatePr = firstPrTime > twoPmET;
       expect(isLatePr).toBe(false);
     });
   });

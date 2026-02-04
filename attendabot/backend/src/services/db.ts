@@ -192,11 +192,8 @@ function seedDefaultFeatureFlags(): void {
     1,
     "Include next day's assignment in the EOD reminder message"
   );
-  stmt.run(
-    "password_login_enabled",
-    0,
-    "Show the username/password login form (disable to show Discord login only)"
-  );
+  // Clean up obsolete flags
+  db.prepare(`DELETE FROM feature_flags WHERE key = ?`).run("password_login_enabled");
 }
 
 /** Seeds default cohorts (Fa2025, Sp2026) if they don't already exist. */

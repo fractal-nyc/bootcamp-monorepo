@@ -9,7 +9,6 @@ import path from "path";
 import http from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "../auth";
-import { authRouter } from "./routes/auth";
 import { statusRouter } from "./routes/status";
 import { messagesRouter } from "./routes/messages";
 import { channelsRouter } from "./routes/channels";
@@ -40,7 +39,6 @@ app.all("/api/auth/better/*", toNodeHandler(auth));
 app.use(express.json());
 
 // API routes
-app.use("/api/auth", authRouter);
 app.use("/api/status", statusRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/channels", channelsRouter);

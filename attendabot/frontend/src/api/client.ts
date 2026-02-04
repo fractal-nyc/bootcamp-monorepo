@@ -1,21 +1,11 @@
 /**
  * @fileoverview API client for communicating with the attendabot backend.
- * Handles authentication, status, channels, messages, and user data.
+ * Authentication is handled by BetterAuth session cookies.
  */
 
 const API_BASE = "/api";
 
-/** Gets the JWT token from localStorage. */
-export function getToken(): string | null {
-  return localStorage.getItem("token");
-}
-
-/** Stores the JWT token in localStorage. */
-export function setToken(token: string): void {
-  localStorage.setItem("token", token);
-}
-
-/** Stores the username in localStorage. */
+/** Stores the username in localStorage for display purposes. */
 export function setUsername(username: string): void {
   localStorage.setItem("username", username);
 }
@@ -25,15 +15,9 @@ export function getUsername(): string | null {
   return localStorage.getItem("username");
 }
 
-/** Removes the JWT token and username from localStorage. */
-export function clearToken(): void {
-  localStorage.removeItem("token");
+/** Clears the stored username from localStorage. */
+export function clearSession(): void {
   localStorage.removeItem("username");
-}
-
-/** Returns whether a JWT token exists in localStorage. */
-export function isLoggedIn(): boolean {
-  return !!getToken();
 }
 
 /** Callback invoked when an API call receives a 401/403 response. */
@@ -49,110 +33,24 @@ export function onAuthFailure(callback: () => void): () => void {
   };
 }
 
-/**
- * Verifies the current session token is still valid by making a lightweight API call.
- * Returns true if the session is valid, false if the token is expired/invalid.
- */
-export async function verifySession(): Promise<boolean> {
-  const token = getToken();
-  if (!token) return false;
-
-  try {
-    const res = await fetch(`${API_BASE}/status`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.status === 401 || res.status === 403) {
-      return false;
-    }
-    return res.ok;
-  } catch {
-    // Network error -- can't determine auth state, assume OK
-    return true;
-  }
-}
-
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = getToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
 
-  if (token) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers, credentials: "include" });
 
   if (res.status === 401 || res.status === 403) {
-    clearToken();
     if (authFailureCallback) {
       authFailureCallback();
     }
   }
 
   return res;
-}
-
-/** Authenticates with the backend and stores the returned JWT token. */
-export async function login(
-  password: string,
-  username?: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, username }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      return { success: false, error: data.error || "Login failed" };
-    }
-
-    const data = await res.json();
-    setToken(data.token);
-    if (data.username) {
-      setUsername(data.username);
-    }
-    return { success: true };
-  } catch (error) {
-    console.log(error);
-    return { success: false, error: "Network error" };
-  }
-}
-
-/** Fetches the list of valid usernames for login. */
-export async function getUsernames(): Promise<string[]> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/usernames`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.usernames || [];
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
-
-/** Login page configuration from the server. */
-export interface LoginConfig {
-  passwordLoginEnabled: boolean;
-}
-
-/** Fetches login page configuration (public, no auth required). */
-export async function getLoginConfig(): Promise<LoginConfig> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/login-config`);
-    if (!res.ok) return { passwordLoginEnabled: true };
-    return await res.json();
-  } catch {
-    return { passwordLoginEnabled: true };
-  }
 }
 
 /** Bot status including connection state, stats, and scheduled jobs. */
@@ -179,12 +77,7 @@ export interface BotStatus {
 export async function getStatus(): Promise<BotStatus | null> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/status`);
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        clearToken();
-      }
-      return null;
-    }
+    if (!res.ok) return null;
     return res.json();
   } catch (error) {
     console.error(error);

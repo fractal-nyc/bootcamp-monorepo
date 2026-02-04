@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { isLoggedIn, clearToken, getUsername, setUsername as storeUsername, verifySession, onAuthFailure } from "./api/client";
+import { setUsername as storeUsername, clearSession, onAuthFailure } from "./api/client";
 import { authClient } from "./lib/auth-client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
@@ -19,33 +19,21 @@ type Tab = "students" | "observers" | "messages" | "testing" | "diagnostics";
 
 /** Root application component with authentication and admin dashboard. */
 function App() {
-  const [loggedIn, setLoggedIn] = useState(isLoggedIn());
+  const [loggedIn, setLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("students");
   const [username, setUsername] = useState<string | null>(null);
   const [sessionInvalid, setSessionInvalid] = useState(false);
 
   useEffect(() => {
-    // Check JWT-based login first
-    if (isLoggedIn()) {
-      setLoggedIn(true);
-      setUsername(getUsername());
-
-      verifySession().then((valid) => {
-        if (!valid) {
-          setSessionInvalid(true);
-        }
-      });
-    } else {
-      // Check for BetterAuth session (Discord OAuth)
-      authClient.getSession().then((result) => {
-        if (result.data?.user) {
-          const name = result.data.user.name || result.data.user.email || "Discord User";
-          storeUsername(name);
-          setLoggedIn(true);
-          setUsername(name);
-        }
-      });
-    }
+    // Check for BetterAuth session (Discord OAuth)
+    authClient.getSession().then((result) => {
+      if (result.data?.user) {
+        const name = result.data.user.name || result.data.user.email || "Discord User";
+        storeUsername(name);
+        setLoggedIn(true);
+        setUsername(name);
+      }
+    });
 
     // Listen for auth failures from any API call
     const unsubscribe = onAuthFailure(() => {
@@ -56,13 +44,12 @@ function App() {
   }, []);
 
   const handleLogout = async () => {
-    // Sign out from BetterAuth (clears session cookie)
     try {
       await authClient.signOut();
     } catch {
       // Ignore errors if no BetterAuth session exists
     }
-    clearToken();
+    clearSession();
     setLoggedIn(false);
     setSessionInvalid(false);
     setUsername(null);
@@ -70,20 +57,14 @@ function App() {
 
   if (!loggedIn) {
     return <Login onLogin={() => {
-      setLoggedIn(true);
-      // Check JWT username first, then BetterAuth session
-      const jwtUser = getUsername();
-      if (jwtUser) {
-        setUsername(jwtUser);
-      } else {
-        authClient.getSession().then((result) => {
-          if (result.data?.user) {
-            const name = result.data.user.name || result.data.user.email || "Discord User";
-            storeUsername(name);
-            setUsername(name);
-          }
-        });
-      }
+      authClient.getSession().then((result) => {
+        if (result.data?.user) {
+          const name = result.data.user.name || result.data.user.email || "Discord User";
+          storeUsername(name);
+          setLoggedIn(true);
+          setUsername(name);
+        }
+      });
     }} />;
   }
 

@@ -121,7 +121,7 @@ See `_devlogs/private/aws-setup.md` for full IAM policy details and setup instru
 | 10:00 AM | Attendance verification (DMs late users)       |
 | 1:45 PM  | Midday PR reminder                             |
 | 2:00 PM  | Midday PR verification                         |
-| 5:00 PM  | EOD reminder + tomorrow's assignment (Mon-Sat) |
+| 6:00 PM  | EOD reminder + tomorrow's assignment (Mon-Sat) |
 | 11:59 PM | EOD verification + PR leaderboard              |
 
 ## Testing

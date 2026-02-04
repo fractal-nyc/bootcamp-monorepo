@@ -3,8 +3,8 @@
  * cron schedules, channel IDs, and user mappings.
  */
 
-/** Cron expression for daily EOD reminder (5 PM EST, Mon-Sat, skip Sundays). */
-export const EOD_REMINDER_CRON = "0 17 * * 1-6";
+/** Cron expression for daily EOD reminder (6 PM ET, Mon-Sat, skip Sundays). */
+export const EOD_REMINDER_CRON = "0 18 * * 1-6";
 
 /** Cron expression for EOD verification (11:59 PM EST). */
 export const EOD_VERIFICATION_CRON = "59 23 * * *";

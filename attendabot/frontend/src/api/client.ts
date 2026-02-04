@@ -346,6 +346,7 @@ export interface Student {
   status: "active" | "inactive" | "graduated" | "withdrawn";
   lastCheckIn: string | null;
   currentInternship: string | null;
+  observerId: number | null;
 }
 
 /** A feed item (EOD message or instructor note). */
@@ -388,6 +389,7 @@ export async function getStudentsByCohort(cohortId: number): Promise<Student[]> 
       status: string;
       last_check_in: string | null;
       current_internship: string | null;
+      observer_id: number | null;
     }) => ({
       id: s.id,
       name: s.name,
@@ -397,6 +399,7 @@ export async function getStudentsByCohort(cohortId: number): Promise<Student[]> 
       status: s.status as Student["status"],
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     }));
   } catch (error) {
     console.error(error);
@@ -420,6 +423,7 @@ export async function getStudent(id: number): Promise<Student | null> {
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -455,6 +459,7 @@ export async function createStudent(input: CreateStudentInput): Promise<Student 
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -469,6 +474,7 @@ export interface UpdateStudentInput {
   cohortId?: number;
   status?: Student["status"];
   currentInternship?: string | null;
+  observerId?: number | null;
 }
 
 /** Updates a student. */
@@ -490,6 +496,7 @@ export async function updateStudent(id: number, input: UpdateStudentInput): Prom
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -838,6 +845,66 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
       enabled: f.enabled,
       description: f.description,
       updatedAt: f.updated_at,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+// ============================================================================
+// Observers API
+// ============================================================================
+
+/** An observer (instructor). */
+export interface Observer {
+  id: number;
+  discordUserId: string;
+  displayName: string | null;
+  username: string;
+}
+
+/** Fetches all observers. */
+export async function getObservers(): Promise<Observer[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/observers`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.observers.map((o: {
+      id: number;
+      discord_user_id: string;
+      display_name: string | null;
+      username: string;
+    }) => ({
+      id: o.id,
+      discordUserId: o.discord_user_id,
+      displayName: o.display_name,
+      username: o.username,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Syncs observers from the Discord @instructors role. */
+export async function syncObservers(): Promise<Observer[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/observers/sync`, {
+      method: "POST",
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.observers.map((o: {
+      id: number;
+      discord_user_id: string;
+      display_name: string | null;
+      username: string;
+    }) => ({
+      id: o.id,
+      discordUserId: o.discord_user_id,
+      displayName: o.display_name,
+      username: o.username,
     }));
   } catch (error) {
     console.error(error);

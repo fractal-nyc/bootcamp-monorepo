@@ -719,6 +719,20 @@ button:disabled {
   color: var(--color-white);
 }
 
+.observer-select {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-family: var(--font-primary);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  cursor: pointer;
+}
+
+.observer-select:hover {
+  border-color: var(--color-charcoal);
+  background: var(--color-fog);
+}
+
 /* ========================================
    Status Badges
    ======================================== */

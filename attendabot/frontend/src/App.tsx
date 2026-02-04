@@ -12,9 +12,10 @@ import { UserMessages } from "./components/UserMessages";
 import { StudentCohortPanel } from "./components/StudentCohortPanel";
 import { TestingPanel } from "./components/TestingPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
+import { ObserversPanel } from "./components/ObserversPanel";
 import "./App.css";
 
-type Tab = "students" | "messages" | "testing" | "diagnostics";
+type Tab = "students" | "observers" | "messages" | "testing" | "diagnostics";
 
 /** Root application component with authentication and admin dashboard. */
 function App() {
@@ -117,6 +118,12 @@ function App() {
           Students
         </button>
         <button
+          className={`tab-btn ${activeTab === "observers" ? "active" : ""}`}
+          onClick={() => setActiveTab("observers")}
+        >
+          Observers
+        </button>
+        <button
           className={`tab-btn ${activeTab === "messages" ? "active" : ""}`}
           onClick={() => setActiveTab("messages")}
         >
@@ -139,6 +146,8 @@ function App() {
       <main>
         {activeTab === "students" ? (
           <StudentCohortPanel />
+        ) : activeTab === "observers" ? (
+          <ObserversPanel />
         ) : activeTab === "messages" ? (
           <>
             <MessageFeed />

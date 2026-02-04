@@ -154,6 +154,24 @@ function initializeTables(): void {
     )
   `);
 
+  // Observers table (instructors who observe students)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS observers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      discord_user_id TEXT UNIQUE NOT NULL,
+      display_name TEXT,
+      username TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Add observer_id column to students if it doesn't exist
+  const studentColumns = db.pragma("table_info(students)") as Array<{ name: string }>;
+  if (!studentColumns.some((col) => col.name === "observer_id")) {
+    db.exec(`ALTER TABLE students ADD COLUMN observer_id INTEGER REFERENCES observers(id)`);
+  }
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
@@ -447,6 +465,7 @@ export interface StudentRecord {
   cohort_id: number;
   status: "active" | "inactive" | "graduated" | "withdrawn";
   current_internship: string | null;
+  observer_id: number | null;
   last_check_in: string | null;
   created_at: string;
   updated_at: string;
@@ -464,6 +483,7 @@ export function getStudentsByCohort(cohortId: number): StudentRecord[] {
       s.cohort_id,
       s.status,
       s.current_internship,
+      s.observer_id,
       MAX(n.created_at) as last_check_in,
       s.created_at,
       s.updated_at
@@ -489,6 +509,7 @@ export function getStudent(id: number): StudentRecord | null {
       s.cohort_id,
       s.status,
       s.current_internship,
+      s.observer_id,
       MAX(n.created_at) as last_check_in,
       s.created_at,
       s.updated_at
@@ -534,6 +555,7 @@ export interface UpdateStudentInput {
   cohortId?: number;
   status?: "active" | "inactive" | "graduated" | "withdrawn";
   currentInternship?: string | null;
+  observerId?: number | null;
 }
 
 /** Updates a student and returns the updated record. */
@@ -549,6 +571,7 @@ export function updateStudent(id: number, input: UpdateStudentInput): StudentRec
       cohort_id = ?,
       status = ?,
       current_internship = ?,
+      observer_id = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `);
@@ -558,6 +581,7 @@ export function updateStudent(id: number, input: UpdateStudentInput): StudentRec
     input.cohortId ?? existing.cohort_id,
     input.status ?? existing.status,
     input.currentInternship !== undefined ? input.currentInternship : existing.current_internship,
+    input.observerId !== undefined ? input.observerId : existing.observer_id,
     id
   );
   return getStudent(id);
@@ -710,6 +734,7 @@ export function getStudentsByLastCheckIn(cohortId: number): StudentRecord[] {
       s.cohort_id,
       s.status,
       s.current_internship,
+      s.observer_id,
       MAX(n.created_at) as last_check_in,
       s.created_at,
       s.updated_at
@@ -737,6 +762,7 @@ export function getActiveStudentsWithDiscord(cohortId: number): StudentRecord[] 
       s.cohort_id,
       s.status,
       s.current_internship,
+      s.observer_id,
       MAX(n.created_at) as last_check_in,
       s.created_at,
       s.updated_at
@@ -970,4 +996,57 @@ export function updateFeatureFlag(key: string, enabled: boolean): FeatureFlagRec
     | undefined;
   if (!row) return null;
   return { ...row, enabled: row.enabled === 1 };
+}
+
+// ============================================================================
+// Observer functions
+// ============================================================================
+
+/** An observer record from the database. */
+export interface ObserverRecord {
+  id: number;
+  discord_user_id: string;
+  display_name: string | null;
+  username: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Retrieves all observers, ordered by display name. */
+export function getObservers(): ObserverRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT id, discord_user_id, display_name, username, created_at, updated_at
+    FROM observers
+    ORDER BY COALESCE(display_name, username) COLLATE NOCASE ASC
+  `);
+  return stmt.all() as ObserverRecord[];
+}
+
+/** Retrieves a single observer by ID. */
+export function getObserver(id: number): ObserverRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT * FROM observers WHERE id = ?`);
+  return (stmt.get(id) as ObserverRecord) || null;
+}
+
+/** Upserts an observer by Discord user ID. Returns the observer record. */
+export function upsertObserver(
+  discordUserId: string,
+  displayName: string | null,
+  username: string
+): ObserverRecord {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    INSERT INTO observers (discord_user_id, display_name, username, updated_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(discord_user_id) DO UPDATE SET
+      display_name = COALESCE(excluded.display_name, display_name),
+      username = excluded.username,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+  stmt.run(discordUserId, displayName, username);
+
+  const row = db.prepare(`SELECT * FROM observers WHERE discord_user_id = ?`).get(discordUserId);
+  return row as ObserverRecord;
 }

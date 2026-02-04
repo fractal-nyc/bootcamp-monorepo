@@ -120,7 +120,7 @@ studentsRouter.put("/:id", (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const { name, discordUserId, cohortId, status, currentInternship } = req.body;
+    const { name, discordUserId, cohortId, status, currentInternship, observerId } = req.body;
 
     const student = updateStudent(id, {
       name,
@@ -128,6 +128,7 @@ studentsRouter.put("/:id", (req: AuthRequest, res: Response) => {
       cohortId,
       status,
       currentInternship,
+      observerId,
     });
 
     if (!student) {

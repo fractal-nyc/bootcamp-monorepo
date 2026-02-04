@@ -11,12 +11,13 @@ import {
   TextChannel,
 } from "discord.js";
 import dotenv from "dotenv";
-import { logMessage, getMessageCountByChannel, getAllUsers, upsertUser } from "./db";
+import { logMessage, getMessageCountByChannel, getAllUsers, upsertUser, upsertObserver, type ObserverRecord } from "./db";
 import {
   MONITORED_CHANNEL_IDS,
   BOT_TEST_CHANNEL_ID,
   SP2026_COHORT_ROLE_ID,
   FA2025_COHORT_ROLE_ID,
+  INSTRUCTORS_ROLE_ID,
 } from "../bot/constants";
 
 dotenv.config();
@@ -378,4 +379,36 @@ export async function syncUserDisplayNames(): Promise<number> {
 
   console.log(`Synced display names for ${updatedCount} users`);
   return updatedCount;
+}
+
+/** Syncs observers from the Discord @instructors role into the observers table. */
+export async function syncObserversFromDiscord(): Promise<ObserverRecord[]> {
+  const discordClient = getDiscordClient();
+
+  if (!isReady) {
+    throw new Error("Discord client is not ready. Call initializeDiscord() first.");
+  }
+
+  const channel = await discordClient.channels.fetch(MONITORED_CHANNEL_IDS[0]);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    throw new Error("Could not fetch channel to get guild");
+  }
+
+  const guild = (channel as TextChannel).guild;
+  await guild.members.fetch();
+
+  const role = guild.roles.cache.get(INSTRUCTORS_ROLE_ID);
+  if (!role) {
+    throw new Error(`Instructors role ${INSTRUCTORS_ROLE_ID} not found in guild`);
+  }
+
+  const observers: ObserverRecord[] = [];
+  for (const [memberId, member] of role.members) {
+    const observer = upsertObserver(memberId, member.displayName, member.user.username);
+    observers.push(observer);
+    console.log(`Synced observer ${member.user.username}: ${member.displayName}`);
+  }
+
+  console.log(`Synced ${observers.length} observers from @instructors role`);
+  return observers;
 }

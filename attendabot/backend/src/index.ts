@@ -26,8 +26,8 @@ async function main(): Promise<void> {
     // Initialize Discord client first
     await initializeDiscord();
 
-    // Load API keys from Secrets Manager (non-fatal if unavailable)
-    await initApiKeys();
+    // Load API key from environment
+    initApiKeys();
 
     // Start the bot (schedules cron jobs)
     startBot();

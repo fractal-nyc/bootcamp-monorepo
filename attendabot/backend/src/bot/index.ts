@@ -163,7 +163,7 @@ export function buildEodMessage(): string {
       `${roleMention(
         CURRENT_COHORT_ROLE_ID,
       )} reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.\n` +
-      `Your EOD must include sections for **Wins**, **Blockers**, and **PRs**.\n` +
+      `Your EOD must include sections for **Wins** and **Blockers** along with links to your **PRs**.\n` +
       `Also, please provide:\n` +
       `- Anonymous feedback: https://forms.gle/SgzMsfX29CF5noZ1A\n` +
       `- Flow check: https://forms.gle/TE9NNsXhhQVfayo96.`;
@@ -481,14 +481,13 @@ export function countPrsInMessage(messageContent: string): number {
 
 /**
  * Checks whether a message qualifies as a valid EOD submission.
- * A valid EOD must contain the strings "Wins", "Blockers", and "PRs" (case-insensitive).
+ * A valid EOD must contain the strings "Wins" and "Blockers" (case-insensitive).
  */
 export function isValidEodMessage(content: string): boolean {
   const lower = content.toLowerCase();
   return (
     lower.includes("wins") &&
-    lower.includes("blockers") &&
-    lower.includes("prs")
+    lower.includes("blockers")
   );
 }
 

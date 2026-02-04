@@ -217,33 +217,28 @@ describe("Daily Briefing - Student Categorization Logic", () => {
 });
 
 describe("Daily Briefing - isValidEodMessage", () => {
-  it("returns true when message contains Wins, Blockers, and PRs", () => {
-    const message = "**Wins**\nShipped auth\n**Blockers**\nNone\n**PRs**\nhttps://github.com/user/repo/pull/1";
+  it("returns true when message contains Wins and Blockers", () => {
+    const message = "**Wins**\nShipped auth\n**Blockers**\nNone\nhttps://github.com/user/repo/pull/1";
     expect(isValidEodMessage(message)).toBe(true);
   });
 
   it("is case insensitive", () => {
-    const message = "wins: did stuff\nblockers: none\nprs: link";
+    const message = "wins: did stuff\nblockers: none";
     expect(isValidEodMessage(message)).toBe(true);
   });
 
   it("works with mixed casing", () => {
-    const message = "WINS\nsome stuff\nBlockers\nnone\nPRs\nlinks";
+    const message = "WINS\nsome stuff\nBlockers\nnone";
     expect(isValidEodMessage(message)).toBe(true);
   });
 
   it("returns false when missing Wins", () => {
-    const message = "**Blockers**\nNone\n**PRs**\nhttps://github.com/user/repo/pull/1";
+    const message = "**Blockers**\nNone\nhttps://github.com/user/repo/pull/1";
     expect(isValidEodMessage(message)).toBe(false);
   });
 
   it("returns false when missing Blockers", () => {
-    const message = "**Wins**\nShipped auth\n**PRs**\nhttps://github.com/user/repo/pull/1";
-    expect(isValidEodMessage(message)).toBe(false);
-  });
-
-  it("returns false when missing PRs", () => {
-    const message = "**Wins**\nShipped auth\n**Blockers**\nNone";
+    const message = "**Wins**\nShipped auth\nhttps://github.com/user/repo/pull/1";
     expect(isValidEodMessage(message)).toBe(false);
   });
 

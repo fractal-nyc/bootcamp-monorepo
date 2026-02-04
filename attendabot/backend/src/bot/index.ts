@@ -163,6 +163,7 @@ export function buildEodMessage(): string {
       `${roleMention(
         CURRENT_COHORT_ROLE_ID,
       )} reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.\n` +
+      `Your EOD must include sections for **Wins**, **Blockers**, and **PRs**.\n` +
       `Also, please provide:\n` +
       `- Anonymous feedback (1 sentence): https://forms.gle/SgzMsfX29CF5noZ1A\n` +
       `- Flow check (1 multiple choice): https://forms.gle/TE9NNsXhhQVfayo96.`;
@@ -478,6 +479,15 @@ export function countPrsInMessage(messageContent: string): number {
   return (messageContent.match(re) || []).length;
 }
 
+/**
+ * Checks whether a message qualifies as a valid EOD submission.
+ * A valid EOD must contain the strings "Wins", "Blockers", and "PRs" (case-insensitive).
+ */
+export function isValidEodMessage(content: string): boolean {
+  const lower = content.toLowerCase();
+  return lower.includes("wins") && lower.includes("blockers") && lower.includes("prs");
+}
+
 // ============================================================================
 // Daily Briefing
 // ============================================================================
@@ -574,15 +584,29 @@ export async function generateDailyBriefing(
     }
   }
 
-  const eodPrCountByUser = new Map<string, number>(); // discord_id -> PR count
+  const eodPrsByUser = new Map<string, Set<string>>(); // discord_id -> unique PR URLs
+  const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   for (const msg of eodMessages) {
-    const prCount = countPrsInMessage(msg.content ?? "");
-    eodPrCountByUser.set(
-      msg.author_id,
-      (eodPrCountByUser.get(msg.author_id) ?? 0) + prCount,
-    );
+    const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+    if (urls.length > 0) {
+      if (!eodPrsByUser.has(msg.author_id)) {
+        eodPrsByUser.set(msg.author_id, new Set());
+      }
+      const userPrs = eodPrsByUser.get(msg.author_id)!;
+      for (const url of urls) {
+        userPrs.add(url);
+      }
+    }
   }
-  const eodPostedUsers = new Set(eodMessages.map((m) => m.author_id));
+  const eodPrCountByUser = new Map<string, number>(
+    [...eodPrsByUser.entries()].map(([id, prs]) => [id, prs.size]),
+  );
+  // A valid EOD must be posted between 2 PM and end of day, and contain "Wins", "Blockers", and "PRs"
+  const eodPostedUsers = new Set(
+    eodMessages
+      .filter((m) => m.created_at >= twoPm && isValidEodMessage(m.content ?? ""))
+      .map((m) => m.author_id),
+  );
 
   // Track first PR time for each student (only PRs after 8 AM count)
   const firstPrTimeByUser = new Map<string, string>();

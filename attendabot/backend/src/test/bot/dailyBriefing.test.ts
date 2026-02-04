@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage } from "../../bot/index";
+import { countPrsInMessage, isValidEodMessage } from "../../bot/index";
 
 describe("Daily Briefing - PR Counting", () => {
   describe("countPrsInMessage", () => {
@@ -213,5 +213,121 @@ describe("Daily Briefing - Student Categorization Logic", () => {
       const hasNoEod = !eodPostedUsers.has(discordId);
       expect(hasNoEod).toBe(true);
     });
+  });
+});
+
+describe("Daily Briefing - isValidEodMessage", () => {
+  it("returns true when message contains Wins, Blockers, and PRs", () => {
+    const message = "**Wins**\nShipped auth\n**Blockers**\nNone\n**PRs**\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("is case insensitive", () => {
+    const message = "wins: did stuff\nblockers: none\nprs: link";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("works with mixed casing", () => {
+    const message = "WINS\nsome stuff\nBlockers\nnone\nPRs\nlinks";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns false when missing Wins", () => {
+    const message = "**Blockers**\nNone\n**PRs**\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(false);
+  });
+
+  it("returns false when missing Blockers", () => {
+    const message = "**Wins**\nShipped auth\n**PRs**\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(false);
+  });
+
+  it("returns false when missing PRs", () => {
+    const message = "**Wins**\nShipped auth\n**Blockers**\nNone";
+    expect(isValidEodMessage(message)).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(isValidEodMessage("")).toBe(false);
+  });
+
+  it("returns false for a casual message without the required sections", () => {
+    expect(isValidEodMessage("Hey team, wrapping up for the day!")).toBe(false);
+  });
+});
+
+describe("Daily Briefing - PR Deduplication", () => {
+  it("counts unique PR URLs across multiple messages", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "midday: https://github.com/user/repo/pull/1" },
+      { author_id: "user-1", content: "EOD:\nhttps://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(2);
+  });
+
+  it("counts PRs separately per user", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/1" },
+      { author_id: "user-2", content: "https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(1);
+    expect(prsByUser.get("user-2")!.size).toBe(2);
+  });
+
+  it("does not count the same PR URL posted three times", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(1);
   });
 });

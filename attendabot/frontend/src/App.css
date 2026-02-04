@@ -1777,6 +1777,15 @@ button:disabled {
   border-bottom: 2px solid var(--color-charcoal);
 }
 
+.fr-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.fr-table th.sortable:hover {
+  color: var(--color-charcoal);
+}
+
 /* Feature Request Status Badges */
 .status-new {
   background: var(--color-white);

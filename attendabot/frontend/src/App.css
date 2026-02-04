@@ -1988,6 +1988,153 @@ button:disabled {
 }
 
 /* ========================================
+   Database Viewer
+   ======================================== */
+.db-viewer-panel {
+  grid-column: span 2;
+}
+
+.db-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.db-table-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.db-table-select label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-slate);
+}
+
+.db-table-select select {
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  color: var(--color-charcoal);
+  font-size: var(--text-base);
+  font-family: var(--font-primary);
+}
+
+.db-row-count {
+  font-size: var(--text-sm);
+  color: var(--color-slate);
+  font-weight: 700;
+}
+
+.db-download-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.db-download-btn:hover {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.db-table-wrapper {
+  overflow-x: auto;
+  border: 2px solid var(--color-charcoal);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-lg);
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+}
+
+.db-table th,
+.db-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.db-table th {
+  position: sticky;
+  top: 0;
+  color: var(--color-slate);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--color-platinum);
+  border-bottom: 2px solid var(--color-charcoal);
+  z-index: 1;
+}
+
+.db-pk-badge {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  font-size: 0.55rem;
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  vertical-align: middle;
+}
+
+.db-table tbody tr:hover {
+  background: var(--color-fog);
+}
+
+.db-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.db-page-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.db-page-btn:hover:not(:disabled) {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.db-page-btn:disabled {
+  background: var(--color-platinum);
+  color: var(--color-slate);
+  border-color: var(--color-slate);
+  box-shadow: none;
+}
+
+.db-page-info {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-slate);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========================================
    Responsive
    ======================================== */
 @media (max-width: 768px) {
@@ -2001,6 +2148,15 @@ button:disabled {
 
   .feature-requests-panel {
     grid-column: span 1;
+  }
+
+  .db-viewer-panel {
+    grid-column: span 1;
+  }
+
+  .db-controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   header h1 {

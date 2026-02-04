@@ -818,6 +818,62 @@ export async function syncObservers(): Promise<Observer[]> {
   }
 }
 
+// ============================================================================
+// Database Viewer API
+// ============================================================================
+
+/** Column metadata for a database table. */
+export interface DbColumn {
+  name: string;
+  type: string;
+  pk: boolean;
+}
+
+/** Response from the table data endpoint. */
+export interface DbTableData {
+  table: string;
+  columns: DbColumn[];
+  rows: Record<string, unknown>[];
+  totalRows: number;
+  limit: number;
+  offset: number;
+}
+
+/** Fetches the list of all database tables. */
+export async function getDbTables(): Promise<string[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/database/tables`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.tables;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Fetches rows and column info for a specific table. */
+export async function getDbTableData(
+  tableName: string,
+  limit: number = 100,
+  offset: number = 0
+): Promise<DbTableData | null> {
+  try {
+    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+    const res = await fetchWithAuth(`${API_BASE}/database/tables/${encodeURIComponent(tableName)}?${params}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Triggers a download of the raw SQLite database file. */
+export function downloadDatabase(): void {
+  window.open(`${API_BASE}/database/download`, "_blank");
+}
+
 /** Updates a feature flag's enabled state. */
 export async function updateFeatureFlag(
   key: string,

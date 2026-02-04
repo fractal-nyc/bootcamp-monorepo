@@ -19,6 +19,7 @@ import { llmRouter } from "./routes/llm";
 import { featureRequestsRouter } from "./routes/featureRequests";
 import { featureFlagsRouter } from "./routes/featureFlags";
 import { observersRouter } from "./routes/observers";
+import { databaseRouter } from "./routes/database";
 import { initializeWebSocket } from "./websocket";
 
 /** Express application instance. */
@@ -50,6 +51,7 @@ app.use("/api/llm", llmRouter);
 app.use("/api/feature-requests", featureRequestsRouter);
 app.use("/api/feature-flags", featureFlagsRouter);
 app.use("/api/observers", observersRouter);
+app.use("/api/database", databaseRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {

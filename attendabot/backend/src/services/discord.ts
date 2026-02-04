@@ -110,7 +110,7 @@ export async function initializeDiscord(): Promise<Client> {
   }
 
   readyPromise = new Promise<void>((resolve, reject) => {
-    discordClient.once("ready", () => {
+    discordClient.once("clientReady", () => {
       isReady = true;
       console.log(
         `Discord client logged in as ${

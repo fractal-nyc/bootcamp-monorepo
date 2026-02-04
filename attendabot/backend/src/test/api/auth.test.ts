@@ -1,8 +1,9 @@
 /**
- * @fileoverview Tests for BetterAuth session middleware (api/middleware/auth.ts).
+ * @fileoverview Tests for auth middleware (api/middleware/auth.ts).
+ * Covers both API key and BetterAuth session authentication.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Response, NextFunction } from "express";
 
 // Mock the BetterAuth module
@@ -19,13 +20,78 @@ vi.mock("better-auth/node", () => ({
   fromNodeHeaders: vi.fn((headers: Record<string, string>) => new Headers(headers as Record<string, string>)),
 }));
 
+const mockValidateApiKey = vi.fn();
+vi.mock("../../services/apiKeys", () => ({
+  validateApiKey: (...args: unknown[]) => mockValidateApiKey(...args),
+}));
+
 import {
   authenticateToken,
   AuthRequest,
 } from "../../api/middleware/auth";
 
 describe("Auth Middleware", () => {
-  describe("authenticateToken middleware", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("API key authentication", () => {
+    it("calls next() for a valid API key", () => {
+      mockValidateApiKey.mockReturnValue(true);
+
+      const req = { headers: { "x-api-key": "valid-key" } } as unknown as AuthRequest;
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      } as unknown as Response;
+      const next = vi.fn() as unknown as NextFunction;
+
+      authenticateToken(req, res, next);
+
+      expect(mockValidateApiKey).toHaveBeenCalledWith("valid-key");
+      expect(next).toHaveBeenCalled();
+      expect(req.user).toEqual({ authenticated: true, username: "api-key" });
+      expect(mockGetSession).not.toHaveBeenCalled();
+    });
+
+    it("returns 401 for an invalid API key", () => {
+      mockValidateApiKey.mockReturnValue(false);
+
+      const req = { headers: { "x-api-key": "bad-key" } } as unknown as AuthRequest;
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      } as unknown as Response;
+      const next = vi.fn() as unknown as NextFunction;
+
+      authenticateToken(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: "Invalid API key" });
+      expect(next).not.toHaveBeenCalled();
+      expect(mockGetSession).not.toHaveBeenCalled();
+    });
+
+    it("falls through to BetterAuth when no x-api-key header is present", async () => {
+      mockGetSession.mockResolvedValue(null);
+
+      const req = { headers: {} } as AuthRequest;
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      } as unknown as Response;
+      const next = vi.fn() as unknown as NextFunction;
+
+      authenticateToken(req, res, next);
+
+      expect(mockValidateApiKey).not.toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(res.status).toHaveBeenCalledWith(401);
+      });
+    });
+  });
+
+  describe("BetterAuth session authentication", () => {
     it("returns 401 when no session exists", async () => {
       mockGetSession.mockResolvedValue(null);
 

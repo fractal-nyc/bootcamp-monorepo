@@ -42,7 +42,7 @@ Discord Bot (cron jobs)
 | `backend/src/services/`    | Core logic: db, discord, llm, stats, logger |
 | `backend/src/test/`        | Vitest test suite                           |
 | `frontend/src/components/` | React UI components                         |
-| `frontend/src/api/`        | API client with JWT handling                |
+| `frontend/src/api/`        | API client with cookie-based auth           |
 | `frontend/src/hooks/`      | Custom hooks (useWebSocket)                 |
 
 ## Database Tables
@@ -58,14 +58,23 @@ Discord Bot (cron jobs)
 | `instructor_notes`  | Per-student notes (CASCADE on delete)   |
 | `student_summaries` | Cached AI summaries by date             |
 | `cohort_sentiments` | Cached cohort sentiment by date         |
+| `observers`         | Instructors synced from Discord role     |
+| `feature_requests`  | Feature requests with priority/status    |
+| `feature_flags`     | Boolean feature toggles                 |
+
+## Authentication
+
+Authentication is handled entirely by **BetterAuth** with Discord OAuth. There is no JWT or password-based login. Session cookies are used for both REST API requests and WebSocket upgrade requests. The `authenticateToken` middleware in `api/middleware/auth.ts` verifies BetterAuth sessions.
 
 ## Environment Variables
 
 ```bash
 DISCORD_TOKEN=         # Discord bot token
-JWT_SECRET=            # Secret for admin panel JWT
-ADMIN_PASSWORD=        # Admin login password
 GEMINI_API_KEY=        # Google Gemini API (optional, for AI features)
+BETTER_AUTH_SECRET=    # BetterAuth session signing secret
+BETTER_AUTH_URL=       # Base URL for BetterAuth (e.g., https://attendabot.example.com)
+DISCORD_CLIENT_ID=     # Discord OAuth app client ID
+DISCORD_CLIENT_SECRET= # Discord OAuth app client secret
 ```
 
 ## Deployment

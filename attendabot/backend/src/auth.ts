@@ -26,7 +26,7 @@ function getAuthDatabase(): Database.Database {
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
   }
-  const dbPath = path.join(dbDir, "attendabot.db");
+  const dbPath = path.join(dbDir, "auth.db");
   const db = new Database(dbPath);
 
   // Create BetterAuth tables if they don't exist

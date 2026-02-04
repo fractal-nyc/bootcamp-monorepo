@@ -10,6 +10,9 @@ import { AuthRequest, authenticateToken } from "../middleware/auth";
 /** Router for database inspection endpoints. */
 export const databaseRouter = Router();
 
+/** Auth tables that must never be exposed via the API. */
+const AUTH_TABLES = new Set(["user", "session", "account", "verification"]);
+
 /** GET / — list all user-defined tables. */
 databaseRouter.get("/tables", authenticateToken, (req: AuthRequest, res: Response) => {
   try {
@@ -17,7 +20,7 @@ databaseRouter.get("/tables", authenticateToken, (req: AuthRequest, res: Respons
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
       .all() as { name: string }[];
-    res.json({ tables: tables.map((t) => t.name) });
+    res.json({ tables: tables.filter((t) => !AUTH_TABLES.has(t.name)).map((t) => t.name) });
   } catch (err) {
     console.error("Failed to list tables:", err);
     res.status(500).json({ error: "Failed to list tables" });
@@ -29,6 +32,12 @@ databaseRouter.get("/tables/:name", authenticateToken, (req: AuthRequest, res: R
   try {
     const db = getDatabase();
     const tableName = req.params.name;
+
+    // Block access to auth tables
+    if (AUTH_TABLES.has(tableName)) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
 
     // Validate table name exists to prevent SQL injection
     const exists = db

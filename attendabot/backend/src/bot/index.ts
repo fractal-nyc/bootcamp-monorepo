@@ -165,8 +165,8 @@ export function buildEodMessage(): string {
       )} reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.\n` +
       `Your EOD must include sections for **Wins**, **Blockers**, and **PRs**.\n` +
       `Also, please provide:\n` +
-      `- Anonymous feedback (1 sentence): https://forms.gle/SgzMsfX29CF5noZ1A\n` +
-      `- Flow check (1 multiple choice): https://forms.gle/TE9NNsXhhQVfayo96.`;
+      `- Anonymous feedback: https://forms.gle/SgzMsfX29CF5noZ1A\n` +
+      `- Flow check: https://forms.gle/TE9NNsXhhQVfayo96.`;
   }
 
   // Add tomorrow's assignment if available and feature flag is enabled
@@ -485,7 +485,11 @@ export function countPrsInMessage(messageContent: string): number {
  */
 export function isValidEodMessage(content: string): boolean {
   const lower = content.toLowerCase();
-  return lower.includes("wins") && lower.includes("blockers") && lower.includes("prs");
+  return (
+    lower.includes("wins") &&
+    lower.includes("blockers") &&
+    lower.includes("prs")
+  );
 }
 
 // ============================================================================
@@ -604,7 +608,9 @@ export async function generateDailyBriefing(
   // A valid EOD must be posted between 2 PM and end of day, and contain "Wins", "Blockers", and "PRs"
   const eodPostedUsers = new Set(
     eodMessages
-      .filter((m) => m.created_at >= twoPm && isValidEodMessage(m.content ?? ""))
+      .filter(
+        (m) => m.created_at >= twoPm && isValidEodMessage(m.content ?? ""),
+      )
       .map((m) => m.author_id),
   );
 

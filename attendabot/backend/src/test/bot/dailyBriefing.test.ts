@@ -1,4 +1,4 @@
-/**
+ /**
  * @fileoverview Tests for daily briefing helper functions (bot/index.ts).
  * Tests the countPrsInMessage function and date/time utilities.
  */

@@ -11,7 +11,6 @@ We have two goals today:
  - [Learn about Mobile-first](https://www.uxpin.com/studio/blog/a-hands-on-guide-to-mobile-first-design)
  - Style your `App.tsx`
     - Make it look really pretty (or wacky) and your own style!
-    - 
 
 ## Steps (Afternoon)
  - Read [Promises & Asynchronous Programming, from beginning until "Generators" section](https://eloquentjavascript.net/11_async.html)

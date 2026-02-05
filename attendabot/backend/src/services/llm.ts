@@ -71,7 +71,7 @@ Provide your sentiment analysis:`;
 
 const GEMINI_API_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview";
+const GEMINI_DEFAULT_MODEL = "gemini-3-pro-preview";
 const GEMINI_TIMEOUT_MS = 30000;
 
 /** Gemini LLM provider using the REST API. */
@@ -159,6 +159,24 @@ function getProvider(): LLMProvider | null {
 /** Returns whether an LLM provider is configured. */
 export function isLLMConfigured(): boolean {
   return !!process.env.GEMINI_API_KEY;
+}
+
+// ============================================================================
+// Test / Diagnostic Functions
+// ============================================================================
+
+/**
+ * Sends an arbitrary prompt to the LLM and returns the full response.
+ * Intended for diagnostics from the Testing panel.
+ */
+export async function testLlmCompletion(message: string): Promise<LLMResponse> {
+  const provider = getProvider();
+  if (!provider) {
+    throw new Error(
+      "LLM not configured: GEMINI_API_KEY environment variable is not set",
+    );
+  }
+  return provider.complete({ prompt: message, maxTokens: 1024 });
 }
 
 // ============================================================================

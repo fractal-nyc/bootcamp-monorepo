@@ -1,21 +1,11 @@
 /**
  * @fileoverview API client for communicating with the attendabot backend.
- * Handles authentication, status, channels, messages, and user data.
+ * Authentication is handled by BetterAuth session cookies.
  */
 
 const API_BASE = "/api";
 
-/** Gets the JWT token from localStorage. */
-export function getToken(): string | null {
-  return localStorage.getItem("token");
-}
-
-/** Stores the JWT token in localStorage. */
-export function setToken(token: string): void {
-  localStorage.setItem("token", token);
-}
-
-/** Stores the username in localStorage. */
+/** Stores the username in localStorage for display purposes. */
 export function setUsername(username: string): void {
   localStorage.setItem("username", username);
 }
@@ -25,15 +15,9 @@ export function getUsername(): string | null {
   return localStorage.getItem("username");
 }
 
-/** Removes the JWT token and username from localStorage. */
-export function clearToken(): void {
-  localStorage.removeItem("token");
+/** Clears the stored username from localStorage. */
+export function clearSession(): void {
   localStorage.removeItem("username");
-}
-
-/** Returns whether a JWT token exists in localStorage. */
-export function isLoggedIn(): boolean {
-  return !!getToken();
 }
 
 /** Callback invoked when an API call receives a 401/403 response. */
@@ -49,94 +33,24 @@ export function onAuthFailure(callback: () => void): () => void {
   };
 }
 
-/**
- * Verifies the current session token is still valid by making a lightweight API call.
- * Returns true if the session is valid, false if the token is expired/invalid.
- */
-export async function verifySession(): Promise<boolean> {
-  const token = getToken();
-  if (!token) return false;
-
-  try {
-    const res = await fetch(`${API_BASE}/status`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.status === 401 || res.status === 403) {
-      return false;
-    }
-    return res.ok;
-  } catch {
-    // Network error -- can't determine auth state, assume OK
-    return true;
-  }
-}
-
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = getToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
 
-  if (token) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers, credentials: "include" });
 
   if (res.status === 401 || res.status === 403) {
-    clearToken();
     if (authFailureCallback) {
       authFailureCallback();
     }
   }
 
   return res;
-}
-
-/** Authenticates with the backend and stores the returned JWT token. */
-export async function login(
-  password: string,
-  username?: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, username }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      return { success: false, error: data.error || "Login failed" };
-    }
-
-    const data = await res.json();
-    setToken(data.token);
-    if (data.username) {
-      setUsername(data.username);
-    }
-    return { success: true };
-  } catch (error) {
-    console.log(error);
-    return { success: false, error: "Network error" };
-  }
-}
-
-/** Fetches the list of valid usernames for login. */
-export async function getUsernames(): Promise<string[]> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/usernames`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.usernames || [];
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
 }
 
 /** Bot status including connection state, stats, and scheduled jobs. */
@@ -163,12 +77,7 @@ export interface BotStatus {
 export async function getStatus(): Promise<BotStatus | null> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/status`);
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        clearToken();
-      }
-      return null;
-    }
+    if (!res.ok) return null;
     return res.json();
   } catch (error) {
     console.error(error);
@@ -330,6 +239,7 @@ export interface Student {
   status: "active" | "inactive" | "graduated" | "withdrawn";
   lastCheckIn: string | null;
   currentInternship: string | null;
+  observerId: number | null;
 }
 
 /** A feed item (EOD message or instructor note). */
@@ -372,6 +282,7 @@ export async function getStudentsByCohort(cohortId: number): Promise<Student[]> 
       status: string;
       last_check_in: string | null;
       current_internship: string | null;
+      observer_id: number | null;
     }) => ({
       id: s.id,
       name: s.name,
@@ -381,6 +292,7 @@ export async function getStudentsByCohort(cohortId: number): Promise<Student[]> 
       status: s.status as Student["status"],
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     }));
   } catch (error) {
     console.error(error);
@@ -404,6 +316,7 @@ export async function getStudent(id: number): Promise<Student | null> {
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -439,6 +352,7 @@ export async function createStudent(input: CreateStudentInput): Promise<Student 
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -453,6 +367,7 @@ export interface UpdateStudentInput {
   cohortId?: number;
   status?: Student["status"];
   currentInternship?: string | null;
+  observerId?: number | null;
 }
 
 /** Updates a student. */
@@ -474,6 +389,7 @@ export async function updateStudent(id: number, input: UpdateStudentInput): Prom
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -526,6 +442,19 @@ export async function createNote(studentId: number, content: string): Promise<bo
     const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes`, {
       method: "POST",
       body: JSON.stringify({ content, author: username }),
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+/** Deletes an instructor note. Returns true if deleted. */
+export async function deleteNote(studentId: number, noteId: number): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes/${noteId}`, {
+      method: "DELETE",
     });
     return res.ok;
   } catch (error) {
@@ -629,6 +558,45 @@ export async function sendTestEodPreview(
   } catch (error) {
     console.error(error);
     return { success: false, message: "Network error" };
+  }
+}
+
+/**
+ * Sends a test message to the LLM endpoint and returns the response or error details.
+ * @param message - The prompt to send to the LLM.
+ */
+export async function sendTestLlmMessage(
+  message: string
+): Promise<{
+  success: boolean;
+  text?: string;
+  usage?: { promptTokens: number; completionTokens: number } | null;
+  elapsedMs?: number;
+  error?: string;
+  detail?: { name?: string; message?: string; stack?: string };
+}> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/testing/llm-test`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || "LLM request failed",
+        detail: data.detail,
+      };
+    }
+    return {
+      success: true,
+      text: data.text,
+      usage: data.usage,
+      elapsedMs: data.elapsedMs,
+    };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Network error — could not reach the server" };
   }
 }
 
@@ -788,6 +756,122 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
     console.error(error);
     return [];
   }
+}
+
+// ============================================================================
+// Observers API
+// ============================================================================
+
+/** An observer (instructor). */
+export interface Observer {
+  id: number;
+  discordUserId: string;
+  displayName: string | null;
+  username: string;
+}
+
+/** Fetches all observers. */
+export async function getObservers(): Promise<Observer[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/observers`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.observers.map((o: {
+      id: number;
+      discord_user_id: string;
+      display_name: string | null;
+      username: string;
+    }) => ({
+      id: o.id,
+      discordUserId: o.discord_user_id,
+      displayName: o.display_name,
+      username: o.username,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Syncs observers from the Discord @instructors role. */
+export async function syncObservers(): Promise<Observer[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/observers/sync`, {
+      method: "POST",
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.observers.map((o: {
+      id: number;
+      discord_user_id: string;
+      display_name: string | null;
+      username: string;
+    }) => ({
+      id: o.id,
+      discordUserId: o.discord_user_id,
+      displayName: o.display_name,
+      username: o.username,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+// ============================================================================
+// Database Viewer API
+// ============================================================================
+
+/** Column metadata for a database table. */
+export interface DbColumn {
+  name: string;
+  type: string;
+  pk: boolean;
+}
+
+/** Response from the table data endpoint. */
+export interface DbTableData {
+  table: string;
+  columns: DbColumn[];
+  rows: Record<string, unknown>[];
+  totalRows: number;
+  limit: number;
+  offset: number;
+}
+
+/** Fetches the list of all database tables. */
+export async function getDbTables(): Promise<string[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/database/tables`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.tables;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Fetches rows and column info for a specific table. */
+export async function getDbTableData(
+  tableName: string,
+  limit: number = 100,
+  offset: number = 0
+): Promise<DbTableData | null> {
+  try {
+    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+    const res = await fetchWithAuth(`${API_BASE}/database/tables/${encodeURIComponent(tableName)}?${params}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Triggers a download of the raw SQLite database file. */
+export function downloadDatabase(): void {
+  window.open(`${API_BASE}/database/download`, "_blank");
 }
 
 /** Updates a feature flag's enabled state. */

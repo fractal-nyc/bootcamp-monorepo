@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage } from "../../bot/index.js";
+import { countPrsInMessage, getTopLeaderboard } from "../../bot/index.js";
 
 describe("countPrsInMessage", () => {
   it("returns 1 when there is one PR URL", () => {
@@ -44,5 +44,125 @@ describe("countPrsInMessage", () => {
       https://github.com/asdf/qwer/pull/104
       https://github.com/asdf/asdf/pull/1`;
     expect(countPrsInMessage(message)).toEqual(5);
+  });
+});
+
+describe("getTopLeaderboard", () => {
+  it("returns top 3 distinct people with no ties", () => {
+    const sorted = [
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 4 },
+      { name: "Charlie", count: 3 },
+      { name: "Dave", count: 2 },
+    ];
+    const result = getTopLeaderboard(sorted);
+    expect(result).toEqual([
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 4 },
+      { name: "Charlie", count: 3 },
+    ]);
+  });
+
+  it("includes all tied for 1st place even if more than 3", () => {
+    const sorted = [
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 5 },
+      { name: "Charlie", count: 5 },
+      { name: "Dave", count: 5 },
+      { name: "Eve", count: 4 },
+    ];
+    const result = getTopLeaderboard(sorted);
+    expect(result).toEqual([
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 5 },
+      { name: "Charlie", count: 5 },
+      { name: "Dave", count: 5 },
+    ]);
+  });
+
+  it("stops after 1st place tie when 3+ people already included", () => {
+    const sorted = [
+      { name: "A", count: 5 },
+      { name: "B", count: 5 },
+      { name: "C", count: 5 },
+      { name: "D", count: 5 },
+      { name: "E", count: 5 },
+      { name: "F", count: 5 },
+      { name: "G", count: 5 },
+      { name: "H", count: 4 },
+      { name: "I", count: 4 },
+      { name: "J", count: 4 },
+      { name: "K", count: 3 },
+    ];
+    const result = getTopLeaderboard(sorted);
+    expect(result.length).toBe(7);
+    expect(result.every((e) => e.count === 5)).toBe(true);
+  });
+
+  it("includes 2nd place ties when 1st + 2nd totals under 3", () => {
+    const sorted = [
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 4 },
+      { name: "Charlie", count: 4 },
+      { name: "Dave", count: 3 },
+    ];
+    const result = getTopLeaderboard(sorted);
+    expect(result).toEqual([
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 4 },
+      { name: "Charlie", count: 4 },
+    ]);
+  });
+
+  it("stops after 2nd place when 1st + 2nd already >= 3", () => {
+    const sorted = [
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 5 },
+      { name: "Charlie", count: 4 },
+      { name: "Dave", count: 3 },
+    ];
+    const result = getTopLeaderboard(sorted);
+    expect(result).toEqual([
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 5 },
+      { name: "Charlie", count: 4 },
+    ]);
+  });
+
+  it("includes 3rd place when 1st + 2nd totals 2", () => {
+    const sorted = [
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 4 },
+      { name: "Charlie", count: 3 },
+      { name: "Dave", count: 3 },
+      { name: "Eve", count: 2 },
+    ];
+    const result = getTopLeaderboard(sorted);
+    expect(result).toEqual([
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 4 },
+      { name: "Charlie", count: 3 },
+      { name: "Dave", count: 3 },
+    ]);
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(getTopLeaderboard([])).toEqual([]);
+  });
+
+  it("returns single entry when only one person", () => {
+    const sorted = [{ name: "Alice", count: 3 }];
+    expect(getTopLeaderboard(sorted)).toEqual([{ name: "Alice", count: 3 }]);
+  });
+
+  it("returns two entries when only two people", () => {
+    const sorted = [
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 3 },
+    ];
+    expect(getTopLeaderboard(sorted)).toEqual([
+      { name: "Alice", count: 5 },
+      { name: "Bob", count: 3 },
+    ]);
   });
 });

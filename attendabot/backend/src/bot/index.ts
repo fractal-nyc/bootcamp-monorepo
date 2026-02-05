@@ -18,7 +18,7 @@ import {
   EOD_VERIFICATION_CRON,
   MIDDAY_PR_REMINDER_CRON,
   MIDDAY_PR_VERIFICATION_CRON,
-  USER_ID_TO_NAME_MAP,
+  DB_BACKUP_CRON,
 } from "./constants";
 import {
   getTomorrowsAssignment,
@@ -46,8 +46,27 @@ import {
   isFeatureFlagEnabled,
 } from "../services/db";
 import { isLLMConfigured, generateCohortSentiment } from "../services/llm";
+import { backupDatabaseToS3 } from "../services/s3backup";
 
-const CURRENT_COHORT_USER_IDS = Array.from(USER_ID_TO_NAME_MAP.keys());
+/**
+ * Fetches active cohort students from the DB and returns their Discord user IDs
+ * and a user ID to name mapping. Called at cron execution time for fresh data.
+ */
+function getCurrentCohortUsers(): {
+  userIds: string[];
+  nameMap: Map<string, string>;
+} {
+  const cohortId = getDefaultCohortId();
+  if (!cohortId) {
+    return { userIds: [], nameMap: new Map() };
+  }
+  const students = getActiveStudentsWithDiscord(cohortId);
+  const userIds = students.map((s) => s.discord_user_id!);
+  const nameMap = new Map<string, string>(
+    students.map((s) => [s.discord_user_id!, s.name]),
+  );
+  return { userIds, nameMap };
+}
 
 /** Validates that required channel IDs are configured. */
 function validateConfig(): void {
@@ -105,6 +124,12 @@ function scheduleJobs(): void {
     () => verifyMiddayPrPost(),
     "Midday PR verification",
   );
+
+  scheduleTask(
+    DB_BACKUP_CRON,
+    () => backupDatabaseToS3(),
+    "Database backup to S3",
+  );
 }
 
 async function sendAttendanceReminder(): Promise<void> {
@@ -134,9 +159,14 @@ export function buildEodMessage(): string {
   if (!CURRENT_COHORT_ROLE_ID) {
     message = `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`;
   } else {
-    message = `${roleMention(
-      CURRENT_COHORT_ROLE_ID,
-    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`;
+    message =
+      `${roleMention(
+        CURRENT_COHORT_ROLE_ID,
+      )} reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.\n` +
+      `Your EOD must include sections for **Wins** and **Blockers** along with links to your **PRs**.\n` +
+      `Also, please provide:\n` +
+      `- Anonymous feedback: https://forms.gle/SgzMsfX29CF5noZ1A\n` +
+      `- Flow check: https://forms.gle/TE9NNsXhhQVfayo96.`;
   }
 
   // Add tomorrow's assignment if available and feature flag is enabled
@@ -162,28 +192,30 @@ async function sendEodReminder(): Promise<void> {
   incrementRemindersTriggered();
 }
 
-async function verifyAttendancePost(): Promise<void> {
+async function verifyAttendancePost(): Promise<string[]> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
       "CURRENT_COHORT_ROLE_ID is not set. Skipping attendance verification.",
     );
-    return;
+    return [];
   }
 
-  await verifyPosts(ATTENDANCE_CHANNEL_ID, "attendance");
+  const dmedUsers = await verifyPosts(ATTENDANCE_CHANNEL_ID, "attendance");
   incrementVerificationsRun();
+  return dmedUsers;
 }
 
-async function verifyEodPost(): Promise<void> {
+async function verifyEodPost(): Promise<string[]> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
       "CURRENT_COHORT_ROLE_ID is not set. Skipping EOD verification.",
     );
-    return;
+    return [];
   }
 
-  await verifyPosts(EOD_CHANNEL_ID, "EOD");
+  const dmedUsers = await verifyPosts(EOD_CHANNEL_ID, "EOD");
   incrementVerificationsRun();
+  return dmedUsers;
 }
 
 async function sendMiddayPrReminder(): Promise<void> {
@@ -196,17 +228,25 @@ async function sendMiddayPrReminder(): Promise<void> {
 
   await sendReminder(
     EOD_CHANNEL_ID,
-    `${roleMention(CURRENT_COHORT_ROLE_ID)} please post your first PR of the day by 1 PM for ${getCurrentMonthDay()}.`,
+    `${roleMention(CURRENT_COHORT_ROLE_ID)} please post your first PR of the day by 2 PM for ${getCurrentMonthDay()}.`,
   );
   incrementRemindersTriggered();
 }
 
-async function verifyMiddayPrPost(): Promise<void> {
+async function verifyMiddayPrPost(): Promise<string[]> {
   if (!CURRENT_COHORT_ROLE_ID) {
     console.log(
       "CURRENT_COHORT_ROLE_ID is not set. Skipping midday PR verification.",
     );
-    return;
+    return [];
+  }
+
+  const { userIds, nameMap } = getCurrentCohortUsers();
+  if (userIds.length === 0) {
+    console.log(
+      "No active students with Discord IDs. Skipping midday PR verification.",
+    );
+    return [];
   }
 
   const channel = await fetchTextChannel(EOD_CHANNEL_ID);
@@ -227,7 +267,7 @@ async function verifyMiddayPrPost(): Promise<void> {
   // Find users who posted at least one PR
   const usersWithPr = new Set<string>();
   for (const message of messages) {
-    if (CURRENT_COHORT_USER_IDS.includes(message.author.id)) {
+    if (userIds.includes(message.author.id)) {
       if (countPrsInMessage(message.content) > 0) {
         usersWithPr.add(message.author.id);
       }
@@ -235,25 +275,28 @@ async function verifyMiddayPrPost(): Promise<void> {
   }
 
   // DM users without any PR
-  const missingUsers = CURRENT_COHORT_USER_IDS.filter(
-    (id) => !usersWithPr.has(id),
-  );
+  const missingUsers = userIds.filter((id) => !usersWithPr.has(id));
   const dateStr = `${year}-${month}-${day}`;
+  const dmedUserNames: string[] = [];
 
   for (const userId of missingUsers) {
-    await sendDirectMessage(
+    const sent = await sendDirectMessage(
       userId,
       `Could not find a midday PR from you for ${dateStr} in the EOD channel. Please post one ASAP.`,
     );
+    if (sent) {
+      dmedUserNames.push(nameMap.get(userId) ?? `<@${userId}>`);
+    }
     incrementMessagesSent();
   }
 
   incrementVerificationsRun();
+  return dmedUserNames;
 }
 
 function scheduleTask(
   cronExpression: string,
-  task: () => Promise<void>,
+  task: () => Promise<string[] | void>,
   description: string,
 ): void {
   try {
@@ -268,11 +311,12 @@ function scheduleTask(
           `⏰ **Cron running:** ${description} (${timestamp})`,
         ).catch(() => {});
         task()
-          .then(() => {
-            sendChannelMessage(
-              BOT_TEST_CHANNEL_ID,
-              `✅ **Cron completed:** ${description}`,
-            ).catch(() => {});
+          .then((dmedUsers) => {
+            let message = `✅ **Cron completed:** ${description}`;
+            if (dmedUsers && dmedUsers.length > 0) {
+              message += `\n📬 **DM'd:** ${dmedUsers.join(", ")}`;
+            }
+            sendChannelMessage(BOT_TEST_CHANNEL_ID, message).catch(() => {});
           })
           .catch((error) => {
             console.error(`Error while running ${description} task:`, error);
@@ -310,7 +354,18 @@ async function sendReminder(channelId: string, message: string): Promise<void> {
   incrementMessagesSent();
 }
 
-async function verifyPosts(channelId: string, label: string): Promise<void> {
+async function verifyPosts(
+  channelId: string,
+  label: string,
+): Promise<string[]> {
+  const { userIds, nameMap } = getCurrentCohortUsers();
+  if (userIds.length === 0) {
+    console.log(
+      `No active students with Discord IDs. Skipping ${label} verification.`,
+    );
+    return [];
+  }
+
   const channel = await fetchTextChannel(channelId);
   const since = new Date(Date.now() - 12 * 60 * 60 * 1000);
   const messages = await fetchMessagesSince(channel, since);
@@ -320,7 +375,7 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
 
   for (const message of messages) {
     const authorId = message.author.id;
-    if (CURRENT_COHORT_USER_IDS.includes(authorId)) {
+    if (userIds.includes(authorId)) {
       usersWhoPosted.add(message.author.id);
 
       const prCount = countPrsInMessage(message.content);
@@ -336,24 +391,12 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
     // Sort by PR count descending
     const sorted = Array.from(userPullRequestCounts.entries())
       .map(([userId, count]) => ({
-        name: USER_ID_TO_NAME_MAP.get(userId) ?? "Unknown User",
+        name: `<@${userId}>`,
         count,
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Get top 3 places (include ties)
-    const top3: typeof sorted = [];
-    let currentRank = 0;
-    let lastCount = -1;
-
-    for (const entry of sorted) {
-      if (entry.count !== lastCount) {
-        currentRank++;
-        if (currentRank > 3) break;
-        lastCount = entry.count;
-      }
-      top3.push(entry);
-    }
+    const top3 = getTopLeaderboard(sorted);
 
     if (top3.length > 0) {
       const leaderboard = top3.map((e) => `${e.name}: ${e.count}`).join("\n");
@@ -364,9 +407,9 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
     }
   }
 
-  const missingUsers = CURRENT_COHORT_USER_IDS.filter(
-    (id) => !usersWhoPosted.has(id),
-  );
+  const missingUsers = userIds.filter((id) => !usersWhoPosted.has(id));
+
+  const dmedUserNames: string[] = [];
 
   if (missingUsers.length === 0) {
     console.log(
@@ -383,12 +426,15 @@ async function verifyPosts(channelId: string, label: string): Promise<void> {
       if (sent) {
         incrementMessagesSent();
         dmsSent++;
+        dmedUserNames.push(nameMap.get(userId) ?? `<@${userId}>`);
       }
     }
     console.log(
       `Sent ${label} reminder DMs to ${dmsSent}/${missingUsers.length} users`,
     );
   }
+
+  return dmedUserNames;
 }
 
 function getCurrentMonthDay(): string {
@@ -402,10 +448,47 @@ function roleMention(roleId: string) {
   return `<@&${roleId}>`;
 }
 
+/**
+ * Selects the top entries for the PR leaderboard from a pre-sorted (descending) list.
+ * Includes ties for any included rank, but stops adding new ranks once 3+ people
+ * are already included from higher ranks.
+ * Always allows up to 3 distinct ranks if the cumulative count stays under 3.
+ */
+export function getTopLeaderboard(
+  sorted: Array<{ name: string; count: number }>,
+): Array<{ name: string; count: number }> {
+  const result: Array<{ name: string; count: number }> = [];
+  let currentRank = 0;
+  let lastCount = -1;
+
+  for (const entry of sorted) {
+    if (entry.count !== lastCount) {
+      currentRank++;
+      if (currentRank > 3 || (currentRank > 1 && result.length >= 3)) break;
+      lastCount = entry.count;
+    }
+    result.push(entry);
+  }
+
+  return result;
+}
+
 /** Counts the number of GitHub pull request URLs in a message. */
 export function countPrsInMessage(messageContent: string): number {
   const re = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   return (messageContent.match(re) || []).length;
+}
+
+/**
+ * Checks whether a message qualifies as a valid EOD submission.
+ * A valid EOD must contain the strings "Wins" and "Blockers" (case-insensitive).
+ */
+export function isValidEodMessage(content: string): boolean {
+  const lower = content.toLowerCase();
+  return (
+    lower.includes("wins") &&
+    lower.includes("blockers")
+  );
 }
 
 // ============================================================================
@@ -462,9 +545,9 @@ function getEightAmET(dateStr: string): string {
   return new Date(`${dateStr}T08:00:00-05:00`).toISOString();
 }
 
-/** Returns the ISO timestamp for 1 PM ET on a given date string (YYYY-MM-DD). */
-function getOnePmET(dateStr: string): string {
-  return new Date(`${dateStr}T13:00:00-05:00`).toISOString();
+/** Returns the ISO timestamp for 2 PM ET on a given date string (YYYY-MM-DD). */
+function getTwoPmET(dateStr: string): string {
+  return new Date(`${dateStr}T14:00:00-05:00`).toISOString();
 }
 
 /**
@@ -486,7 +569,7 @@ export async function generateDailyBriefing(
   const previousDayStr = start.split("T")[0];
   const tenAm = getTenAmET(previousDayStr);
   const eightAm = getEightAmET(previousDayStr);
-  const onePm = getOnePmET(previousDayStr);
+  const twoPm = getTwoPmET(previousDayStr);
 
   // Get messages from previous day
   const attendanceMessages = getMessagesByChannelAndDateRange(
@@ -504,15 +587,31 @@ export async function generateDailyBriefing(
     }
   }
 
-  const eodPrCountByUser = new Map<string, number>(); // discord_id -> PR count
+  const eodPrsByUser = new Map<string, Set<string>>(); // discord_id -> unique PR URLs
+  const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   for (const msg of eodMessages) {
-    const prCount = countPrsInMessage(msg.content ?? "");
-    eodPrCountByUser.set(
-      msg.author_id,
-      (eodPrCountByUser.get(msg.author_id) ?? 0) + prCount,
-    );
+    const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+    if (urls.length > 0) {
+      if (!eodPrsByUser.has(msg.author_id)) {
+        eodPrsByUser.set(msg.author_id, new Set());
+      }
+      const userPrs = eodPrsByUser.get(msg.author_id)!;
+      for (const url of urls) {
+        userPrs.add(url);
+      }
+    }
   }
-  const eodPostedUsers = new Set(eodMessages.map((m) => m.author_id));
+  const eodPrCountByUser = new Map<string, number>(
+    [...eodPrsByUser.entries()].map(([id, prs]) => [id, prs.size]),
+  );
+  // A valid EOD must be posted between 2 PM and end of day, and contain "Wins", "Blockers", and "PRs"
+  const eodPostedUsers = new Set(
+    eodMessages
+      .filter(
+        (m) => m.created_at >= twoPm && isValidEodMessage(m.content ?? ""),
+      )
+      .map((m) => m.author_id),
+  );
 
   // Track first PR time for each student (only PRs after 8 AM count)
   const firstPrTimeByUser = new Map<string, string>();
@@ -543,9 +642,9 @@ export async function generateDailyBriefing(
       lateStudents.push(student.name);
     }
 
-    // Check late midday PR (no PR after 8 AM, or first PR was after 1 PM)
+    // Check late midday PR (no PR after 8 AM, or first PR was after 2 PM)
     const firstPrTime = firstPrTimeByUser.get(discordId);
-    if (!firstPrTime || firstPrTime > onePm) {
+    if (!firstPrTime || firstPrTime > twoPm) {
       lateMiddayPrStudents.push(student.name);
     }
 
@@ -610,7 +709,7 @@ export async function generateDailyBriefing(
   briefing += "\n\n";
 
   // Late midday PR
-  briefing += `**Late Midday PR (after 1 PM):**\n`;
+  briefing += `**Late Midday PR (after 2 PM):**\n`;
   briefing +=
     lateMiddayPrStudents.length > 0 ? lateMiddayPrStudents.join(", ") : "None";
   briefing += "\n\n";
@@ -645,6 +744,9 @@ export async function generateDailyBriefing(
     })
     .join("\n");
   briefing += checkInList || "No students";
+  briefing += "\n\n";
+
+  briefing += "Don't forget to record all your conversations!";
 
   return briefing;
 }

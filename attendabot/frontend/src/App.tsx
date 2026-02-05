@@ -4,36 +4,36 @@
  */
 
 import { useState, useEffect } from "react";
-import { isLoggedIn, clearToken, getUsername, verifySession, onAuthFailure } from "./api/client";
+import { setUsername as storeUsername, clearSession, onAuthFailure } from "./api/client";
+import { authClient } from "./lib/auth-client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
 import { UserMessages } from "./components/UserMessages";
 import { StudentCohortPanel } from "./components/StudentCohortPanel";
 import { TestingPanel } from "./components/TestingPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
+import { ObserversPanel } from "./components/ObserversPanel";
 import "./App.css";
 
-type Tab = "students" | "messages" | "testing" | "diagnostics";
+type Tab = "students" | "observers" | "messages" | "testing" | "diagnostics";
 
 /** Root application component with authentication and admin dashboard. */
 function App() {
-  const [loggedIn, setLoggedIn] = useState(isLoggedIn());
+  const [loggedIn, setLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("students");
   const [username, setUsername] = useState<string | null>(null);
   const [sessionInvalid, setSessionInvalid] = useState(false);
 
   useEffect(() => {
-    setLoggedIn(isLoggedIn());
-    setUsername(getUsername());
-
-    // Verify the token is actually valid on mount
-    if (isLoggedIn()) {
-      verifySession().then((valid) => {
-        if (!valid) {
-          setSessionInvalid(true);
-        }
-      });
-    }
+    // Check for BetterAuth session (Discord OAuth)
+    authClient.getSession().then((result) => {
+      if (result.data?.user) {
+        const name = result.data.user.name || result.data.user.email || "Discord User";
+        storeUsername(name);
+        setLoggedIn(true);
+        setUsername(name);
+      }
+    });
 
     // Listen for auth failures from any API call
     const unsubscribe = onAuthFailure(() => {
@@ -43,8 +43,13 @@ function App() {
     return unsubscribe;
   }, []);
 
-  const handleLogout = () => {
-    clearToken();
+  const handleLogout = async () => {
+    try {
+      await authClient.signOut();
+    } catch {
+      // Ignore errors if no BetterAuth session exists
+    }
+    clearSession();
     setLoggedIn(false);
     setSessionInvalid(false);
     setUsername(null);
@@ -52,8 +57,14 @@ function App() {
 
   if (!loggedIn) {
     return <Login onLogin={() => {
-      setLoggedIn(true);
-      setUsername(getUsername());
+      authClient.getSession().then((result) => {
+        if (result.data?.user) {
+          const name = result.data.user.name || result.data.user.email || "Discord User";
+          storeUsername(name);
+          setLoggedIn(true);
+          setUsername(name);
+        }
+      });
     }} />;
   }
 
@@ -88,6 +99,12 @@ function App() {
           Students
         </button>
         <button
+          className={`tab-btn ${activeTab === "observers" ? "active" : ""}`}
+          onClick={() => setActiveTab("observers")}
+        >
+          Observers
+        </button>
+        <button
           className={`tab-btn ${activeTab === "messages" ? "active" : ""}`}
           onClick={() => setActiveTab("messages")}
         >
@@ -110,6 +127,8 @@ function App() {
       <main>
         {activeTab === "students" ? (
           <StudentCohortPanel />
+        ) : activeTab === "observers" ? (
+          <ObserversPanel />
         ) : activeTab === "messages" ? (
           <>
             <MessageFeed />

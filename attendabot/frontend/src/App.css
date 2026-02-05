@@ -455,6 +455,64 @@ button:disabled {
 }
 
 /* ========================================
+   Login — Discord OAuth
+   ======================================== */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-7);
+  color: var(--color-slate);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: var(--color-line);
+}
+
+.login-error {
+  padding: 0 var(--space-7);
+  margin: 0;
+}
+
+.login-social {
+  padding: var(--space-4) var(--space-7) var(--space-7);
+}
+
+.discord-login-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: #5865F2;
+  color: var(--color-white);
+  border: 3px solid #4752C4;
+  box-shadow: 4px 4px 0 #4752C4;
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-base);
+}
+
+.discord-login-btn:hover {
+  background: #4752C4;
+  color: var(--color-white);
+}
+
+.discord-login-btn:disabled {
+  background: #8891F2;
+  border-color: #7881E0;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ========================================
    Errors
    ======================================== */
 .error {
@@ -661,6 +719,45 @@ button:disabled {
   color: var(--color-white);
 }
 
+.delete-note-btn {
+  margin-left: auto;
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  box-shadow: none;
+  color: var(--color-slate);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.delete-note-btn:hover {
+  background: var(--color-platinum);
+  color: var(--color-charcoal);
+  transform: none;
+}
+
+.delete-note-btn.confirm {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-white);
+}
+
+.observer-select {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-family: var(--font-primary);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  cursor: pointer;
+}
+
+.observer-select:hover {
+  border-color: var(--color-charcoal);
+  background: var(--color-fog);
+}
+
 /* ========================================
    Status Badges
    ======================================== */
@@ -724,7 +821,7 @@ button:disabled {
   top: 0;
   right: 0;
   max-width: 90vw;
-  height: 100vh;
+  height: 100dvh;
   background: var(--color-white);
   border-left: 3px solid var(--color-charcoal);
   box-shadow: -6px 0 0 rgba(0, 0, 0, 0.15);
@@ -1680,6 +1777,15 @@ button:disabled {
   border-bottom: 2px solid var(--color-charcoal);
 }
 
+.fr-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.fr-table th.sortable:hover {
+  color: var(--color-charcoal);
+}
+
 /* Feature Request Status Badges */
 .status-new {
   background: var(--color-white);
@@ -1882,6 +1988,153 @@ button:disabled {
 }
 
 /* ========================================
+   Database Viewer
+   ======================================== */
+.db-viewer-panel {
+  grid-column: span 2;
+}
+
+.db-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.db-table-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.db-table-select label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-slate);
+}
+
+.db-table-select select {
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  color: var(--color-charcoal);
+  font-size: var(--text-base);
+  font-family: var(--font-primary);
+}
+
+.db-row-count {
+  font-size: var(--text-sm);
+  color: var(--color-slate);
+  font-weight: 700;
+}
+
+.db-download-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.db-download-btn:hover {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.db-table-wrapper {
+  overflow-x: auto;
+  border: 2px solid var(--color-charcoal);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-lg);
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+}
+
+.db-table th,
+.db-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.db-table th {
+  position: sticky;
+  top: 0;
+  color: var(--color-slate);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--color-platinum);
+  border-bottom: 2px solid var(--color-charcoal);
+  z-index: 1;
+}
+
+.db-pk-badge {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  font-size: 0.55rem;
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  vertical-align: middle;
+}
+
+.db-table tbody tr:hover {
+  background: var(--color-fog);
+}
+
+.db-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.db-page-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.db-page-btn:hover:not(:disabled) {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.db-page-btn:disabled {
+  background: var(--color-platinum);
+  color: var(--color-slate);
+  border-color: var(--color-slate);
+  box-shadow: none;
+}
+
+.db-page-info {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-slate);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========================================
    Responsive
    ======================================== */
 @media (max-width: 768px) {
@@ -1895,6 +2148,15 @@ button:disabled {
 
   .feature-requests-panel {
     grid-column: span 1;
+  }
+
+  .db-viewer-panel {
+    grid-column: span 1;
+  }
+
+  .db-controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   header h1 {

@@ -7,7 +7,8 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import http from "http";
-import { authRouter } from "./routes/auth";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "../auth";
 import { statusRouter } from "./routes/status";
 import { messagesRouter } from "./routes/messages";
 import { channelsRouter } from "./routes/channels";
@@ -17,6 +18,8 @@ import { testingRouter } from "./routes/testing";
 import { llmRouter } from "./routes/llm";
 import { featureRequestsRouter } from "./routes/featureRequests";
 import { featureFlagsRouter } from "./routes/featureFlags";
+import { observersRouter } from "./routes/observers";
+import { databaseRouter } from "./routes/database";
 import { initializeWebSocket } from "./websocket";
 
 /** Express application instance. */
@@ -26,11 +29,17 @@ const app = express();
 const httpServer = http.createServer(app);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", process.env.BETTER_AUTH_URL || "http://localhost:3001"],
+  credentials: true,
+}));
+
+// BetterAuth handler must be mounted before express.json()
+app.all("/api/auth/better/*", toNodeHandler(auth));
+
 app.use(express.json());
 
 // API routes
-app.use("/api/auth", authRouter);
 app.use("/api/status", statusRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/channels", channelsRouter);
@@ -41,6 +50,8 @@ app.use("/api/testing", testingRouter);
 app.use("/api/llm", llmRouter);
 app.use("/api/feature-requests", featureRequestsRouter);
 app.use("/api/feature-flags", featureFlagsRouter);
+app.use("/api/observers", observersRouter);
+app.use("/api/database", databaseRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {

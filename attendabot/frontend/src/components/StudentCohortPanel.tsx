@@ -4,13 +4,14 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import type { Cohort, Student } from "../api/client";
+import type { Cohort, Student, Observer } from "../api/client";
 import {
   getCohorts,
   getStudentsByCohort,
   createStudent,
   deleteStudent,
   updateStudent,
+  getObservers,
 } from "../api/client";
 import { StudentTable } from "./StudentTable";
 import { StudentDetail } from "./StudentDetail";
@@ -22,12 +23,13 @@ export function StudentCohortPanel() {
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [selectedCohortId, setSelectedCohortId] = useState<number | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [observers, setObservers] = useState<Observer[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load cohorts on mount, sorted in reverse order so the most recent is first
+  // Load cohorts and observers on mount
   useEffect(() => {
     getCohorts().then((c) => {
       const sorted = [...c].sort((a, b) => b.id - a.id);
@@ -37,6 +39,7 @@ export function StudentCohortPanel() {
       }
       setLoading(false);
     });
+    getObservers().then(setObservers);
   }, []);
 
   // Load students when cohort changes
@@ -97,6 +100,13 @@ export function StudentCohortPanel() {
     loadStudents();
   };
 
+  const handleObserverChange = async (student: Student, observerId: number | null) => {
+    const updated = await updateStudent(student.id, { observerId });
+    if (updated) {
+      loadStudents();
+    }
+  };
+
   const handleStudentNameChange = async (newName: string) => {
     if (!selectedStudent) return;
     const updated = await updateStudent(selectedStudent.id, { name: newName });
@@ -135,8 +145,10 @@ export function StudentCohortPanel() {
       ) : (
         <StudentTable
           students={students}
+          observers={observers}
           onStudentClick={handleStudentClick}
           onDeleteStudent={handleDeleteStudent}
+          onObserverChange={handleObserverChange}
         />
       )}
 

@@ -19,24 +19,28 @@ src/
 ├── App.tsx               # Root component with tab navigation and auth
 ├── App.css               # Main styles
 ├── api/
-│   └── client.ts         # API client (fetch wrapper, JWT handling, all endpoints)
+│   └── client.ts         # API client (fetch wrapper, cookie auth, all endpoints)
+├── lib/
+│   └── auth-client.ts    # BetterAuth client for Discord OAuth
 ├── components/
-│   ├── Login.tsx         # Authentication form
-│   ├── StudentTable.tsx  # Main student list with filtering
+│   ├── Login.tsx         # Discord OAuth login page
+│   ├── StudentTable.tsx  # Sortable student list with observer dropdown
 │   ├── StudentDetail.tsx # Individual student view with summary
-│   ├── StudentFeed.tsx   # EOD messages + instructor notes feed
+│   ├── StudentFeed.tsx   # EOD messages + instructor notes feed (with delete)
 │   ├── StudentCohortPanel.tsx  # Cohort selector + student list
 │   ├── AddStudentModal.tsx     # Modal for creating students
 │   ├── NoteInput.tsx     # Instructor note input field
+│   ├── ObserversPanel.tsx     # Sortable observers table with Discord sync
+│   ├── FeatureRequestsPanel.tsx # Sortable feature requests with boolean status filters
 │   ├── MessageFeed.tsx   # Discord messages by channel
 │   ├── UserMessages.tsx  # Messages filtered by user
 │   ├── ServerLogs.tsx    # Real-time log viewer (WebSocket)
 │   ├── StatusPanel.tsx   # Bot status display
-│   ├── DiagnosticsPanel.tsx   # System diagnostics
+│   ├── DiagnosticsPanel.tsx   # Configuration: status, feature flags, feature requests
 │   ├── TestingPanel.tsx  # Test briefings and EOD previews
 │   └── Sidebar.tsx       # Navigation sidebar
 ├── hooks/
-│   └── useWebSocket.ts   # WebSocket connection hook
+│   └── useWebSocket.ts   # WebSocket connection hook (cookie auth)
 └── utils/
     └── linkify.tsx       # URL detection and linking
 ```
@@ -45,26 +49,76 @@ src/
 
 ### App.tsx
 - Root component managing auth state and tab navigation
-- Tabs: Students, Messages, Testing, Diagnostics
-- Stores JWT in localStorage via api/client.ts
+- Tabs: Students, Observers, Messages, Testing, Configuration
+- Auth state determined by BetterAuth `getSession()` (Discord OAuth)
 
 ### StudentTable.tsx
-- Displays students in selected cohort
-- Columns: Name, Discord, Status, Last Check-in, Internship
+- Displays students in selected cohort with sortable columns
+- Columns: Name, Discord, Status, Last Check-in, Internship, Observer
+- Observer column has dropdown to assign an observer (instructor) per student
 - Click row to view StudentDetail
+- Two-click delete confirmation pattern (click → "Confirm?" → click again, blur resets)
 
-### StudentDetail.tsx
-- Shows student info, AI summary, and feed
-- Generates summary via LLM endpoint (cached by date)
+### StudentFeed.tsx
+- Interleaved feed of EOD messages and instructor notes
+- Delete button on notes with two-click confirmation pattern
+
+### ObserversPanel.tsx
+- Sortable table of observers synced from Discord @instructors role
+- "Sync from Discord" button to fetch/upsert instructors
+
+### FeatureRequestsPanel.tsx
+- Sortable columns (reuses same pattern as StudentTable)
+- Boolean status toggle filters: New, In Progress, Done (Done initially off)
+- "All" button toggles all filters on
 
 ### ServerLogs.tsx
-- Connects to WebSocket for real-time logs
+- Connects to WebSocket for real-time logs (cookie-based auth, no token needed)
 - Auto-scrolls to latest messages
+
+## Sortable Table Pattern
+
+Multiple tables (StudentTable, ObserversPanel, FeatureRequestsPanel) share this pattern:
+
+```typescript
+const [sortField, setSortField] = useState<SortField>("name");
+const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+const sortedData = useMemo(() => {
+  const sorted = [...data].sort((a, b) => {
+    // compare by sortField
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+  return sorted;
+}, [data, sortField, sortDirection]);
+
+const handleSort = (field: SortField) => {
+  if (sortField === field) {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+  } else {
+    setSortField(field);
+    setSortDirection("asc");
+  }
+};
+
+// In JSX: <th onClick={() => handleSort("name")} className="sortable">
+```
+
+## Authentication
+
+Authentication uses **BetterAuth** with Discord OAuth. There is no JWT or password login.
+
+- **Login**: Discord OAuth via `authClient.signIn.social({ provider: "discord" })`
+- **Session check**: `authClient.getSession()` on mount
+- **API calls**: `fetchWithAuth()` sends `credentials: "include"` so cookies are attached
+- **WebSocket**: `useWebSocket()` connects without a token — cookies sent automatically on upgrade
+- **Logout**: `authClient.signOut()` + clear username from localStorage
 
 ## State Management
 
 - **Local state**: useState/useEffect throughout
-- **Auth**: JWT token in localStorage (`api/client.ts`)
+- **Auth**: BetterAuth session cookies (no localStorage tokens)
+- **Username display**: Stored in localStorage for display only (not for auth)
 - **No global store**: Each component fetches its own data
 
 ## API Client (api/client.ts)
@@ -72,22 +126,24 @@ src/
 All backend communication goes through this file:
 
 ```typescript
-import { getStudentsByCohort, createStudent, login } from "../api/client";
-
-// Auth
-await login(password, username);  // Stores JWT in localStorage
-isLoggedIn();                     // Check if token exists
-clearToken();                     // Logout
+import { getStudentsByCohort, createStudent, deleteNote } from "../api/client";
 
 // Students
 const students = await getStudentsByCohort(cohortId);
-const student = await getStudent(id);
-await createStudent({ name, cohortId, discordUserId });
-await updateStudent(id, { status: "graduated" });
+await updateStudent(id, { status: "graduated", observerId: 3 });
 
-// Feed
+// Feed & Notes
 const feed = await getStudentFeed(studentId);
 await createNote(studentId, "Note content");
+await deleteNote(studentId, noteId);
+
+// Observers
+const observers = await getObservers();
+await syncObservers();
+
+// Feature Requests
+const requests = await getFeatureRequests();
+await createFeatureRequest({ title, description, author, priority });
 
 // LLM
 const summary = await getStudentSummary(studentId, "2026-01-25");
@@ -96,8 +152,10 @@ const summary = await getStudentSummary(studentId, "2026-01-25");
 ## WebSocket (hooks/useWebSocket.ts)
 
 ```typescript
-const { messages, isConnected } = useWebSocket("ws://localhost:3001/ws");
-// messages: LogMessage[] with timestamp, level, content
+const { logs, status, clearLogs } = useWebSocket();
+// logs: LogEntry[] with id, timestamp, level, message
+// status: "connecting" | "connected" | "disconnected" | "error"
+// Auto-reconnects with exponential backoff (max 5 attempts)
 ```
 
 ## Development
@@ -138,7 +196,8 @@ const { messages, isConnected } = useWebSocket("ws://localhost:3001/ws");
 
 ## Gotchas
 
-- **Auth redirects**: fetchWithAuth clears token on 401/403 - app will show login
+- **Auth redirects**: fetchWithAuth triggers `onAuthFailure` callback on 401/403, which shows session expired warning
 - **Vite proxy**: Only works in dev mode; production serves from backend static files
 - **No React Router**: Navigation is tab-based within App.tsx, not URL-based
 - **Styling**: CSS in App.css, no CSS modules or styled-components
+- **Two-click delete pattern**: Used for destructive actions (delete student, delete note). Click shows "Confirm?", click again deletes, blur resets.

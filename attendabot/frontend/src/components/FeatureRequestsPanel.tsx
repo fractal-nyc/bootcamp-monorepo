@@ -1,6 +1,6 @@
 /**
  * @fileoverview Panel for viewing and managing feature requests.
- * Supports filtering by status, sorting, and CRUD operations.
+ * Supports filtering by status, sorting by column, and CRUD operations.
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -16,15 +16,18 @@ import { AddFeatureRequestModal } from "./AddFeatureRequestModal";
 import { FeatureRequestDetail } from "./FeatureRequestDetail";
 import { Sidebar } from "./Sidebar";
 
-type StatusFilter = "all" | "new" | "in_progress" | "done";
-type SortOption = "priority" | "newest" | "title";
+type SortField = "title" | "status" | "priority" | "author" | "createdAt";
+type SortDirection = "asc" | "desc";
 
 /** Panel for managing feature requests with filter, sort, and CRUD. */
 export function FeatureRequestsPanel() {
   const [requests, setRequests] = useState<FeatureRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortOption, setSortOption] = useState<SortOption>("priority");
+  const [showNew, setShowNew] = useState(true);
+  const [showInProgress, setShowInProgress] = useState(true);
+  const [showDone, setShowDone] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("priority");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [selectedRequest, setSelectedRequest] = useState<FeatureRequest | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -42,26 +45,83 @@ export function FeatureRequestsPanel() {
   }, [loadRequests]);
 
   const filteredAndSorted = useMemo(() => {
-    let filtered = requests;
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((r) => r.status === statusFilter);
-    }
+    const filtered = requests.filter((r) => {
+      if (r.status === "new" && !showNew) return false;
+      if (r.status === "in_progress" && !showInProgress) return false;
+      if (r.status === "done" && !showDone) return false;
+      return true;
+    });
 
     const sorted = [...filtered].sort((a, b) => {
-      switch (sortOption) {
-        case "priority":
-          return b.priority - a.priority;
-        case "newest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      let aVal: string | number | null = null;
+      let bVal: string | number | null = null;
+
+      switch (sortField) {
         case "title":
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
+          aVal = a.title;
+          bVal = b.title;
+          break;
+        case "status":
+          aVal = a.status;
+          bVal = b.status;
+          break;
+        case "priority":
+          aVal = a.priority;
+          bVal = b.priority;
+          break;
+        case "author":
+          aVal = a.author;
+          bVal = b.author;
+          break;
+        case "createdAt":
+          aVal = a.createdAt;
+          bVal = b.createdAt;
+          break;
       }
+
+      if (aVal === null && bVal === null) return 0;
+      if (aVal === null) return 1;
+      if (bVal === null) return -1;
+
+      let comparison: number;
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        comparison = aVal - bVal;
+      } else {
+        comparison = String(aVal).localeCompare(String(bVal));
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
     });
 
     return sorted;
-  }, [requests, statusFilter, sortOption]);
+  }, [requests, showNew, showInProgress, showDone, sortField, sortDirection]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection(field === "priority" || field === "createdAt" ? "desc" : "asc");
+    }
+  };
+
+  const getSortIndicator = (field: SortField) => {
+    if (sortField !== field) return "";
+    return sortDirection === "asc" ? " ▲" : " ▼";
+  };
+
+  const allEnabled = showNew && showInProgress && showDone;
+
+  const handleAllToggle = () => {
+    if (allEnabled) {
+      setShowNew(false);
+      setShowInProgress(false);
+      setShowDone(false);
+    } else {
+      setShowNew(true);
+      setShowInProgress(true);
+      setShowDone(true);
+    }
+  };
 
   const handleRequestClick = (request: FeatureRequest) => {
     setSelectedRequest(request);
@@ -145,39 +205,38 @@ export function FeatureRequestsPanel() {
     }
   };
 
-  const statusFilterOptions: { value: StatusFilter; label: string }[] = [
-    { value: "all", label: "All" },
-    { value: "new", label: "New" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "done", label: "Done" },
-  ];
-
   return (
     <div className="panel feature-requests-panel">
       <h2>Feature Requests</h2>
 
       <div className="fr-controls">
         <div className="fr-filter-pills">
-          {statusFilterOptions.map((opt) => (
-            <button
-              key={opt.value}
-              className={`fr-pill ${statusFilter === opt.value ? "active" : ""}`}
-              onClick={() => setStatusFilter(opt.value)}
-            >
-              {opt.label}
-            </button>
-          ))}
+          <button
+            className={`fr-pill ${allEnabled ? "active" : ""}`}
+            onClick={handleAllToggle}
+          >
+            All
+          </button>
+          <button
+            className={`fr-pill ${showNew ? "active" : ""}`}
+            onClick={() => setShowNew((v) => !v)}
+          >
+            New
+          </button>
+          <button
+            className={`fr-pill ${showInProgress ? "active" : ""}`}
+            onClick={() => setShowInProgress((v) => !v)}
+          >
+            In Progress
+          </button>
+          <button
+            className={`fr-pill ${showDone ? "active" : ""}`}
+            onClick={() => setShowDone((v) => !v)}
+          >
+            Done
+          </button>
         </div>
         <div className="fr-right-controls">
-          <select
-            className="fr-sort-select"
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value as SortOption)}
-          >
-            <option value="priority">Priority (High first)</option>
-            <option value="newest">Newest first</option>
-            <option value="title">Title (A-Z)</option>
-          </select>
           <button onClick={() => setModalOpen(true)}>New Request</button>
         </div>
       </div>
@@ -188,11 +247,21 @@ export function FeatureRequestsPanel() {
         <table className="fr-table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Status</th>
-              <th>Priority</th>
-              <th>Author</th>
-              <th>Created</th>
+              <th onClick={() => handleSort("title")} className="sortable">
+                Title{getSortIndicator("title")}
+              </th>
+              <th onClick={() => handleSort("status")} className="sortable">
+                Status{getSortIndicator("status")}
+              </th>
+              <th onClick={() => handleSort("priority")} className="sortable">
+                Priority{getSortIndicator("priority")}
+              </th>
+              <th onClick={() => handleSort("author")} className="sortable">
+                Author{getSortIndicator("author")}
+              </th>
+              <th onClick={() => handleSort("createdAt")} className="sortable">
+                Created{getSortIndicator("createdAt")}
+              </th>
               <th>Actions</th>
             </tr>
           </thead>

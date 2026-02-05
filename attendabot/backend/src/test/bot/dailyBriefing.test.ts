@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage } from "../../bot/index";
+import { countPrsInMessage, isValidEodMessage } from "../../bot/index";
 
 describe("Daily Briefing - PR Counting", () => {
   describe("countPrsInMessage", () => {
@@ -111,9 +111,9 @@ describe("Daily Briefing - Date Utilities", () => {
       expect(eightAm.getUTCHours()).toBe(13); // 8 AM ET = 1 PM UTC
     });
 
-    it("calculates 1 PM ET correctly", () => {
-      const onePm = new Date("2024-01-15T13:00:00-05:00");
-      expect(onePm.getUTCHours()).toBe(18); // 1 PM ET = 6 PM UTC
+    it("calculates 2 PM ET correctly", () => {
+      const twoPm = new Date("2024-01-15T14:00:00-05:00");
+      expect(twoPm.getUTCHours()).toBe(19); // 2 PM ET = 7 PM UTC
     });
   });
 
@@ -188,19 +188,19 @@ describe("Daily Briefing - Student Categorization Logic", () => {
       expect(isLowPr).toBe(true);
     });
 
-    it("categorizes as late midday PR when first PR after 1 PM", () => {
-      const onePmET = "2024-01-15T18:00:00Z"; // 1 PM ET in UTC
-      const firstPrTime = "2024-01-15T19:00:00Z"; // 2 PM ET
+    it("categorizes as late midday PR when first PR after 2 PM", () => {
+      const twoPmET = "2024-01-15T19:00:00Z"; // 2 PM ET in UTC
+      const firstPrTime = "2024-01-15T20:00:00Z"; // 3 PM ET
 
-      const isLatePr = firstPrTime > onePmET;
+      const isLatePr = firstPrTime > twoPmET;
       expect(isLatePr).toBe(true);
     });
 
-    it("categorizes as on-time PR when first PR before 1 PM", () => {
-      const onePmET = "2024-01-15T18:00:00Z";
-      const firstPrTime = "2024-01-15T17:00:00Z"; // 12 PM ET
+    it("categorizes as on-time PR when first PR before 2 PM", () => {
+      const twoPmET = "2024-01-15T19:00:00Z";
+      const firstPrTime = "2024-01-15T18:00:00Z"; // 1 PM ET
 
-      const isLatePr = firstPrTime > onePmET;
+      const isLatePr = firstPrTime > twoPmET;
       expect(isLatePr).toBe(false);
     });
   });
@@ -213,5 +213,116 @@ describe("Daily Briefing - Student Categorization Logic", () => {
       const hasNoEod = !eodPostedUsers.has(discordId);
       expect(hasNoEod).toBe(true);
     });
+  });
+});
+
+describe("Daily Briefing - isValidEodMessage", () => {
+  it("returns true when message contains Wins and Blockers", () => {
+    const message = "**Wins**\nShipped auth\n**Blockers**\nNone\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("is case insensitive", () => {
+    const message = "wins: did stuff\nblockers: none";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("works with mixed casing", () => {
+    const message = "WINS\nsome stuff\nBlockers\nnone";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns false when missing Wins", () => {
+    const message = "**Blockers**\nNone\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(false);
+  });
+
+  it("returns false when missing Blockers", () => {
+    const message = "**Wins**\nShipped auth\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(isValidEodMessage("")).toBe(false);
+  });
+
+  it("returns false for a casual message without the required sections", () => {
+    expect(isValidEodMessage("Hey team, wrapping up for the day!")).toBe(false);
+  });
+});
+
+describe("Daily Briefing - PR Deduplication", () => {
+  it("counts unique PR URLs across multiple messages", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "midday: https://github.com/user/repo/pull/1" },
+      { author_id: "user-1", content: "EOD:\nhttps://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(2);
+  });
+
+  it("counts PRs separately per user", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/1" },
+      { author_id: "user-2", content: "https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(1);
+    expect(prsByUser.get("user-2")!.size).toBe(2);
+  });
+
+  it("does not count the same PR URL posted three times", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(1);
   });
 });

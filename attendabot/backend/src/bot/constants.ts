@@ -3,8 +3,8 @@
  * cron schedules, channel IDs, and user mappings.
  */
 
-/** Cron expression for daily EOD reminder (5 PM EST, Mon-Sat, skip Sundays). */
-export const EOD_REMINDER_CRON = "0 17 * * 1-6";
+/** Cron expression for daily EOD reminder (6 PM ET, Mon-Sat, skip Sundays). */
+export const EOD_REMINDER_CRON = "0 18 * * 1-6";
 
 /** Cron expression for EOD verification (11:59 PM EST). */
 export const EOD_VERIFICATION_CRON = "59 23 * * *";
@@ -18,11 +18,14 @@ export const ATTENDANCE_VERIFICATION_CRON = "0 10 * * *";
 /** Cron expression for daily briefing (8 AM EST). */
 export const DAILY_BRIEFING_CRON = "0 8 * * *";
 
-/** Cron expression for midday PR reminder (12:45 PM EST). */
-export const MIDDAY_PR_REMINDER_CRON = "45 12 * * *";
+/** Cron expression for midday PR reminder (1:45 PM ET). */
+export const MIDDAY_PR_REMINDER_CRON = "45 13 * * *";
 
-/** Cron expression for midday PR verification (1:00 PM EST). */
-export const MIDDAY_PR_VERIFICATION_CRON = "0 13 * * *";
+/** Cron expression for midday PR verification (2:00 PM ET). */
+export const MIDDAY_PR_VERIFICATION_CRON = "0 14 * * *";
+
+/** Cron expression for nightly database backup to S3 (2:00 AM EST). */
+export const DB_BACKUP_CRON = "0 2 * * *";
 
 /** Timezone for all cron schedules. */
 export const CRON_TIMEZONE = "America/New_York";
@@ -49,8 +52,8 @@ export const CURRENT_COHORT_ROLE_ID = "1467913673560559768";
 export const SP2026_COHORT_ROLE_ID = "1467913673560559768";
 export const FA2025_COHORT_ROLE_ID = "1416479282817007797";
 
-/** Discord user ID to name mapping for the current cohort. */
-export const USER_ID_TO_NAME_MAP = new Map<string, string>([]);
+/** Discord role ID for instructors (observers). */
+export const INSTRUCTORS_ROLE_ID = "1362774423391703180";
 
 /** Discord user ID to name mapping for FA2025 cohort members. */
 export const FA2025_USER_ID_TO_NAME_MAP = new Map<string, string>([

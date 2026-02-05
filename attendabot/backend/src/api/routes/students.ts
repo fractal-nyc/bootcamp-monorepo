@@ -13,6 +13,7 @@ import {
   deleteStudent,
   getStudentFeed,
   createInstructorNote,
+  deleteInstructorNote,
 } from "../../services/db";
 
 /** Router for student endpoints. */
@@ -120,7 +121,7 @@ studentsRouter.put("/:id", (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const { name, discordUserId, cohortId, status, currentInternship } = req.body;
+    const { name, discordUserId, cohortId, status, currentInternship, observerId } = req.body;
 
     const student = updateStudent(id, {
       name,
@@ -128,6 +129,7 @@ studentsRouter.put("/:id", (req: AuthRequest, res: Response) => {
       cohortId,
       status,
       currentInternship,
+      observerId,
     });
 
     if (!student) {
@@ -215,5 +217,27 @@ studentsRouter.post("/:id/notes", (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error creating note:", error);
     res.status(500).json({ error: "Failed to create note" });
+  }
+});
+
+/** DELETE /api/students/:id/notes/:noteId - Delete an instructor note */
+studentsRouter.delete("/:id/notes/:noteId", (req: AuthRequest, res: Response) => {
+  try {
+    const noteId = parseInt(req.params.noteId, 10);
+    if (isNaN(noteId)) {
+      res.status(400).json({ error: "Invalid note ID" });
+      return;
+    }
+
+    const deleted = deleteInstructorNote(noteId);
+    if (!deleted) {
+      res.status(404).json({ error: "Note not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting note:", error);
+    res.status(500).json({ error: "Failed to delete note" });
   }
 });

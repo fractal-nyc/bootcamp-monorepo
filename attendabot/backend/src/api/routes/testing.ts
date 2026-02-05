@@ -11,6 +11,7 @@ import {
 } from "../../bot/curriculum";
 import { CURRENT_COHORT_ROLE_ID, BOT_TEST_CHANNEL_ID } from "../../bot/constants";
 import { sendChannelMessage } from "../../services/discord";
+import { isLLMConfigured, testLlmCompletion } from "../../services/llm";
 
 /** Router for testing endpoints. */
 export const testingRouter = Router();
@@ -138,3 +139,47 @@ testingRouter.post(
     }
   }
 );
+
+/**
+ * POST /api/testing/llm-test
+ * Sends a test message to the LLM and returns the response.
+ * Body: { message: string }
+ */
+testingRouter.post("/llm-test", authenticateToken, async (req: AuthRequest, res: Response) => {
+  const { message } = req.body;
+
+  if (!message || typeof message !== "string") {
+    res.status(400).json({ error: "message is required and must be a string" });
+    return;
+  }
+
+  if (!isLLMConfigured()) {
+    res.status(500).json({
+      error: "LLM not configured: GEMINI_API_KEY environment variable is not set",
+    });
+    return;
+  }
+
+  try {
+    const startTime = Date.now();
+    const response = await testLlmCompletion(message);
+    const elapsed = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      text: response.text,
+      usage: response.usage ?? null,
+      elapsedMs: elapsed,
+    });
+  } catch (error) {
+    const detail =
+      error instanceof Error
+        ? { name: error.name, message: error.message, stack: error.stack }
+        : { message: String(error) };
+    console.error("LLM test error:", detail);
+    res.status(500).json({
+      error: "LLM request failed",
+      detail,
+    });
+  }
+});

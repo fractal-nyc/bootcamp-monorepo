@@ -2,7 +2,7 @@
 
 ## Overview
 
-Today we are going to start building a chatbot/AI agent app. We will be using familiar technologies (git, bun, Vite, Express, React) alongside a new component: third-party APIs, specifically Claude.
+Today we are going to start building a chatbot/AI agent app. We will be using familiar technologies (git, bun, Vite, Express, React) alongside a new one: third-party APIs, specifically Claude.
 
 ## Steps (Morning)
 
@@ -26,16 +26,18 @@ Today we are going to start building a chatbot/AI agent app. We will be using fa
     - a `<textarea>` element ([docs](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea)) where the user can type messages
     - a `<button>` that when clicked calls your `/chat` endpoint
     - a `<div>` that displays the entire convesation. It gets updated when the call to `/chat` returns.
+- Bonus: add a `/reset` endpoint that clears the conversation so the user can start a fresh conversation.
 
 ## Steps (Afternoon)
+
 - We have the basic chat flow working now, so let's make it look pretty.
 - Previously, you were introduced to [Tailwind](https://tailwindcss.com/), a CSS library that makes it easy to style plain HTML elements.
 - Today, we're going up one level of abstraction higher with [Shadcn](https://ui.shadcn.com/), a library of pre-built UI components that provide common functionality while allowing easy customizability.
 - Add Shadcn to your project like so: https://ui.shadcn.com/docs/installation/vite
-    - Note that Shadcn has a somewhat different installation model compared to other component libraries. Rather than introducing a Node package dependency, we copy all of the Shadcn code for the components used in our project such that we "own" the code.
+  - Note that Shadcn has a somewhat different installation model compared to other component libraries. Rather than introducing a Node package dependency, we copy all of the Shadcn code for the components used in our project such that we "own" the code.
 - Now add the components you want to use in your UI. Suggestions:
-    - [ScrollArea](https://ui.shadcn.com/docs/components/radix/scroll-area) to contain the conversation.
-    - [Textarea](https://ui.shadcn.com/docs/components/radix/textarea) for where the user types.
-    - [Card](https://ui.shadcn.com/docs/components/radix/card) for each turn in the conversation.
-    - [Button](https://ui.shadcn.com/docs/components/radix/button) for sending the chat to the server.
+  - [ScrollArea](https://ui.shadcn.com/docs/components/radix/scroll-area) to contain the conversation.
+  - [Textarea](https://ui.shadcn.com/docs/components/radix/textarea) for where the user types.
+  - [Card](https://ui.shadcn.com/docs/components/radix/card) for each turn in the conversation.
+  - [Button](https://ui.shadcn.com/docs/components/radix/button) for sending the chat to the server.
 - Bonus: try using one of the higher-level libraries in the [Shadcn directory](https://ui.shadcn.com/docs/directory) like [AI Elements](https://elements.ai-sdk.dev/) or [Assistant UI](https://www.assistant-ui.com/docs/ui/thread).

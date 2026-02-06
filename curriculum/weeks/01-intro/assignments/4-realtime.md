@@ -19,5 +19,9 @@ to the other tab. Our goal is to fix that with a technology for real-time commun
 ## Steps (Afternoon)
  - Use [Render](https://render.com) to deploy your project
     - Just logging in with your github and providing your tic tac toe repo will get something started
-    - make sure Sevalla runs `bun install`, `bun run build`, and then `bun run start`
-    - Make sure your app starts on the port configured from the environemnt, [like Sevalla tells you to](https://render.com/docs/web-services#port-binding)
+    - make sure Render runs `bun install`, `bun run build`, and then `bun run start`
+    - Make sure your app starts on the port configured from the environemnt, [like Render tells you to](https://render.com/docs/web-services#port-binding)
+
+## Diagram
+
+![image](4-deployment.png)

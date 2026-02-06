@@ -24,4 +24,4 @@ to the other tab. Our goal is to fix that with a technology for real-time commun
 
 ## Diagram
 
-![image](4-realtime.png)
+![image](4-deployment.png)

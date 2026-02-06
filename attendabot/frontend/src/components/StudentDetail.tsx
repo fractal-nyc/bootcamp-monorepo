@@ -192,7 +192,15 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
       {/* AI Summary */}
       <div className="student-ai-summary">
         <div className="summary-header">
-          <h3>Summary</h3>
+          <h3>
+            Summary
+            {summary && !summaryLoading && (
+              <span className="summary-meta">
+                {" "}Generated {formatSummaryDate(summary.generatedAt)}
+                {summary.cached && " (cached)"}
+              </span>
+            )}
+          </h3>
           {summary && !summaryLoading && (
             <button
               className="regenerate-btn"
@@ -209,15 +217,9 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
         ) : summaryError ? (
           <p className="summary-error">{summaryError}</p>
         ) : summary ? (
-          <>
-            <div className="summary-text">
-              <Markdown>{summary.summary}</Markdown>
-            </div>
-            <p className="summary-meta">
-              Generated {formatSummaryDate(summary.generatedAt)}
-              {summary.cached && " (cached)"}
-            </p>
-          </>
+          <div className="summary-text">
+            <Markdown>{summary.summary}</Markdown>
+          </div>
         ) : (
           <p className="summary-error">No summary available</p>
         )}

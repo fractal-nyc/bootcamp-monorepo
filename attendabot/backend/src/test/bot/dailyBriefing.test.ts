@@ -217,28 +217,38 @@ describe("Daily Briefing - Student Categorization Logic", () => {
 });
 
 describe("Daily Briefing - isValidEodMessage", () => {
-  it("returns true when message contains Wins and Blockers", () => {
+  it("returns true with win, block, and PR link", () => {
     const message = "**Wins**\nShipped auth\n**Blockers**\nNone\nhttps://github.com/user/repo/pull/1";
     expect(isValidEodMessage(message)).toBe(true);
   });
 
+  it("returns true with win, block, and 'PRs' string", () => {
+    const message = "wins: did stuff\nblockers: none\nPRs: none today";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns true with only 'win' (no 'block') plus PR link", () => {
+    const message = "Win: shipped auth\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns true with only 'block' (no 'win') plus PR link", () => {
+    const message = "Blocker: stuck on deploy\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
   it("is case insensitive", () => {
-    const message = "wins: did stuff\nblockers: none";
+    const message = "WIN today\nprs: link";
     expect(isValidEodMessage(message)).toBe(true);
   });
 
-  it("works with mixed casing", () => {
-    const message = "WINS\nsome stuff\nBlockers\nnone";
-    expect(isValidEodMessage(message)).toBe(true);
-  });
-
-  it("returns false when missing Wins", () => {
-    const message = "**Blockers**\nNone\nhttps://github.com/user/repo/pull/1";
+  it("returns false when missing both win and block", () => {
+    const message = "Did some stuff\nhttps://github.com/user/repo/pull/1";
     expect(isValidEodMessage(message)).toBe(false);
   });
 
-  it("returns false when missing Blockers", () => {
-    const message = "**Wins**\nShipped auth\nhttps://github.com/user/repo/pull/1";
+  it("returns false when missing PRs section and PR links", () => {
+    const message = "**Wins**\nShipped auth\n**Blockers**\nNone";
     expect(isValidEodMessage(message)).toBe(false);
   });
 

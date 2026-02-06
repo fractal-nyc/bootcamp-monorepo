@@ -482,14 +482,13 @@ export function countPrsInMessage(messageContent: string): number {
 
 /**
  * Checks whether a message qualifies as a valid EOD submission.
- * A valid EOD must contain the strings "Wins" and "Blockers" (case-insensitive).
+ * Must contain ("win" OR "block", case-insensitive) AND (a GitHub PR link OR "PRs", case-insensitive).
  */
 export function isValidEodMessage(content: string): boolean {
   const lower = content.toLowerCase();
-  return (
-    lower.includes("wins") &&
-    lower.includes("blockers")
-  );
+  const hasWinOrBlock = lower.includes("win") || lower.includes("block");
+  const hasPrs = lower.includes("prs") || countPrsInMessage(content) > 0;
+  return hasWinOrBlock && hasPrs;
 }
 
 // ============================================================================

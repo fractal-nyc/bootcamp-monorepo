@@ -14,6 +14,9 @@ import {
   getStudentFeed,
   createInstructorNote,
   deleteInstructorNote,
+  getStudentImage,
+  updateStudentImage,
+  deleteStudentImage,
 } from "../../services/db";
 
 /** Router for student endpoints. */
@@ -239,5 +242,77 @@ studentsRouter.delete("/:id/notes/:noteId", (req: AuthRequest, res: Response) =>
   } catch (error) {
     console.error("Error deleting note:", error);
     res.status(500).json({ error: "Failed to delete note" });
+  }
+});
+
+/** GET /api/students/:id/image - Get a student's profile image */
+studentsRouter.get("/:id/image", (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid student ID" });
+      return;
+    }
+
+    const image = getStudentImage(id);
+    res.json({ image });
+  } catch (error) {
+    console.error("Error fetching student image:", error);
+    res.status(500).json({ error: "Failed to fetch student image" });
+  }
+});
+
+/** PUT /api/students/:id/image - Upload/update a student's profile image */
+studentsRouter.put("/:id/image", (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid student ID" });
+      return;
+    }
+
+    const { image } = req.body;
+    if (!image || typeof image !== "string") {
+      res.status(400).json({ error: "image is required and must be a base64 data URL string" });
+      return;
+    }
+
+    if (!image.startsWith("data:image/")) {
+      res.status(400).json({ error: "image must be a valid data URL (data:image/...)" });
+      return;
+    }
+
+    const updated = updateStudentImage(id, image);
+    if (!updated) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error updating student image:", error);
+    res.status(500).json({ error: "Failed to update student image" });
+  }
+});
+
+/** DELETE /api/students/:id/image - Remove a student's profile image */
+studentsRouter.delete("/:id/image", (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid student ID" });
+      return;
+    }
+
+    const deleted = deleteStudentImage(id);
+    if (!deleted) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting student image:", error);
+    res.status(500).json({ error: "Failed to delete student image" });
   }
 });

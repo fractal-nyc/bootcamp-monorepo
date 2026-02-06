@@ -408,6 +408,84 @@ describe("Database Service - Direct Tests", () => {
     });
   });
 
+  describe("Student Profile Images", () => {
+    let cohortId: number;
+    let studentId: number;
+
+    beforeEach(() => {
+      const cohort = createTestCohort(db);
+      cohortId = cohort.id;
+      const student = createTestStudent(db, { name: "Image Test", cohortId });
+      studentId = student.id;
+    });
+
+    it("returns null when no image is set", () => {
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const result = stmt.get(studentId) as { profile_image: string | null };
+
+      expect(result.profile_image).toBeNull();
+    });
+
+    it("stores a base64 image data URL", () => {
+      const imageData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
+
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?").run(imageData, studentId);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const result = stmt.get(studentId) as { profile_image: string };
+
+      expect(result.profile_image).toBe(imageData);
+    });
+
+    it("updates an existing image", () => {
+      const original = "data:image/png;base64,AAAA";
+      const updated = "data:image/jpeg;base64,BBBB";
+
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?").run(original, studentId);
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?").run(updated, studentId);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const result = stmt.get(studentId) as { profile_image: string };
+
+      expect(result.profile_image).toBe(updated);
+    });
+
+    it("removes an image by setting to null", () => {
+      const imageData = "data:image/png;base64,iVBORw0KGgo=";
+
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?").run(imageData, studentId);
+      db.prepare("UPDATE students SET profile_image = NULL WHERE id = ?").run(studentId);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const result = stmt.get(studentId) as { profile_image: string | null };
+
+      expect(result.profile_image).toBeNull();
+    });
+
+    it("returns 0 changes when updating non-existent student", () => {
+      const result = db.prepare("UPDATE students SET profile_image = ? WHERE id = ?")
+        .run("data:image/png;base64,AAAA", 9999);
+
+      expect(result.changes).toBe(0);
+    });
+
+    it("does not include profile_image in standard student queries by default", () => {
+      const imageData = "data:image/png;base64,LargeImageData";
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?").run(imageData, studentId);
+
+      // Standard query pattern used by getStudentsByCohort excludes profile_image
+      const stmt = db.prepare(`
+        SELECT s.id, s.name, s.status, s.cohort_id
+        FROM students s
+        WHERE s.cohort_id = ?
+      `);
+      const results = stmt.all(cohortId) as Record<string, unknown>[];
+
+      expect(results.length).toBe(1);
+      expect(results[0]).not.toHaveProperty("profile_image");
+    });
+  });
+
   describe("Instructor Notes", () => {
     let cohortId: number;
     let studentId: number;

@@ -3,10 +3,10 @@
  * Displays summary, note input, and feed.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Markdown from "react-markdown";
 import type { Student, FeedItem, StudentSummaryResponse } from "../api/client";
-import { getStudentFeed, createNote, deleteNote, getStudentSummary } from "../api/client";
+import { getStudentFeed, createNote, deleteNote, getStudentSummary, getStudentImage, uploadStudentImage, deleteStudentImage } from "../api/client";
 import { NoteInput } from "./NoteInput";
 import { StudentFeed } from "./StudentFeed";
 
@@ -21,10 +21,42 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Profile image state
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // AI Summary state
   const [summary, setSummary] = useState<StudentSummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  const loadImage = useCallback(async () => {
+    const image = await getStudentImage(student.id);
+    setProfileImage(image);
+  }, [student.id]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageUploading(true);
+    const success = await uploadStudentImage(student.id, file);
+    if (success) {
+      await loadImage();
+    }
+    setImageUploading(false);
+    // Reset file input so the same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImageRemove = async () => {
+    const success = await deleteStudentImage(student.id);
+    if (success) {
+      setProfileImage(null);
+    }
+  };
 
   const loadFeed = useCallback(async () => {
     setLoading(true);
@@ -49,7 +81,8 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
   useEffect(() => {
     loadFeed();
     loadSummary();
-  }, [loadFeed, loadSummary]);
+    loadImage();
+  }, [loadFeed, loadSummary, loadImage]);
 
   const handleAddNote = async (content: string) => {
     const success = await createNote(student.id, content);
@@ -117,6 +150,45 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
 
   return (
     <div className="student-detail">
+      {/* Profile Image */}
+      <div className="student-profile-image-section">
+        {profileImage ? (
+          <img
+            src={profileImage}
+            alt={student.name}
+            className="student-profile-image"
+          />
+        ) : (
+          <div className="student-profile-image-placeholder">
+            {student.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="image-upload-controls">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            style={{ display: "none" }}
+          />
+          <button
+            className="image-upload-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={imageUploading}
+          >
+            {imageUploading ? "Uploading..." : profileImage ? "Change Image" : "Upload Image"}
+          </button>
+          {profileImage && (
+            <button
+              className="image-remove-btn"
+              onClick={handleImageRemove}
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* AI Summary */}
       <div className="student-ai-summary">
         <div className="summary-header">

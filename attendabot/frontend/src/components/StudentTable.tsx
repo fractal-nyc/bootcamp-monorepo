@@ -2,8 +2,9 @@
  * @fileoverview Sortable table displaying students in a cohort.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Student, Observer } from "../api/client";
+import { getStudentImage } from "../api/client";
 
 /** Props for the StudentTable component. */
 interface StudentTableProps {
@@ -22,6 +23,23 @@ export function StudentTable({ students, observers, onStudentClick, onDeleteStud
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [studentImages, setStudentImages] = useState<Record<number, string | null>>({});
+
+  // Load profile images for all students
+  useEffect(() => {
+    const loadImages = async () => {
+      const images: Record<number, string | null> = {};
+      await Promise.all(
+        students.map(async (s) => {
+          images[s.id] = await getStudentImage(s.id);
+        })
+      );
+      setStudentImages(images);
+    };
+    if (students.length > 0) {
+      loadImages();
+    }
+  }, [students]);
 
   const sortedStudents = useMemo(() => {
     const sorted = [...students].sort((a, b) => {
@@ -159,12 +177,25 @@ export function StudentTable({ students, observers, onStudentClick, onDeleteStud
           sortedStudents.map((student) => (
             <tr key={student.id}>
               <td>
-                <button
-                  className="student-name-link"
-                  onClick={() => onStudentClick(student)}
-                >
-                  {student.name}
-                </button>
+                <div className="student-name-cell">
+                  {studentImages[student.id] ? (
+                    <img
+                      src={studentImages[student.id]!}
+                      alt={student.name}
+                      className="student-avatar"
+                    />
+                  ) : (
+                    <span className="student-avatar-placeholder">
+                      {student.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <button
+                    className="student-name-link"
+                    onClick={() => onStudentClick(student)}
+                  >
+                    {student.name}
+                  </button>
+                </div>
               </td>
               <td>{student.discordHandle ? `@${student.discordHandle}` : "—"}</td>
               <td>

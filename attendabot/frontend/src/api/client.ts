@@ -410,6 +410,53 @@ export async function deleteStudent(id: number): Promise<boolean> {
   }
 }
 
+/** Fetches a student's profile image as a base64 data URL. */
+export async function getStudentImage(studentId: number): Promise<string | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/image`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.image ?? null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Uploads a profile image for a student. Reads the file and sends as base64 data URL. */
+export async function uploadStudentImage(studentId: number, file: File): Promise<boolean> {
+  try {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/image`, {
+      method: "PUT",
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+/** Removes a student's profile image. */
+export async function deleteStudentImage(studentId: number): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/image`, {
+      method: "DELETE",
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
 /** Fetches the interleaved feed of EOD messages and instructor notes for a student. */
 export async function getStudentFeed(studentId: number, limit: number = 50): Promise<FeedItem[]> {
   try {

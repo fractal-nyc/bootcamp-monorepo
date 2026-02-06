@@ -172,6 +172,12 @@ function initializeTables(): void {
     db.exec(`ALTER TABLE students ADD COLUMN observer_id INTEGER REFERENCES observers(id)`);
   }
 
+  // Add profile_image column to students if it doesn't exist
+  const studentCols2 = db.pragma("table_info(students)") as Array<{ name: string }>;
+  if (!studentCols2.some((col) => col.name === "profile_image")) {
+    db.exec(`ALTER TABLE students ADD COLUMN profile_image TEXT`);
+  }
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
@@ -588,6 +594,30 @@ export function updateStudent(id: number, input: UpdateStudentInput): StudentRec
 export function deleteStudent(id: number): boolean {
   const db = getDatabase();
   const stmt = db.prepare(`DELETE FROM students WHERE id = ?`);
+  const result = stmt.run(id);
+  return result.changes > 0;
+}
+
+/** Retrieves a student's profile image (base64 data URL). */
+export function getStudentImage(id: number): string | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`SELECT profile_image FROM students WHERE id = ?`);
+  const result = stmt.get(id) as { profile_image: string | null } | undefined;
+  return result?.profile_image ?? null;
+}
+
+/** Updates a student's profile image. Returns true if the student exists. */
+export function updateStudentImage(id: number, base64Data: string): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`UPDATE students SET profile_image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
+  const result = stmt.run(base64Data, id);
+  return result.changes > 0;
+}
+
+/** Removes a student's profile image. Returns true if the student exists. */
+export function deleteStudentImage(id: number): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare(`UPDATE students SET profile_image = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
   const result = stmt.run(id);
   return result.changes > 0;
 }

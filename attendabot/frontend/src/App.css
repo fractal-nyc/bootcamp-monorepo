@@ -685,6 +685,38 @@ button:disabled {
   box-shadow: none;
 }
 
+/* Student Name Cell with Avatar */
+.student-name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.student-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-charcoal);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.student-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-line);
+  background: var(--color-platinum);
+  color: var(--color-slate);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
 .no-students {
   color: var(--color-slate);
   text-align: center;
@@ -951,6 +983,83 @@ button:disabled {
   color: var(--color-slate);
   border-bottom: 2px solid var(--color-line);
   padding-bottom: var(--space-3);
+}
+
+/* Student Profile Image (Sidebar) */
+.student-profile-image-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: 2px solid var(--color-line);
+}
+
+.student-profile-image {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 3px solid var(--color-charcoal);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.15);
+  object-fit: cover;
+}
+
+.student-profile-image-placeholder {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 3px solid var(--color-line);
+  background: var(--color-platinum);
+  color: var(--color-slate);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.image-upload-controls {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.image-upload-btn {
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+  color: var(--color-charcoal);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.image-upload-btn:hover {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.image-remove-btn {
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  box-shadow: none;
+  color: var(--color-slate);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.image-remove-btn:hover {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-white);
+  transform: none;
 }
 
 .student-detail h3:first-child {

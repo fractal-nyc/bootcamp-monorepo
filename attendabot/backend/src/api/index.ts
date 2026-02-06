@@ -37,7 +37,7 @@ app.use(cors({
 // BetterAuth handler must be mounted before express.json()
 app.all("/api/auth/better/*", toNodeHandler(auth));
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 
 // API routes
 app.use("/api/status", statusRouter);

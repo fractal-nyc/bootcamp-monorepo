@@ -29,6 +29,7 @@ import {
   fetchMessagesSince,
   sendDirectMessage,
   sendChannelMessage,
+  splitMessage,
 } from "../services/discord";
 import {
   incrementMessagesSent,
@@ -765,9 +766,12 @@ async function sendDailyBriefing(): Promise<void> {
     return;
   }
 
-  // Send to channel
+  // Send to channel, splitting into chunks if needed
   const channel = await fetchTextChannel(DAILY_BRIEFING_CHANNEL_ID);
-  await channel.send({ content: briefing });
+  const chunks = splitMessage(briefing);
+  for (const chunk of chunks) {
+    await channel.send({ content: chunk });
+  }
   incrementMessagesSent();
-  console.log(`Sent daily briefing to #${channel.name}`);
+  console.log(`Sent daily briefing to #${channel.name} (${chunks.length} message(s))`);
 }

@@ -67,11 +67,45 @@ export async function sendDirectMessage(userId: string, message: string): Promis
   }
 }
 
+/** Discord's maximum message length. */
+const DISCORD_MAX_LENGTH = 2000;
+
 /**
- * Sends a message to a text channel.
+ * Splits a message into chunks that fit within Discord's 2000 character limit.
+ * Splits on newline boundaries to avoid breaking lines mid-sentence.
+ */
+export function splitMessage(message: string, maxLength = DISCORD_MAX_LENGTH): string[] {
+  if (message.length <= maxLength) return [message];
+
+  const chunks: string[] = [];
+  let remaining = message;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLength) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // Find the last newline within the limit
+    let splitIndex = remaining.lastIndexOf("\n", maxLength);
+    if (splitIndex <= 0) {
+      // No newline found; hard-split at the limit
+      splitIndex = maxLength;
+    }
+
+    chunks.push(remaining.slice(0, splitIndex));
+    remaining = remaining.slice(splitIndex + 1); // +1 to skip the newline
+  }
+
+  return chunks;
+}
+
+/**
+ * Sends a message to a text channel, automatically splitting into
+ * multiple messages if the content exceeds Discord's 2000 character limit.
  * @param channelId - The Discord channel ID to send the message to.
  * @param message - The message content to send.
- * @returns True if the message was sent successfully, false otherwise.
+ * @returns True if all messages were sent successfully, false otherwise.
  */
 export async function sendChannelMessage(channelId: string, message: string): Promise<boolean> {
   const discordClient = getDiscordClient();
@@ -83,7 +117,10 @@ export async function sendChannelMessage(channelId: string, message: string): Pr
       console.error(`Channel ${channelId} is not a text channel or not found`);
       return false;
     }
-    await (channel as TextChannel).send(message);
+    const chunks = splitMessage(message);
+    for (const chunk of chunks) {
+      await (channel as TextChannel).send(chunk);
+    }
     return true;
   } catch (error) {
     console.error(`Failed to send message to channel ${channelId}:`, error);

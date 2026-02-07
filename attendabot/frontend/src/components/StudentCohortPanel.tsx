@@ -16,6 +16,7 @@ import {
 import { StudentTable } from "./StudentTable";
 import { StudentDetail } from "./StudentDetail";
 import { AddStudentModal } from "./AddStudentModal";
+import { StudentRandomizer } from "./StudentRandomizer";
 import { Sidebar } from "./Sidebar";
 
 /** Main panel for managing students organized by cohort. */
@@ -143,13 +144,16 @@ export function StudentCohortPanel() {
       {loading ? (
         <div className="loading">Loading students...</div>
       ) : (
-        <StudentTable
-          students={students}
-          observers={observers}
-          onStudentClick={handleStudentClick}
-          onDeleteStudent={handleDeleteStudent}
-          onObserverChange={handleObserverChange}
-        />
+        <>
+          <StudentTable
+            students={students}
+            observers={observers}
+            onStudentClick={handleStudentClick}
+            onDeleteStudent={handleDeleteStudent}
+            onObserverChange={handleObserverChange}
+          />
+          <StudentRandomizer students={students} />
+        </>
       )}
 
       <Sidebar

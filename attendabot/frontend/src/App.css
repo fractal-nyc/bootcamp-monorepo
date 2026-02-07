@@ -2245,6 +2245,164 @@ button:disabled {
 }
 
 /* ========================================
+   Student Randomizer
+   ======================================== */
+.randomizer-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 2px solid var(--color-line);
+}
+
+.randomizer-section h3 {
+  margin-top: 0;
+}
+
+.randomizer-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.randomizer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.randomizer-row label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-slate);
+}
+
+.group-count-control {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--color-charcoal);
+}
+
+.group-count-btn {
+  background: var(--color-white);
+  border: none;
+  box-shadow: none;
+  color: var(--color-charcoal);
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-base);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.group-count-btn:hover:not(:disabled) {
+  background: var(--color-platinum);
+  transform: none;
+}
+
+.group-count-btn:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.group-count-btn:disabled {
+  color: var(--color-line);
+  background: var(--color-white);
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+.group-count-value {
+  width: 36px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--text-base);
+  border-left: 2px solid var(--color-charcoal);
+  border-right: 2px solid var(--color-charcoal);
+  line-height: 32px;
+}
+
+.shuffle-btn {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-sm);
+}
+
+.randomizer-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.randomizer-results.multi-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.randomizer-group {
+  background: var(--color-white);
+  border: 2px solid var(--color-line);
+}
+
+.randomizer-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-platinum);
+  border-bottom: 2px solid var(--color-line);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-charcoal);
+}
+
+.randomizer-group-count {
+  font-size: var(--text-xs);
+  color: var(--color-slate);
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  padding: var(--space-1) var(--space-3);
+}
+
+.randomizer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.randomizer-item {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-base);
+  counter-increment: randomizer-counter;
+}
+
+.randomizer-item::before {
+  content: counter(randomizer-counter) ".";
+  display: inline-block;
+  min-width: 1.8em;
+  font-weight: 700;
+  color: var(--color-slate);
+}
+
+.randomizer-group {
+  counter-reset: randomizer-counter;
+}
+
+.randomizer-item:last-child {
+  border-bottom: none;
+}
+
+/* ========================================
    Responsive
    ======================================== */
 @media (max-width: 768px) {

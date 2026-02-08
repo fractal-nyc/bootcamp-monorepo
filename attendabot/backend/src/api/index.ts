@@ -57,11 +57,15 @@ app.use("/api/database", databaseRouter);
 if (process.env.NODE_ENV === "production") {
   // __dirname is backend/dist/api when compiled, so go up to attendabot/ then into frontend/dist
   const frontendPath = path.join(__dirname, "../../../frontend/dist");
+
   app.use(express.static(frontendPath));
 
-  // Fallback to index.html for SPA routing
+  // Fallback: serve the correct index.html based on path
   app.get("*", (req, res) => {
-    if (!req.path.startsWith("/api")) {
+    if (req.path.startsWith("/api")) return;
+    if (req.path.startsWith("/simulations")) {
+      res.sendFile(path.join(frontendPath, "simulations/index.html"));
+    } else {
       res.sendFile(path.join(frontendPath, "index.html"));
     }
   });

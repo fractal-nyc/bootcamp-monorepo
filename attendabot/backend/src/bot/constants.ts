@@ -6,23 +6,23 @@
 /** Cron expression for daily EOD reminder (6 PM ET, Mon-Sat, skip Sundays). */
 export const EOD_REMINDER_CRON = "0 18 * * 1-6";
 
-/** Cron expression for EOD verification (11:59 PM EST). */
-export const EOD_VERIFICATION_CRON = "59 23 * * *";
+/** Cron expression for EOD verification (11:59 PM EST, Mon-Sat). */
+export const EOD_VERIFICATION_CRON = "59 23 * * 1-6";
 
-/** Cron expression for daily attendance reminder (9:45 AM EST). */
-export const ATTENDANCE_REMINDER_CRON = "45 9 * * *";
+/** Cron expression for daily attendance reminder (9:45 AM EST, Mon-Sat). */
+export const ATTENDANCE_REMINDER_CRON = "45 9 * * 1-6";
 
-/** Cron expression for attendance verification (10:00 AM EST). */
-export const ATTENDANCE_VERIFICATION_CRON = "0 10 * * *";
+/** Cron expression for attendance verification (10:00 AM EST, Mon-Sat). */
+export const ATTENDANCE_VERIFICATION_CRON = "0 10 * * 1-6";
 
-/** Cron expression for daily briefing (8 AM EST). */
-export const DAILY_BRIEFING_CRON = "0 8 * * *";
+/** Cron expression for daily briefing (8 AM EST, Mon-Sat). */
+export const DAILY_BRIEFING_CRON = "0 8 * * 1-6";
 
-/** Cron expression for midday PR reminder (1:45 PM ET). */
-export const MIDDAY_PR_REMINDER_CRON = "45 13 * * *";
+/** Cron expression for midday PR reminder (1:45 PM ET, Mon-Sat). */
+export const MIDDAY_PR_REMINDER_CRON = "45 13 * * 1-6";
 
-/** Cron expression for midday PR verification (2:00 PM ET). */
-export const MIDDAY_PR_VERIFICATION_CRON = "0 14 * * *";
+/** Cron expression for midday PR verification (2:00 PM ET, Mon-Sat). */
+export const MIDDAY_PR_VERIFICATION_CRON = "0 14 * * 1-6";
 
 /** Cron expression for nightly database backup to S3 (2:00 AM EST). */
 export const DB_BACKUP_CRON = "0 2 * * *";

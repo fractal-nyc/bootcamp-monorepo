@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage, isValidEodMessage } from "../../bot/index";
+import { countPrsInMessage, isValidEodMessage, getPreviousDayRangeET } from "../../bot/index";
 
 describe("Daily Briefing - PR Counting", () => {
   describe("countPrsInMessage", () => {
@@ -117,33 +117,40 @@ describe("Daily Briefing - Date Utilities", () => {
     });
   });
 
-  describe("Previous day range calculation", () => {
-    it("calculates previous day boundaries", () => {
-      const today = "2024-01-16";
-      const [year, month, day] = today.split("-").map(Number);
-      const yesterday = new Date(year, month - 1, day - 1);
+  describe("Previous day range calculation (getPreviousDayRangeET)", () => {
+    it("looks back 1 day on a normal weekday (Tuesday)", () => {
+      // 2024-01-16 is a Tuesday
+      const { start } = getPreviousDayRangeET("2024-01-16");
+      expect(start).toContain("2024-01-15");
+    });
 
-      expect(yesterday.getDate()).toBe(15);
-      expect(yesterday.getMonth()).toBe(0); // January
+    it("looks back 2 days on Monday (to Saturday)", () => {
+      // 2024-01-15 is a Monday
+      const { start } = getPreviousDayRangeET("2024-01-15");
+      expect(start).toContain("2024-01-13"); // Saturday
+    });
+
+    it("looks back 1 day on other weekdays", () => {
+      // Wed 2024-01-17 -> Tue 2024-01-16
+      expect(getPreviousDayRangeET("2024-01-17").start).toContain("2024-01-16");
+      // Thu 2024-01-18 -> Wed 2024-01-17
+      expect(getPreviousDayRangeET("2024-01-18").start).toContain("2024-01-17");
+      // Fri 2024-01-19 -> Thu 2024-01-18
+      expect(getPreviousDayRangeET("2024-01-19").start).toContain("2024-01-18");
+      // Sat 2024-01-20 -> Fri 2024-01-19
+      expect(getPreviousDayRangeET("2024-01-20").start).toContain("2024-01-19");
     });
 
     it("handles month boundaries", () => {
-      const today = "2024-02-01";
-      const [year, month, day] = today.split("-").map(Number);
-      const yesterday = new Date(year, month - 1, day - 1);
-
-      expect(yesterday.getDate()).toBe(31);
-      expect(yesterday.getMonth()).toBe(0); // January
+      // 2024-02-01 is a Thursday
+      const { start } = getPreviousDayRangeET("2024-02-01");
+      expect(start).toContain("2024-01-31");
     });
 
     it("handles year boundaries", () => {
-      const today = "2024-01-01";
-      const [year, month, day] = today.split("-").map(Number);
-      const yesterday = new Date(year, month - 1, day - 1);
-
-      expect(yesterday.getDate()).toBe(31);
-      expect(yesterday.getMonth()).toBe(11); // December
-      expect(yesterday.getFullYear()).toBe(2023);
+      // 2024-01-01 is a Monday -> should look back to 2023-12-30 (Saturday)
+      const { start } = getPreviousDayRangeET("2024-01-01");
+      expect(start).toContain("2023-12-30");
     });
   });
 });

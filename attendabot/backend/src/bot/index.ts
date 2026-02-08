@@ -496,21 +496,21 @@ export function isValidEodMessage(content: string): boolean {
 // ============================================================================
 
 /**
- * Returns start/end ISO strings for the day before the given date (or yesterday if not provided).
+ * Returns start/end ISO strings for the previous working day relative to the given date.
+ * On Mondays (or simulated Mondays), looks back to Saturday instead of Sunday.
  * @param simulatedToday - Optional YYYY-MM-DD string representing "today". If not provided, uses actual today.
  */
-function getPreviousDayRangeET(simulatedToday?: string): {
+export function getPreviousDayRangeET(simulatedToday?: string): {
   start: string;
   end: string;
 } {
-  let targetDate: Date;
+  let todayDate: Date;
 
   if (simulatedToday) {
-    // Parse the simulated date and get the previous day
     const [year, month, day] = simulatedToday.split("-").map(Number);
-    targetDate = new Date(year, month - 1, day - 1); // month is 0-indexed, subtract 1 day
+    todayDate = new Date(year, month - 1, day);
   } else {
-    // Get yesterday in ET
+    // Get today in ET
     const now = new Date();
     const etFormatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/New_York",
@@ -518,10 +518,14 @@ function getPreviousDayRangeET(simulatedToday?: string): {
       month: "2-digit",
       day: "2-digit",
     });
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const [month, day, year] = etFormatter.format(yesterday).split("/");
-    targetDate = new Date(Number(year), Number(month) - 1, Number(day));
+    const [month, day, year] = etFormatter.format(now).split("/");
+    todayDate = new Date(Number(year), Number(month) - 1, Number(day));
   }
+
+  // On Monday (day 1), look back to Saturday (2 days); otherwise look back 1 day
+  const daysBack = todayDate.getDay() === 1 ? 2 : 1;
+  const targetDate = new Date(todayDate);
+  targetDate.setDate(targetDate.getDate() - daysBack);
 
   // Format as YYYY-MM-DD for consistent parsing
   const year = targetDate.getFullYear();

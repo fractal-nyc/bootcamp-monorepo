@@ -217,6 +217,96 @@ export const flows: AuthFlow[] = [
     ],
   },
 
+  // ── API Key Authentication ──
+  {
+    id: "api-keys",
+    title: "API Key Authentication",
+    subtitle: "Long-lived keys that identify an application or developer, not a user session",
+    entities: [
+      { id: "developer", label: "Developer", icon: "\uD83D\uDC69\u200D\uD83D\uDCBB", color: "#6c8cff" },
+      { id: "service", label: "API Service\n(e.g. Anthropic)", icon: "\uD83D\uDD10", color: "#a78bfa" },
+      { id: "db", label: "Key Store", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
+    ],
+    steps: [
+      {
+        from: "developer",
+        to: "service",
+        label: "Register for API access",
+        description:
+          "Developer signs up on the service's dashboard (e.g. console.anthropic.com) and requests an API key. This is a one-time setup step, not a per-session login.",
+        payload: `Developer creates account on\nservice dashboard and navigates\nto "API Keys" section.\n\nClicks "Create new key"`,
+        color: "#6c8cff",
+      },
+      {
+        from: "service",
+        to: "db",
+        label: "Generate & store key",
+        description:
+          "Service generates a unique, random key and stores a hashed version alongside the developer's account and permissions. The key is long-lived \u2014 it doesn't expire unless manually revoked.",
+        payload: `INSERT INTO api_keys\n  (key_hash, developer_id, name,\n   scope, created_at)\nVALUES\n  (SHA256('sk-ant-abc123...'), 7,\n   'production', 'messages:write',\n   NOW())`,
+        color: "#fb923c",
+      },
+      {
+        from: "service",
+        to: "developer",
+        label: "Return API key",
+        description:
+          "Service shows the key ONCE. The developer must copy and store it securely (e.g. in a .env file). The service only stores the hash, so it can never show the key again.",
+        payload: `\u26A0\uFE0F  Copy your API key now.\n    You won't see it again.\n\nsk-ant-abc123-xK9m2pL...\n\n\u2192 Store in .env file:\n  ANTHROPIC_API_KEY=sk-ant-abc123-xK9m...`,
+        color: "#a78bfa",
+      },
+      {
+        from: "developer",
+        to: "service",
+        label: "Request with API key",
+        description:
+          "Developer's application sends the key with every request. Unlike session tokens, there's no login step \u2014 the key IS the credential. It typically goes in a header, not a cookie.",
+        payload: `POST /v1/messages HTTP/1.1\nHost: api.anthropic.com\nx-api-key: sk-ant-abc123-xK9m2pL...\nContent-Type: application/json\n\n{ "model": "claude-sonnet-4-5-20250929",\n  "messages": [{ "role": "user",\n    "content": "Hello!" }] }`,
+        color: "#6c8cff",
+      },
+      {
+        from: "service",
+        to: "db",
+        label: "Lookup key hash",
+        description:
+          "Service hashes the received key and looks it up in the key store to identify the caller and check permissions. This is similar to opaque token lookup, but the key represents a developer account, not a user session.",
+        payload: `SELECT * FROM api_keys\nWHERE key_hash = SHA256(\n  'sk-ant-abc123-xK9m2pL...'\n)`,
+        color: "#fb923c",
+      },
+      {
+        from: "db",
+        to: "service",
+        label: "Key found",
+        description:
+          "Key store returns the record. The service now knows which developer account is making the request and what permissions they have.",
+        payload: `{ "developer_id": 7,\n  "name": "production",\n  "scope": "messages:write",\n  "rate_limit": "1000/min" }`,
+        color: "#fb923c",
+      },
+      {
+        from: "service",
+        to: "developer",
+        label: "200 OK + response",
+        description:
+          "Service processes the request and returns the result. The key identified the application, not an individual user.",
+        payload: `HTTP/1.1 200 OK\n\n{ "content": [{\n    "type": "text",\n    "text": "Hello! How can I\n             help you today?"\n  }] }`,
+        color: "#a78bfa",
+      },
+    ],
+    pros: [
+      "Dead simple \u2014 no login flow, no tokens to refresh",
+      "Great for service-to-service and machine-to-machine communication",
+      "Easy to scope keys to specific permissions (read-only, write, admin)",
+      "Easy to rotate or revoke individual keys without affecting others",
+    ],
+    cons: [
+      "Long-lived by default \u2014 if leaked, it's valid until manually revoked",
+      "No built-in expiration (unlike JWTs)",
+      "Identifies an application/developer, not a specific human user",
+      "Still stateful: server must store and look up every key",
+      "Don\u2019t check your API keys into GitHub! Store in .env and .gitignore it",
+    ],
+  },
+
   // ── JWT ──
   {
     id: "jwt",

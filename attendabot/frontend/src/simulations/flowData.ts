@@ -155,6 +155,113 @@ export const flows: AuthFlow[] = [
     ],
   },
 
+  // ── Public-Key Cryptography ──
+  {
+    id: "public-key-crypto",
+    title: "Public-Key Cryptography",
+    subtitle: "Asymmetric keys: what one key locks, only the other can unlock",
+    entities: [
+      { id: "alice", label: "Alice", icon: "\uD83D\uDC69", color: "#6c8cff" },
+      { id: "math", label: "Crypto Engine", icon: "\uD83D\uDD10", color: "#a78bfa" },
+      { id: "bob", label: "Bob", icon: "\uD83D\uDC68", color: "#4ade80" },
+    ],
+    steps: [
+      {
+        from: "alice",
+        to: "math",
+        label: "Generate key pair",
+        description:
+          "Alice asks her device to generate a key pair. The crypto engine picks two mathematically linked keys using a one-way function \u2014 easy to compute forward, astronomically hard to reverse.",
+        payload: `generateKeyPair("ECC-P256")\n\nThe math (conceptually):\n  RSA: multiply two large primes\n    \u2192 easy. Factor the product\n    back? Infeasible.\n  ECC: point multiplication on\n    an elliptic curve \u2192 easy.\n    Reverse it? Infeasible.`,
+        color: "#a78bfa",
+      },
+      {
+        from: "math",
+        to: "alice",
+        label: "Return key pair",
+        description:
+          "The crypto engine returns two keys. The private key must NEVER leave Alice\u2019s device. The public key can be freely shared \u2014 knowing it doesn\u2019t help you figure out the private key.",
+        payload: `\uD83D\uDD10 Private key (SECRET):\n  "MIGHAgEAMBMGByqG..."\n  Stays on Alice's device.\n  NEVER shared with anyone.\n\n\uD83D\uDD13 Public key (SHAREABLE):\n  "MFkwEwYHKoZIzj0C..."\n  Safe to post on a billboard.\n  Useless without the private key.`,
+        color: "#a78bfa",
+      },
+      {
+        from: "alice",
+        to: "bob",
+        label: "Share public key",
+        description:
+          "Alice sends her public key to Bob (and anyone else who wants it). This is completely safe \u2014 the public key can only be used to encrypt messages TO Alice or verify signatures FROM Alice.",
+        payload: `Alice's public key:\n  "MFkwEwYHKoZIzj0C..."\n\nThis travels over the open internet.\nIntercepting it is useless \u2014\nit can't decrypt anything.`,
+        color: "#6c8cff",
+      },
+      {
+        from: "bob",
+        to: "math",
+        label: "Encrypt message with Alice's public key",
+        description:
+          "Bob wants to send Alice a secret message. He encrypts it using her public key. After encryption, even Bob can\u2019t decrypt it \u2014 only the holder of the matching private key can.",
+        payload: `encrypt(\n  message: "Meet at 3pm",\n  key: alice_public_key\n)\n\n\u2192 "x7kQ9mP2zL4nR8wV..."\n\n\u26A0\uFE0F Even Bob can't reverse this.\n  Only Alice's private key can.`,
+        color: "#4ade80",
+      },
+      {
+        from: "bob",
+        to: "alice",
+        label: "Send encrypted message",
+        description:
+          "Bob sends the encrypted ciphertext to Alice. If anyone intercepts it in transit, they see only random-looking data. Without Alice\u2019s private key, the message is unreadable.",
+        payload: `"x7kQ9mP2zL4nR8wV..."\n\nAnyone can see this in transit.\nBut without Alice's private key,\nit's meaningless gibberish.`,
+        color: "#4ade80",
+      },
+      {
+        from: "alice",
+        to: "math",
+        label: "Decrypt with private key",
+        description:
+          "Alice uses her private key to decrypt the message. This is the only key in the world that can reverse the encryption performed by her public key.",
+        payload: `decrypt(\n  ciphertext: "x7kQ9mP2zL4nR8wV...",\n  key: alice_private_key\n)\n\n\u2192 "Meet at 3pm" \u2705`,
+        color: "#a78bfa",
+      },
+      {
+        from: "alice",
+        to: "math",
+        label: "Sign a message",
+        description:
+          "Now authentication: Alice wants to prove she sent a message. She signs it with her private key. This produces a signature that anyone with her public key can verify, but nobody can forge.",
+        payload: `sign(\n  message: "I approve this transfer",\n  key: alice_private_key\n)\n\n\u2192 signature: "r9Xk2mQ7pL..."`,
+        color: "#a78bfa",
+      },
+      {
+        from: "alice",
+        to: "bob",
+        label: "Send message + signature",
+        description:
+          "Alice sends the original message along with the signature. The message itself is NOT encrypted here \u2014 signing is about proving authorship, not secrecy.",
+        payload: `{\n  "message": "I approve this transfer",\n  "signature": "r9Xk2mQ7pL..."\n}\n\nNote: the message is readable.\nThe signature proves WHO sent it,\nnot what it says.`,
+        color: "#6c8cff",
+      },
+      {
+        from: "bob",
+        to: "math",
+        label: "Verify signature with Alice's public key",
+        description:
+          "Bob uses Alice\u2019s public key to verify the signature. If it checks out, Bob knows: (1) Alice sent this, and (2) the message wasn\u2019t tampered with. This is exactly how passkeys, HTTPS, SSH, and git commit signing work.",
+        payload: `verify(\n  message: "I approve this transfer",\n  signature: "r9Xk2mQ7pL...",\n  key: alice_public_key\n)\n\n\u2192 \u2705 VALID\n\n\u2714 Alice sent this (authentication)\n\u2714 Message is unaltered (integrity)`,
+        color: "#4ade80",
+      },
+    ],
+    pros: [
+      "No shared secret \u2014 server breach only exposes public keys, which are useless for impersonation",
+      "Nothing sensitive travels over the wire \u2014 no password to intercept",
+      "Underpins HTTPS, SSH keys, git commit signing, crypto wallets, and passkeys",
+      "ECC achieves strong security with small keys \u2014 efficient for mobile and embedded devices",
+    ],
+    cons: [
+      "More complex to understand than passwords or shared secrets",
+      "Private key loss = permanent lockout (no \"forgot password\" reset)",
+      "Key management is the hard part \u2014 securely storing, rotating, and backing up keys",
+      "Computationally more expensive than symmetric encryption (often used as a hybrid: public-key to exchange a symmetric key, then symmetric for bulk data)",
+    ],
+  },
+
   // ── Server-Side Sessions ──
   {
     id: "sessions",

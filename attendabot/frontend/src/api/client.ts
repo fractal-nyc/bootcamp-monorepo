@@ -848,6 +848,27 @@ export async function getObservers(): Promise<Observer[]> {
   }
 }
 
+/** Re-fetches Discord messages since cohort start date and upserts them into the database. */
+export async function refreshMessages(cohortId: number): Promise<{
+  success: boolean;
+  messagesProcessed?: number;
+  error?: string;
+}> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/cohorts/${cohortId}/refresh-messages`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || "Refresh failed" };
+    }
+    return { success: true, messagesProcessed: data.messagesProcessed };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Network error" };
+  }
+}
+
 /** Syncs observers from the Discord @instructors role. */
 export async function syncObservers(): Promise<Observer[]> {
   try {

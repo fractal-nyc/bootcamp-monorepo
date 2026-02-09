@@ -12,6 +12,7 @@ import {
   deleteStudent,
   updateStudent,
   getObservers,
+  refreshMessages,
 } from "../api/client";
 import { StudentTable } from "./StudentTable";
 import { StudentDetail } from "./StudentDetail";
@@ -29,6 +30,8 @@ export function StudentCohortPanel() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshStatus, setRefreshStatus] = useState<string | null>(null);
 
   // Load cohorts and observers on mount
   useEffect(() => {
@@ -108,6 +111,21 @@ export function StudentCohortPanel() {
     }
   };
 
+  const handleRefreshMessages = async () => {
+    if (selectedCohortId === null || refreshing) return;
+    setRefreshing(true);
+    setRefreshStatus(null);
+    const result = await refreshMessages(selectedCohortId);
+    if (result.success) {
+      setRefreshStatus(`Refreshed ${result.messagesProcessed} messages`);
+      loadStudents();
+    } else {
+      setRefreshStatus(`Error: ${result.error}`);
+    }
+    setRefreshing(false);
+    setTimeout(() => setRefreshStatus(null), 5000);
+  };
+
   const handleStudentNameChange = async (newName: string) => {
     if (!selectedStudent) return;
     const updated = await updateStudent(selectedStudent.id, { name: newName });
@@ -139,6 +157,13 @@ export function StudentCohortPanel() {
         >
           Add Student
         </button>
+        <button
+          onClick={handleRefreshMessages}
+          disabled={selectedCohortId === null || refreshing}
+        >
+          {refreshing ? "Refreshing..." : "Refresh Messages"}
+        </button>
+        {refreshStatus && <span className="refresh-status">{refreshStatus}</span>}
       </div>
 
       {loading ? (

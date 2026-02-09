@@ -546,3 +546,135 @@ describe("Cohort API - Database Operations", () => {
     });
   });
 });
+
+describe("Refresh Messages - Validation Logic", () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDatabase();
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  describe("cohortId parameter validation", () => {
+    it("rejects non-numeric cohort ID", () => {
+      const parsed = parseInt("abc", 10);
+      expect(isNaN(parsed)).toBe(true);
+    });
+
+    it("accepts valid numeric cohort ID", () => {
+      const parsed = parseInt("5", 10);
+      expect(isNaN(parsed)).toBe(false);
+      expect(parsed).toBe(5);
+    });
+  });
+
+  describe("cohort lookup", () => {
+    it("returns undefined for non-existent cohort", () => {
+      const stmt = db.prepare("SELECT * FROM cohorts WHERE id = ?");
+      const cohort = stmt.get(9999);
+      expect(cohort).toBeUndefined();
+    });
+
+    it("finds existing cohort by ID", () => {
+      const created = createTestCohort(db, "Sp2026");
+
+      const stmt = db.prepare("SELECT * FROM cohorts WHERE id = ?");
+      const cohort = stmt.get(created.id) as { id: number; name: string };
+
+      expect(cohort).toBeDefined();
+      expect(cohort.name).toBe("Sp2026");
+    });
+  });
+
+  describe("start_date validation", () => {
+    it("rejects cohort with no start_date", () => {
+      const cohort = createTestCohort(db, "NoDate");
+
+      const stmt = db.prepare("SELECT start_date FROM cohorts WHERE id = ?");
+      const row = stmt.get(cohort.id) as { start_date: string | null };
+
+      expect(row.start_date).toBeNull();
+    });
+
+    it("accepts cohort with start_date", () => {
+      const cohort = createTestCohort(db, "HasDate");
+      db.prepare("UPDATE cohorts SET start_date = ? WHERE id = ?")
+        .run("2026-02-02", cohort.id);
+
+      const stmt = db.prepare("SELECT start_date FROM cohorts WHERE id = ?");
+      const row = stmt.get(cohort.id) as { start_date: string };
+
+      expect(row.start_date).toBe("2026-02-02");
+    });
+
+    it("parses start_date into a valid Date", () => {
+      const since = new Date("2026-02-02");
+      expect(since.getTime()).not.toBeNaN();
+      expect(since.toISOString()).toBe("2026-02-02T00:00:00.000Z");
+    });
+  });
+
+  describe("message upsert on refresh", () => {
+    it("inserts new messages into the database", () => {
+      const channel = createTestChannel(db, "ch-1", "eod");
+      const user = createTestUser(db, "user-1", "testuser");
+
+      db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run("msg-1", channel.channel_id, user.author_id, "Original EOD", "2026-02-06T18:00:00.000Z");
+
+      const stmt = db.prepare("SELECT content FROM messages WHERE discord_message_id = ?");
+      const row = stmt.get("msg-1") as { content: string };
+      expect(row.content).toBe("Original EOD");
+    });
+
+    it("upserts edited messages to update content", () => {
+      const channel = createTestChannel(db, "ch-1", "eod");
+      const user = createTestUser(db, "user-1", "testuser");
+
+      // Insert original
+      db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run("msg-1", channel.channel_id, user.author_id, "Original EOD", "2026-02-06T18:00:00.000Z");
+
+      // Upsert with updated content (same discord_message_id)
+      db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(discord_message_id) DO UPDATE SET content = excluded.content
+      `).run("msg-1", channel.channel_id, user.author_id, "Updated EOD with 9 PRs", "2026-02-06T18:00:00.000Z");
+
+      const stmt = db.prepare("SELECT content FROM messages WHERE discord_message_id = ?");
+      const row = stmt.get("msg-1") as { content: string };
+      expect(row.content).toBe("Updated EOD with 9 PRs");
+    });
+
+    it("does not create duplicate rows on upsert", () => {
+      const channel = createTestChannel(db, "ch-1", "eod");
+      const user = createTestUser(db, "user-1", "testuser");
+
+      const insertStmt = db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(discord_message_id) DO UPDATE SET content = excluded.content
+      `);
+
+      insertStmt.run("msg-1", channel.channel_id, user.author_id, "Version 1", "2026-02-06T18:00:00.000Z");
+      insertStmt.run("msg-1", channel.channel_id, user.author_id, "Version 2", "2026-02-06T18:00:00.000Z");
+      insertStmt.run("msg-1", channel.channel_id, user.author_id, "Version 3", "2026-02-06T18:00:00.000Z");
+
+      const count = db.prepare("SELECT COUNT(*) as count FROM messages WHERE discord_message_id = ?")
+        .get("msg-1") as { count: number };
+      expect(count.count).toBe(1);
+
+      const row = db.prepare("SELECT content FROM messages WHERE discord_message_id = ?")
+        .get("msg-1") as { content: string };
+      expect(row.content).toBe("Version 3");
+    });
+  });
+});

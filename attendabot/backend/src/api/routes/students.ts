@@ -17,7 +17,10 @@ import {
   getStudentImage,
   updateStudentImage,
   deleteStudentImage,
+  logMessage,
 } from "../../services/db";
+import { fetchTextChannel, fetchMessagesSince } from "../../services/discord";
+import { MONITORED_CHANNEL_IDS } from "../../bot/constants";
 
 /** Router for student endpoints. */
 export const studentsRouter = Router();
@@ -314,5 +317,56 @@ studentsRouter.delete("/:id/image", (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error deleting student image:", error);
     res.status(500).json({ error: "Failed to delete student image" });
+  }
+});
+
+/** POST /api/cohorts/:cohortId/refresh-messages - Re-fetch Discord messages since cohort start date. */
+cohortsRouter.post("/:cohortId/refresh-messages", async (req: AuthRequest, res: Response) => {
+  try {
+    const cohortId = parseInt(req.params.cohortId, 10);
+    if (isNaN(cohortId)) {
+      res.status(400).json({ error: "Invalid cohort ID" });
+      return;
+    }
+
+    const cohorts = getCohorts();
+    const cohort = cohorts.find((c) => c.id === cohortId);
+    if (!cohort) {
+      res.status(404).json({ error: "Cohort not found" });
+      return;
+    }
+
+    if (!cohort.start_date) {
+      res.status(400).json({ error: "Cohort has no start date" });
+      return;
+    }
+
+    const since = new Date(cohort.start_date);
+    let messagesProcessed = 0;
+
+    for (const channelId of MONITORED_CHANNEL_IDS) {
+      const channel = await fetchTextChannel(channelId);
+      const messages = await fetchMessagesSince(channel, since);
+
+      for (const message of messages) {
+        logMessage({
+          discord_message_id: message.id,
+          channel_id: message.channelId,
+          channel_name: channel.name,
+          author_id: message.author.id,
+          display_name: message.member?.displayName || null,
+          username: message.author.username,
+          content: message.content,
+          created_at: message.createdAt.toISOString(),
+        });
+        messagesProcessed++;
+      }
+    }
+
+    console.log(`Refreshed ${messagesProcessed} messages for cohort ${cohort.name}`);
+    res.json({ success: true, messagesProcessed });
+  } catch (error) {
+    console.error("Error refreshing messages:", error);
+    res.status(500).json({ error: "Failed to refresh messages" });
   }
 });

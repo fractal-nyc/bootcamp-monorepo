@@ -489,4 +489,327 @@ export const flows: AuthFlow[] = [
       "Need to register your app with each provider",
     ],
   },
+
+  // ── Magic Links ──
+  {
+    id: "magic-links",
+    title: "Magic Links",
+    subtitle: "Passwordless login via a one-time link sent to your email",
+    entities: [
+      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
+      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
+      { id: "db", label: "Token Store", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
+      { id: "email", label: "Email Inbox", icon: "\uD83D\uDCE7", color: "#f472b6" },
+    ],
+    steps: [
+      {
+        from: "client",
+        to: "server",
+        label: "Enter email address",
+        description:
+          "User enters only their email address \u2014 no password field at all. This is the entire \"login form.\"",
+        payload: `POST /auth/magic-link\n\n{ "email": "alice@gmail.com" }`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "db",
+        label: "Generate & store token",
+        description:
+          "Server generates a single-use, time-limited token (typically valid for 10\u201315 minutes) and stores it alongside the user's email.",
+        payload: `INSERT INTO magic_tokens\n  (token, email, expires_at, used)\nVALUES\n  ('mtk_9xQ3kL...', 'alice@gmail.com',\n   NOW() + '15min', false)`,
+        color: "#fb923c",
+      },
+      {
+        from: "server",
+        to: "email",
+        label: "Send magic link email",
+        description:
+          "Server sends an email containing a link with the token embedded. The user needs access to their email inbox to proceed.",
+        payload: `To: alice@gmail.com\nSubject: Your login link\n\nClick here to sign in:\nhttps://yourapp.com/auth/verify\n  ?token=mtk_9xQ3kL...`,
+        color: "#4ade80",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "\"Check your email\"",
+        description:
+          "Server tells the user to go check their email. The user must now leave your app and open their email client \u2014 this is the main friction point.",
+        payload: `HTTP/1.1 200 OK\n\n{ "message": "Check your email!\n  We sent a login link to\n  alice@gmail.com" }`,
+        color: "#4ade80",
+      },
+      {
+        from: "email",
+        to: "client",
+        label: "User clicks link",
+        description:
+          "User opens the email and clicks the magic link. Their browser navigates to your server's verification endpoint with the token.",
+        payload: `User opens email, clicks:\n\n  "Sign in to YourApp"\n\nBrowser navigates to:\nhttps://yourapp.com/auth/verify\n  ?token=mtk_9xQ3kL...`,
+        color: "#f472b6",
+      },
+      {
+        from: "client",
+        to: "server",
+        label: "Send token",
+        description:
+          "Browser hits the verification endpoint, delivering the token from the email link.",
+        payload: `GET /auth/verify\n  ?token=mtk_9xQ3kL...`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "db",
+        label: "Validate & invalidate token",
+        description:
+          "Server looks up the token, checks it hasn't expired or been used, then immediately marks it as used so it can never be reused.",
+        payload: `SELECT * FROM magic_tokens\nWHERE token = 'mtk_9xQ3kL...'\n  AND expires_at > NOW()\n  AND used = false\n\n\u2192 UPDATE magic_tokens\n  SET used = true\n  WHERE token = 'mtk_9xQ3kL...'`,
+        color: "#fb923c",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "Set-Cookie + redirect",
+        description:
+          "Token is valid! Server creates a session and sets a cookie, just like normal session-based auth. From here on, it's regular cookie-based sessions.",
+        payload: `HTTP/1.1 302 Found\nSet-Cookie: session_id=s_magic_789;\n  HttpOnly; Secure\nLocation: https://yourapp.com/dashboard`,
+        color: "#4ade80",
+      },
+    ],
+    pros: [
+      "Nothing to remember \u2014 no passwords to forget, reuse, or have stolen",
+      "Simple UX that most people already understand (click a link in email)",
+      "Shifts security burden to the email provider, which already has strong auth",
+      "No password database to get breached",
+    ],
+    cons: [
+      "Only as secure as the user's email account \u2014 compromised email = compromised login",
+      "Adds friction: user must leave your app, open email, find the message, click the link",
+      "Email delivery is unreliable \u2014 spam filters, delays, deliverability issues",
+      "Doesn\u2019t work well on mobile when email app and your app are different contexts",
+      "Still stateful: server must store and look up the token",
+    ],
+  },
+
+  // ── One-Time Passwords (OTP) ──
+  {
+    id: "otp",
+    title: "One-Time Passwords (OTP)",
+    subtitle: "Short-lived codes via SMS, email, or authenticator app",
+    entities: [
+      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
+      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
+      { id: "device", label: "Phone / Auth App", icon: "\uD83D\uDCF1", color: "#f472b6" },
+    ],
+    steps: [
+      {
+        from: "client",
+        to: "server",
+        label: "Request login",
+        description:
+          "User enters their email or phone number. Optionally they've already entered a password (if OTP is being used as a second factor / 2FA).",
+        payload: `POST /auth/otp/request\n\n{ "email": "alice@gmail.com" }\n\n(or after password step for 2FA)`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Generate code",
+        description:
+          "Server generates a short numeric code (typically 6 digits). For SMS/email delivery, the server stores this code with an expiration. For TOTP (authenticator apps), the server and app independently compute the same code from a shared secret + current time.",
+        payload: `SMS/Email OTP:\n  code = random 6 digits: 847293\n  expires in 5 minutes\n\nTOTP (authenticator app):\n  code = HMAC-SHA1(\n    shared_secret,\n    floor(time / 30)\n  ) \u2192 truncate to 6 digits`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "device",
+        label: "Deliver code",
+        description:
+          "For SMS/email OTP: server sends the code to the user's phone or inbox. For TOTP: this step already happened during setup \u2014 the user scanned a QR code containing the shared secret, and their authenticator app generates codes locally every 30 seconds.",
+        payload: `SMS: "Your code is 847293"\n\nEmail: "Your verification code\n  is 847293"\n\nTOTP: Authenticator app already\n  shows the current code\n  (rotates every 30s)`,
+        color: "#f472b6",
+      },
+      {
+        from: "device",
+        to: "client",
+        label: "User reads code",
+        description:
+          "User reads the 6-digit code from their phone (SMS notification or authenticator app) and types it into your app's verification form.",
+        payload: `User sees: 847293\n\nTypes it into the verification\ninput field in the browser`,
+        color: "#f472b6",
+      },
+      {
+        from: "client",
+        to: "server",
+        label: "Submit code",
+        description:
+          "Browser sends the code the user entered. The server will validate it against what it expects.",
+        payload: `POST /auth/otp/verify\n\n{ "email": "alice@gmail.com",\n  "code": "847293" }`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Validate code",
+        description:
+          "For SMS/email: server checks the stored code matches and hasn't expired. For TOTP: server independently computes the expected code from the shared secret + current time window and compares. No database lookup needed for TOTP \u2014 just math.",
+        payload: `SMS/Email:\n  stored_code === received_code\n  AND expires_at > NOW()\n  \u2192 \u2705 VALID\n\nTOTP:\n  expected = HMAC(secret, time/30)\n  expected === received_code\n  \u2192 \u2705 VALID`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "200 OK + session",
+        description:
+          "Code is valid! Server creates a session. If OTP was the only factor, the user is now logged in. If it was 2FA, this completes the second step.",
+        payload: `HTTP/1.1 200 OK\nSet-Cookie: session_id=s_otp_321;\n  HttpOnly; Secure\n\n{ "message": "Authenticated!" }`,
+        color: "#4ade80",
+      },
+    ],
+    pros: [
+      "Familiar UX \u2014 most people have entered a 6-digit code before",
+      "TOTP is stateless on the server (just needs the shared secret and a clock)",
+      "Short-lived codes limit the window of exposure",
+      "Works well as a second factor (2FA) layered on top of passwords",
+    ],
+    cons: [
+      "SMS-based OTP is vulnerable to SIM swapping \u2014 NIST recommends against it for high-security contexts",
+      "Phishable: user can be tricked into entering the code on a fake site that relays it in real time",
+      "Authenticator app adds onboarding friction (install app, scan QR code, don\u2019t lose your phone)",
+      "Most commonly a second factor, not standalone \u2014 still need a primary auth method",
+    ],
+  },
+
+  // ── Passkeys / WebAuthn ──
+  {
+    id: "passkeys",
+    title: "Passkeys / WebAuthn",
+    subtitle: "Public-key cryptography \u2014 phishing-resistant, passwordless",
+    entities: [
+      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
+      { id: "device", label: "Device\n(Biometrics)", icon: "\uD83D\uDD11", color: "#f472b6" },
+      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
+    ],
+    steps: [
+      {
+        from: "client",
+        to: "server",
+        label: "Start registration",
+        description:
+          "User wants to create a passkey. Browser asks the server for a registration challenge \u2014 a random value the device will sign to prove it generated a real key pair.",
+        payload: `POST /auth/webauthn/register/start\n\n{ "username": "alice" }`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "Send challenge",
+        description:
+          "Server generates a random challenge and sends it along with its domain info. The domain binding is critical \u2014 it's what makes passkeys phishing-resistant.",
+        payload: `{ "challenge": "dG9tYXRvLXBvdGF0bw...",\n  "rp": {\n    "name": "YourApp",\n    "id": "yourapp.com"\n  },\n  "user": {\n    "id": "user_42",\n    "name": "alice"\n  } }`,
+        color: "#4ade80",
+      },
+      {
+        from: "client",
+        to: "device",
+        label: "Prompt biometric",
+        description:
+          "Browser calls the WebAuthn API, which triggers the device\u2019s authenticator. The user verifies their identity locally via fingerprint, face scan, or device PIN. This biometric data NEVER leaves the device.",
+        payload: `navigator.credentials.create({\n  publicKey: options\n})\n\n\uD83D\uDD13 Device prompts:\n  "Touch ID for yourapp.com"\n\nBiometric data stays on device.\nServer never sees it.`,
+        color: "#6c8cff",
+      },
+      {
+        from: "device",
+        to: "device",
+        label: "Generate key pair",
+        description:
+          "After biometric verification, the device generates a public/private key pair. The private key is stored securely on the device (or synced via iCloud Keychain / Google Password Manager). It never leaves.",
+        payload: `\uD83D\uDD10 Private key:\n  Stored in secure enclave.\n  NEVER sent to server.\n  Can sync via iCloud/Google.\n\n\uD83D\uDD13 Public key:\n  Will be sent to server.\n  Safe to store \u2014 useless\n  without the private key.`,
+        color: "#a78bfa",
+      },
+      {
+        from: "device",
+        to: "server",
+        label: "Send public key + signed challenge",
+        description:
+          "Device signs the challenge with the new private key and sends the signature along with the public key to the server. The server can verify the signature but can never derive the private key.",
+        payload: `{ "id": "credential_abc...",\n  "publicKey": "MFkwEwYHKoZI...",\n  "signature": sign(\n    challenge,\n    privateKey\n  ),\n  "origin": "https://yourapp.com" }`,
+        color: "#f472b6",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Store public key",
+        description:
+          "Server verifies the signature against the public key, confirms the origin matches, and stores the public key for future logins. This is all the server ever stores \u2014 no password, no shared secret.",
+        payload: `INSERT INTO passkeys\n  (credential_id, public_key,\n   user_id, created_at)\nVALUES\n  ('credential_abc...', 'MFkwEw...',\n   42, NOW())\n\n\u2714 No password stored. Ever.`,
+        color: "#a78bfa",
+      },
+      {
+        from: "client",
+        to: "server",
+        label: "Login: request challenge",
+        description:
+          "Later, when the user wants to sign in, the browser asks the server for a fresh login challenge.",
+        payload: `POST /auth/webauthn/login/start\n\n{ "username": "alice" }`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "Send login challenge",
+        description:
+          "Server sends a new random challenge. Each login attempt gets a unique challenge to prevent replay attacks.",
+        payload: `{ "challenge": "cGVhbnV0LWJ1dHRlcg...",\n  "allowCredentials": [{\n    "id": "credential_abc..."\n  }] }`,
+        color: "#4ade80",
+      },
+      {
+        from: "client",
+        to: "device",
+        label: "Prompt biometric again",
+        description:
+          "Browser triggers the authenticator again. User taps their fingerprint or uses face scan to unlock the private key.",
+        payload: `navigator.credentials.get({\n  publicKey: options\n})\n\n\uD83D\uDD13 "Touch ID for yourapp.com"`,
+        color: "#6c8cff",
+      },
+      {
+        from: "device",
+        to: "server",
+        label: "Send signed challenge",
+        description:
+          "Device signs the new challenge with the stored private key. The signature is cryptographically bound to yourapp.com \u2014 a phishing site at evil.com could never trigger this credential.",
+        payload: `{ "id": "credential_abc...",\n  "signature": sign(\n    "cGVhbnV0LWJ1dHRlcg...",\n    privateKey\n  ),\n  "origin": "https://yourapp.com" }`,
+        color: "#f472b6",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Verify signature",
+        description:
+          "Server retrieves alice's stored public key and verifies the signature. No shared secret, no password comparison, no database of sensitive credentials \u2014 just math.",
+        payload: `publicKey = lookup(\n  'credential_abc...'\n)\n\nverify(\n  signature,\n  challenge,\n  publicKey\n) \u2192 \u2705 VALID`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "200 OK + session",
+        description:
+          "Signature checks out. Server creates a session. The user is logged in without ever typing a password.",
+        payload: `HTTP/1.1 200 OK\nSet-Cookie: session_id=s_pk_999;\n  HttpOnly; Secure\n\n{ "message": "Welcome back, Alice!" }`,
+        color: "#4ade80",
+      },
+    ],
+    pros: [
+      "Phishing-resistant by design \u2014 credentials are cryptographically bound to the domain",
+      "Nothing to remember, type, or leak in a data breach (server only stores public keys)",
+      "Fast UX once set up \u2014 tap your fingerprint and you\u2019re in",
+      "Backed by FIDO Alliance + Apple, Google, Microsoft \u2014 credentials sync across devices",
+    ],
+    cons: [
+      "Relatively new \u2014 user education is still a hurdle (\"where did my password go?\")",
+      "Account recovery is harder if you lose all devices without sync set up",
+      "Cross-platform sync is improving but still inconsistent across ecosystems",
+      "Requires browser and OS support (widespread now, but not universal)",
+    ],
+  },
 ];

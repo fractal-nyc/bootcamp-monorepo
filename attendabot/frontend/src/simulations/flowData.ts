@@ -138,8 +138,8 @@ export const flows: AuthFlow[] = [
         to: "client",
         label: "Login successful",
         description:
-          "The hashes match! The server now knows the user provided the correct password, without ever having stored it. From here, the server creates a session (see the Server-Side Sessions flow).",
-        payload: `HTTP/1.1 200 OK\nSet-Cookie: session_id=s_abc123;\n  HttpOnly; Secure\n\n{ "message": "Welcome back, Alice!" }\n\n\u2192 See "Server-Side Sessions" for\n  what happens next`,
+          "The hashes match! The server now knows the user provided the correct password, without ever having stored it. From here, the server creates a session (see the Server Sessions+Browser Cookies flow).",
+        payload: `HTTP/1.1 200 OK\nSet-Cookie: session_id=s_abc123;\n  HttpOnly; Secure\n\n{ "message": "Welcome back, Alice!" }\n\n\u2192 See "Server Sessions+Browser Cookies" for\n  what happens next`,
         color: "#4ade80",
       },
     ],
@@ -264,10 +264,10 @@ export const flows: AuthFlow[] = [
     ],
   },
 
-  // ── Server-Side Sessions ──
+  // ── Server Sessions+Browser Cookies ──
   {
     id: "sessions",
-    title: "Server-Side Sessions",
+    title: "Server Sessions+Browser Cookies",
     subtitle: "Stateful: server stores session records",
     entities: [
       { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },

@@ -15,10 +15,12 @@ interface StudentPortalProps {
   sessionInvalid: boolean;
   onLogout: () => void;
   studentDiscordId?: string;
+  cohortStartDate?: string;
+  cohortEndDate?: string;
 }
 
 /** Student portal with tabs for Stats, My EODs, and Simulations. */
-export function StudentPortal({ username, sessionInvalid, onLogout, studentDiscordId }: StudentPortalProps) {
+export function StudentPortal({ username, sessionInvalid, onLogout, studentDiscordId, cohortStartDate, cohortEndDate }: StudentPortalProps) {
   const [activeTab, setActiveTab] = useState<StudentTab>("stats");
   const embedded = !!studentDiscordId;
 
@@ -47,7 +49,7 @@ export function StudentPortal({ username, sessionInvalid, onLogout, studentDisco
 
       <main>
         {activeTab === "stats" ? (
-          <StudentStats studentDiscordId={studentDiscordId} />
+          <StudentStats studentDiscordId={studentDiscordId} cohortStartDate={cohortStartDate} cohortEndDate={cohortEndDate} />
         ) : activeTab === "eods" ? (
           <MyEods studentDiscordId={studentDiscordId} />
         ) : (

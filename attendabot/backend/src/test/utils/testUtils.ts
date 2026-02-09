@@ -60,6 +60,10 @@ export function createTestDatabase(): Database.Database {
     CREATE TABLE IF NOT EXISTS cohorts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
+      start_date TEXT,
+      end_date TEXT,
+      break_start TEXT,
+      break_end TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);

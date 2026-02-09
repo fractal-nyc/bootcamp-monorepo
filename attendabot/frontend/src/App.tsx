@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { setUsername as storeUsername, clearSession, onAuthFailure, getMe, getCohorts, getStudentsByCohort } from "./api/client";
-import type { Student } from "./api/client";
+import type { Student, Cohort } from "./api/client";
 import { authClient } from "./lib/auth-client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
@@ -27,14 +27,21 @@ function App() {
   const [username, setUsername] = useState<string | null>(null);
   const [role, setRole] = useState<"instructor" | "student" | null>(null);
   const [sessionInvalid, setSessionInvalid] = useState(false);
-  const [impersonating, setImpersonating] = useState<{ discordId: string; name: string } | null>(null);
-  const [impersonateStudents, setImpersonateStudents] = useState<{ discordId: string; name: string }[]>([]);
+  const [impersonating, setImpersonating] = useState<{ discordId: string; name: string; cohortId: number } | null>(null);
+  const [impersonateStudents, setImpersonateStudents] = useState<{ discordId: string; name: string; cohortId: number }[]>([]);
+  const [cohorts, setCohorts] = useState<Cohort[]>([]);
+  const [studentCohortId, setStudentCohortId] = useState<number | null>(null);
 
   /** Fetches the user's role and identity after login. */
   const fetchRole = async () => {
     const me = await getMe();
     if (me) {
       setRole(me.role);
+      if (me.role === "student" && me.cohortId) {
+        setStudentCohortId(me.cohortId);
+        const allCohorts = await getCohorts();
+        setCohorts(allCohorts);
+      }
     }
   };
 
@@ -62,15 +69,16 @@ function App() {
   useEffect(() => {
     if (role !== "instructor") return;
     (async () => {
-      const cohorts = await getCohorts();
+      const allCohorts = await getCohorts();
+      setCohorts(allCohorts);
       const allStudents: Student[] = [];
-      for (const cohort of cohorts) {
+      for (const cohort of allCohorts) {
         const students = await getStudentsByCohort(cohort.id);
         allStudents.push(...students);
       }
       const withDiscord = allStudents
         .filter((s) => s.discordUserId)
-        .map((s) => ({ discordId: s.discordUserId!, name: s.name }))
+        .map((s) => ({ discordId: s.discordUserId!, name: s.name, cohortId: s.cohortId }))
         .sort((a, b) => a.name.localeCompare(b.name));
       setImpersonateStudents(withDiscord);
     })();
@@ -106,11 +114,14 @@ function App() {
 
   // Student portal
   if (role === "student") {
+    const cohort = cohorts.find((c) => c.id === studentCohortId);
     return (
       <StudentPortal
         username={username}
         sessionInvalid={sessionInvalid}
         onLogout={handleLogout}
+        cohortStartDate={cohort?.startDate ?? undefined}
+        cohortEndDate={cohort?.endDate ?? undefined}
       />
     );
   }
@@ -179,6 +190,8 @@ function App() {
           sessionInvalid={sessionInvalid}
           onLogout={handleLogout}
           studentDiscordId={impersonating.discordId}
+          cohortStartDate={cohorts.find((c) => c.id === impersonating.cohortId)?.startDate ?? undefined}
+          cohortEndDate={cohorts.find((c) => c.id === impersonating.cohortId)?.endDate ?? undefined}
         />
       ) : (
         <>

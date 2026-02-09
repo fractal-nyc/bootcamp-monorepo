@@ -17,6 +17,7 @@ meRouter.get("/", authenticateToken, (req: AuthRequest, res: Response) => {
     discordAccountId?: string;
     studentId?: number;
     studentName?: string;
+    cohortId?: number;
   } = {
     role: user.role,
     name: user.username,
@@ -27,11 +28,12 @@ meRouter.get("/", authenticateToken, (req: AuthRequest, res: Response) => {
   if (user.role === "student" && user.discordAccountId) {
     const db = getDatabase();
     const student = db
-      .prepare(`SELECT id, name FROM students WHERE discord_user_id = ?`)
-      .get(user.discordAccountId) as { id: number; name: string } | undefined;
+      .prepare(`SELECT id, name, cohort_id FROM students WHERE discord_user_id = ?`)
+      .get(user.discordAccountId) as { id: number; name: string; cohort_id: number } | undefined;
     if (student) {
       result.studentId = student.id;
       result.studentName = student.name;
+      result.cohortId = student.cohort_id;
     }
   }
 

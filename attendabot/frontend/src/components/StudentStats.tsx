@@ -9,6 +9,8 @@ import type { DailyStats } from "../api/client";
 
 interface StudentStatsProps {
   studentDiscordId?: string;
+  cohortStartDate?: string;
+  cohortEndDate?: string;
 }
 
 /** A row in the stats table — either a single day or a weekly summary. */
@@ -16,18 +18,19 @@ type StatsRow =
   | { type: "day"; day: DailyStats }
   | { type: "week"; sundayDate: string; weekDays: DailyStats[] };
 
-/** Renders a table of daily stats for the student over the last 30 days. */
-export function StudentStats({ studentDiscordId }: StudentStatsProps) {
+/** Renders a table of daily stats for the student over the cohort date range (or last 30 days as fallback). */
+export function StudentStats({ studentDiscordId, cohortStartDate, cohortEndDate }: StudentStatsProps) {
   const [days, setDays] = useState<DailyStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
-    const startStr = start.toISOString().split("T")[0];
-    const endStr = end.toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
+    const fallbackStart = new Date();
+    fallbackStart.setDate(fallbackStart.getDate() - 30);
+
+    const startStr = cohortStartDate ?? fallbackStart.toISOString().split("T")[0];
+    const endStr = cohortEndDate && cohortEndDate < today ? cohortEndDate : today;
 
     getMyStats(startStr, endStr, studentDiscordId).then((result) => {
       if (result) {
@@ -35,7 +38,7 @@ export function StudentStats({ studentDiscordId }: StudentStatsProps) {
       }
       setLoading(false);
     });
-  }, [studentDiscordId]);
+  }, [studentDiscordId, cohortStartDate, cohortEndDate]);
 
   /** Build rows: normal days for Mon-Sat, weekly summary rows replacing Sundays. */
   const rows: StatsRow[] = useMemo(() => {
@@ -77,7 +80,7 @@ export function StudentStats({ studentDiscordId }: StudentStatsProps) {
 
   return (
     <div className="panel" style={{ gridColumn: "span 2" }}>
-      <h2>Daily Stats (Last 30 Days)</h2>
+      <h2>Daily Stats{cohortStartDate ? "" : " (Last 30 Days)"}</h2>
       {days.length === 0 ? (
         <p className="no-messages">No stats available.</p>
       ) : (

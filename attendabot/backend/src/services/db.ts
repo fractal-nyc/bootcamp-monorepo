@@ -178,6 +178,15 @@ function initializeTables(): void {
     db.exec(`ALTER TABLE students ADD COLUMN profile_image TEXT`);
   }
 
+  // Add date columns to cohorts if they don't exist
+  const cohortCols = db.pragma("table_info(cohorts)") as Array<{ name: string }>;
+  if (!cohortCols.some((col) => col.name === "start_date")) {
+    db.exec(`ALTER TABLE cohorts ADD COLUMN start_date TEXT`);
+    db.exec(`ALTER TABLE cohorts ADD COLUMN end_date TEXT`);
+    db.exec(`ALTER TABLE cohorts ADD COLUMN break_start TEXT`);
+    db.exec(`ALTER TABLE cohorts ADD COLUMN break_end TEXT`);
+  }
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
@@ -208,6 +217,13 @@ function seedDefaultCohorts(): void {
   const stmt = db.prepare(`INSERT OR IGNORE INTO cohorts (name) VALUES (?)`);
   stmt.run("Fa2025");
   stmt.run("Sp2026");
+
+  // Set Sp2026 dates if not already set
+  db.prepare(`
+    UPDATE cohorts SET start_date='2026-02-02', end_date='2026-05-02',
+      break_start='2026-03-15', break_end='2026-03-22'
+    WHERE name='Sp2026' AND start_date IS NULL
+  `).run();
 }
 
 /** A message record from the database with joined channel and user data. */
@@ -437,13 +453,17 @@ export function closeDatabase(): void {
 export interface CohortRecord {
   id: number;
   name: string;
+  start_date: string | null;
+  end_date: string | null;
+  break_start: string | null;
+  break_end: string | null;
   created_at: string;
 }
 
 /** Retrieves all cohorts from the database, ordered by name. */
 export function getCohorts(): CohortRecord[] {
   const db = getDatabase();
-  const stmt = db.prepare(`SELECT id, name, created_at FROM cohorts ORDER BY name ASC`);
+  const stmt = db.prepare(`SELECT id, name, start_date, end_date, break_start, break_end, created_at FROM cohorts ORDER BY name ASC`);
   return stmt.all() as CohortRecord[];
 }
 
@@ -455,6 +475,10 @@ export function createCohort(name: string): CohortRecord {
   return {
     id: result.lastInsertRowid as number,
     name,
+    start_date: null,
+    end_date: null,
+    break_start: null,
+    break_end: null,
     created_at: new Date().toISOString(),
   };
 }

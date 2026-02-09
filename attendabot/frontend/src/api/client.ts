@@ -227,6 +227,10 @@ export async function syncDisplayNames(): Promise<{
 export interface Cohort {
   id: number;
   name: string;
+  startDate: string | null;
+  endDate: string | null;
+  breakStart: string | null;
+  breakEnd: string | null;
 }
 
 /** A student in a cohort. */
@@ -257,9 +261,13 @@ export async function getCohorts(): Promise<Cohort[]> {
     const res = await fetchWithAuth(`${API_BASE}/cohorts`);
     if (!res.ok) return [];
     const data = await res.json();
-    return data.cohorts.map((c: { id: number; name: string }) => ({
+    return data.cohorts.map((c: { id: number; name: string; start_date: string | null; end_date: string | null; break_start: string | null; break_end: string | null }) => ({
       id: c.id,
       name: c.name,
+      startDate: c.start_date,
+      endDate: c.end_date,
+      breakStart: c.break_start,
+      breakEnd: c.break_end,
     }));
   } catch (error) {
     console.error(error);
@@ -957,6 +965,7 @@ export interface MeResponse {
   discordAccountId?: string;
   studentId?: number;
   studentName?: string;
+  cohortId?: number;
 }
 
 /** Fetches the current user's role and identity. */

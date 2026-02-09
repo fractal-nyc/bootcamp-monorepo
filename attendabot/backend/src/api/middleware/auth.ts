@@ -7,12 +7,17 @@
 
 import { Request, Response, NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "../../auth";
+import { auth, getUserRole, getAuthDatabase } from "../../auth";
 import { validateApiKey } from "../../services/apiKeys";
 
 /** Express Request extended with authenticated user data. */
 export interface AuthRequest extends Request {
-  user?: { authenticated: boolean; username: string };
+  user?: {
+    authenticated: boolean;
+    username: string;
+    role: "instructor" | "student";
+    discordAccountId?: string;
+  };
 }
 
 /**
@@ -24,11 +29,16 @@ export function authenticateToken(
   res: Response,
   next: NextFunction,
 ): void {
+  // Skip if already authenticated (e.g., by mount-level middleware)
+  if (req.user?.authenticated) {
+    return next();
+  }
+
   // Check for API key first
   const apiKey = req.headers["x-api-key"];
   if (typeof apiKey === "string" && apiKey.length > 0) {
     if (validateApiKey(apiKey)) {
-      req.user = { authenticated: true, username: "api-key" };
+      req.user = { authenticated: true, username: "api-key", role: "instructor" };
       return next();
     }
     res.status(401).json({ error: "Invalid API key" });
@@ -40,9 +50,24 @@ export function authenticateToken(
     headers: fromNodeHeaders(req.headers),
   }).then((session) => {
     if (session?.user) {
+      const username = session.user.name || session.user.email || "Discord User";
+
+      // Look up Discord account to determine role
+      const authDb = getAuthDatabase();
+      const account = authDb
+        .prepare(
+          `SELECT "accountId" FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`,
+        )
+        .get(session.user.id) as { accountId: string } | undefined;
+
+      const discordAccountId = account?.accountId;
+      const role = discordAccountId ? (getUserRole(discordAccountId) ?? "instructor") : "instructor";
+
       req.user = {
         authenticated: true,
-        username: session.user.name || session.user.email || "Discord User",
+        username,
+        role,
+        discordAccountId,
       };
       next();
     } else {

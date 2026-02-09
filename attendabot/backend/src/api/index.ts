@@ -9,6 +9,8 @@ import path from "path";
 import http from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "../auth";
+import { authenticateToken } from "./middleware/auth";
+import { requireInstructor } from "./middleware/requireInstructor";
 import { statusRouter } from "./routes/status";
 import { messagesRouter } from "./routes/messages";
 import { channelsRouter } from "./routes/channels";
@@ -20,6 +22,8 @@ import { featureRequestsRouter } from "./routes/featureRequests";
 import { featureFlagsRouter } from "./routes/featureFlags";
 import { observersRouter } from "./routes/observers";
 import { databaseRouter } from "./routes/database";
+import { meRouter } from "./routes/me";
+import { studentPortalRouter } from "./routes/studentPortal";
 import { initializeWebSocket } from "./websocket";
 
 /** Express application instance. */
@@ -39,19 +43,27 @@ app.all("/api/auth/better/*", toNodeHandler(auth));
 
 app.use(express.json({ limit: "10mb" }));
 
-// API routes
-app.use("/api/status", statusRouter);
-app.use("/api/messages", messagesRouter);
-app.use("/api/channels", channelsRouter);
-app.use("/api/users", usersRouter);
-app.use("/api/students", studentsRouter);
-app.use("/api/cohorts", cohortsRouter);
-app.use("/api/testing", testingRouter);
-app.use("/api/llm", llmRouter);
-app.use("/api/feature-requests", featureRequestsRouter);
-app.use("/api/feature-flags", featureFlagsRouter);
-app.use("/api/observers", observersRouter);
-app.use("/api/database", databaseRouter);
+// Routes accessible by both roles (auth handled inside router)
+app.use("/api/auth/me", meRouter);
+
+// Student-only routes (auth + role check handled inside router)
+app.use("/api/student-portal", studentPortalRouter);
+
+// Admin/instructor-only routes
+// authenticateToken sets req.user (with role), then requireInstructor checks it.
+// Each router also calls authenticateToken internally, but it short-circuits if already set.
+app.use("/api/status", authenticateToken, requireInstructor, statusRouter);
+app.use("/api/messages", authenticateToken, requireInstructor, messagesRouter);
+app.use("/api/channels", authenticateToken, requireInstructor, channelsRouter);
+app.use("/api/users", authenticateToken, requireInstructor, usersRouter);
+app.use("/api/students", authenticateToken, requireInstructor, studentsRouter);
+app.use("/api/cohorts", authenticateToken, requireInstructor, cohortsRouter);
+app.use("/api/testing", authenticateToken, requireInstructor, testingRouter);
+app.use("/api/llm", authenticateToken, requireInstructor, llmRouter);
+app.use("/api/feature-requests", authenticateToken, requireInstructor, featureRequestsRouter);
+app.use("/api/feature-flags", authenticateToken, requireInstructor, featureFlagsRouter);
+app.use("/api/observers", authenticateToken, requireInstructor, observersRouter);
+app.use("/api/database", authenticateToken, requireInstructor, databaseRouter);
 
 // Serve static frontend files in production only
 if (process.env.NODE_ENV === "production") {
@@ -63,8 +75,10 @@ if (process.env.NODE_ENV === "production") {
   // Fallback: serve the correct index.html based on path
   app.get("*", (req, res) => {
     if (req.path.startsWith("/api")) return;
-    if (req.path.startsWith("/simulations")) {
-      res.sendFile(path.join(frontendPath, "simulations/index.html"));
+    if (req.path.startsWith("/simulations/auth")) {
+      res.sendFile(path.join(frontendPath, "simulations/auth/index.html"));
+    } else if (req.path.startsWith("/simulations")) {
+      res.sendFile(path.join(frontendPath, "simulations/auth/index.html"));
     } else {
       res.sendFile(path.join(frontendPath, "index.html"));
     }

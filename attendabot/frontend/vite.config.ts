@@ -9,7 +9,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
-        simulations: path.resolve(__dirname, 'simulations/index.html'),
+        'simulations-auth': path.resolve(__dirname, 'simulations/auth/index.html'),
       },
     },
   },

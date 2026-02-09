@@ -945,3 +945,80 @@ export async function updateFeatureFlag(
     return null;
   }
 }
+
+// ============================================================================
+// Identity / Role API
+// ============================================================================
+
+/** Response from GET /api/auth/me. */
+export interface MeResponse {
+  role: "instructor" | "student";
+  name: string;
+  discordAccountId?: string;
+  studentId?: number;
+  studentName?: string;
+}
+
+/** Fetches the current user's role and identity. */
+export async function getMe(): Promise<MeResponse | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/auth/me`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+// ============================================================================
+// Student Portal API
+// ============================================================================
+
+/** An EOD message for the student portal. */
+export interface StudentEodMessage {
+  id: string;
+  content: string;
+  createdAt: string;
+  channelName: string;
+}
+
+/** Fetches the student's own EOD messages. */
+export async function getMyEods(limit: number = 100): Promise<StudentEodMessage[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/student-portal/eods?limit=${limit}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.messages;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Daily stats for a student. */
+export interface DailyStats {
+  date: string;
+  attendancePosted: boolean;
+  attendanceOnTime: boolean;
+  middayPrPosted: boolean;
+  middayPrCount: number;
+  eodPosted: boolean;
+  totalPrCount: number;
+}
+
+/** Fetches daily stats for the student over the given date range. */
+export async function getMyStats(
+  startDate: string,
+  endDate: string
+): Promise<{ days: DailyStats[] } | null> {
+  try {
+    const params = new URLSearchParams({ startDate, endDate });
+    const res = await fetchWithAuth(`${API_BASE}/student-portal/stats?${params}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}

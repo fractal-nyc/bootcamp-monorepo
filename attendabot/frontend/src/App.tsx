@@ -1,10 +1,10 @@
 /**
- * @fileoverview Main application component for the attendabot admin panel.
- * Features tab navigation between Students and Messages views.
+ * @fileoverview Main application component for the attendabot portal.
+ * Renders the admin dashboard for instructors or student portal based on role.
  */
 
 import { useState, useEffect } from "react";
-import { setUsername as storeUsername, clearSession, onAuthFailure } from "./api/client";
+import { setUsername as storeUsername, clearSession, onAuthFailure, getMe } from "./api/client";
 import { authClient } from "./lib/auth-client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
@@ -13,16 +13,26 @@ import { StudentCohortPanel } from "./components/StudentCohortPanel";
 import { TestingPanel } from "./components/TestingPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { ObserversPanel } from "./components/ObserversPanel";
+import { StudentPortal } from "./components/StudentPortal";
 import "./App.css";
 
 type Tab = "students" | "observers" | "messages" | "testing" | "diagnostics";
 
-/** Root application component with authentication and admin dashboard. */
+/** Root application component with authentication and role-based dashboard. */
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("students");
   const [username, setUsername] = useState<string | null>(null);
+  const [role, setRole] = useState<"instructor" | "student" | null>(null);
   const [sessionInvalid, setSessionInvalid] = useState(false);
+
+  /** Fetches the user's role and identity after login. */
+  const fetchRole = async () => {
+    const me = await getMe();
+    if (me) {
+      setRole(me.role);
+    }
+  };
 
   useEffect(() => {
     // Check for BetterAuth session (Discord OAuth)
@@ -32,6 +42,7 @@ function App() {
         storeUsername(name);
         setLoggedIn(true);
         setUsername(name);
+        fetchRole();
       }
     });
 
@@ -53,6 +64,7 @@ function App() {
     setLoggedIn(false);
     setSessionInvalid(false);
     setUsername(null);
+    setRole(null);
   };
 
   if (!loggedIn) {
@@ -63,11 +75,24 @@ function App() {
           storeUsername(name);
           setLoggedIn(true);
           setUsername(name);
+          fetchRole();
         }
       });
     }} />;
   }
 
+  // Student portal
+  if (role === "student") {
+    return (
+      <StudentPortal
+        username={username}
+        sessionInvalid={sessionInvalid}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // Instructor admin dashboard (also shown while role is loading)
   return (
     <div className="app">
       <header>

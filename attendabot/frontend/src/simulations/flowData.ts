@@ -39,6 +39,122 @@ export const flows: AuthFlow[] = [
     ],
   },
 
+  // ── Password Storage & Verification ──
+  {
+    id: "password-hashing",
+    title: "Password Storage",
+    subtitle: "How servers store and verify passwords without ever keeping the plaintext",
+    entities: [
+      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
+      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
+      { id: "db", label: "User Database", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
+    ],
+    steps: [
+      {
+        from: "client",
+        to: "server",
+        label: "Create account",
+        description:
+          "User submits a signup form with a username and password. This is the only time the server ever sees the plaintext password \u2014 and it will never store it.",
+        payload: `POST /signup\n\n{ "username": "alice",\n  "password": "correct-horse-battery" }`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Generate salt",
+        description:
+          "Server generates a random string called a \"salt\" \u2014 unique to this user. The salt prevents two users with the same password from having the same stored hash, and defeats precomputed \"rainbow table\" attacks.",
+        payload: `salt = randomBytes(16)\n\u2192 "a1b2c3d4e5f6..."\n\nWhy salt?\n  Without it, every user with\n  password "123456" would have the\n  same hash \u2014 cracking one cracks\n  them all.`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Hash password + salt",
+        description:
+          "Server concatenates the password with the salt and runs it through a slow hash function (like bcrypt, scrypt, or argon2). The \"cost\" parameter controls how slow it is \u2014 slow enough to make brute-force impractical, fast enough to not annoy users.",
+        payload: `hash = bcrypt(\n  "correct-horse-battery" + "a1b2c3d4e5f6...",\n  cost: 12\n)\n\n\u2192 "$2b$12$LJ3m4ks9Hx8Gk1e..."\n\nThis is a ONE-WAY function:\n  hash \u2192 password is infeasible\n  password \u2192 hash is easy`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "db",
+        label: "Store hash (never plaintext!)",
+        description:
+          "Server stores the hash, salt, algorithm, and cost \u2014 but NEVER the original password. If this database is ever breached, attackers get hashes, not passwords. With a strong hash function + salt, these are extremely expensive to crack.",
+        payload: `INSERT INTO users\n  (username, password_hash,\n   salt, algorithm, cost)\nVALUES\n  ('alice',\n   '$2b$12$LJ3m4ks9Hx8Gk1e...',\n   'a1b2c3d4e5f6...',\n   'bcrypt', 12)\n\n\u274C NEVER: password = "correct-horse..."`,
+        color: "#fb923c",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "Account created!",
+        description:
+          "Server confirms the account was created. The plaintext password is discarded from memory. It is gone forever \u2014 even the server can't recover it.",
+        payload: `HTTP/1.1 201 Created\n\n{ "message": "Account created!" }\n\nThe plaintext password\nis discarded from memory.\nIt no longer exists anywhere.`,
+        color: "#4ade80",
+      },
+      {
+        from: "client",
+        to: "server",
+        label: "Login later",
+        description:
+          "Some time later, the user returns and enters their password again. The server needs to verify it without ever having stored it.",
+        payload: `POST /login\n\n{ "username": "alice",\n  "password": "correct-horse-battery" }`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "db",
+        label: "Lookup user's salt & hash",
+        description:
+          "Server looks up the stored salt, hash, algorithm, and cost for this user. It needs the salt to reproduce the same hashing process.",
+        payload: `SELECT password_hash, salt,\n  algorithm, cost\nFROM users\nWHERE username = 'alice'`,
+        color: "#fb923c",
+      },
+      {
+        from: "db",
+        to: "server",
+        label: "Return stored values",
+        description:
+          "Database returns the hash and salt. Notice: no plaintext password exists anywhere in this system.",
+        payload: `{ "password_hash":\n    "$2b$12$LJ3m4ks9Hx8Gk1e...",\n  "salt": "a1b2c3d4e5f6...",\n  "algorithm": "bcrypt",\n  "cost": 12 }`,
+        color: "#fb923c",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Hash submitted password",
+        description:
+          "Server takes the submitted password, combines it with the stored salt, and runs the same hash function with the same cost. If the user typed the right password, the result will match the stored hash exactly.",
+        payload: `new_hash = bcrypt(\n  "correct-horse-battery"\n    + "a1b2c3d4e5f6...",\n  cost: 12\n)\n\n\u2192 "$2b$12$LJ3m4ks9Hx8Gk1e..."\n\nnew_hash === stored_hash\n\u2192 \u2705 PASSWORD CORRECT`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "Login successful",
+        description:
+          "The hashes match! The server now knows the user provided the correct password, without ever having stored it. From here, the server creates a session (see the Server-Side Sessions flow).",
+        payload: `HTTP/1.1 200 OK\nSet-Cookie: session_id=s_abc123;\n  HttpOnly; Secure\n\n{ "message": "Welcome back, Alice!" }\n\n\u2192 See "Server-Side Sessions" for\n  what happens next`,
+        color: "#4ade80",
+      },
+    ],
+    pros: [
+      "Server never stores the actual password \u2014 only evidence the user knew it",
+      "If the database is breached, attackers get hashes, not passwords",
+      "Salting means identical passwords produce different hashes per user",
+      "Cost parameter makes brute-force attacks computationally expensive",
+    ],
+    cons: [
+      "Users still have to choose and remember passwords (password reuse, weak passwords)",
+      "Vulnerable to phishing \u2014 user can be tricked into typing password on a fake site",
+      "Server sees the plaintext password briefly during each request (must use HTTPS)",
+      "Hash cost must be tuned: too low = easy to brute-force, too high = slow logins",
+    ],
+  },
+
   // ── Server-Side Sessions ──
   {
     id: "sessions",

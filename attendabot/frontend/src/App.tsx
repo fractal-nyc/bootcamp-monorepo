@@ -15,9 +15,10 @@ import { TestingPanel } from "./components/TestingPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { ObserversPanel } from "./components/ObserversPanel";
 import { StudentPortal } from "./components/StudentPortal";
+import { SimulationsHub } from "./components/SimulationsHub";
 import "./App.css";
 
-type Tab = "students" | "observers" | "messages" | "testing" | "diagnostics";
+type Tab = "students" | "simulations" | "observers" | "messages" | "testing" | "diagnostics";
 
 /** Root application component with authentication and role-based dashboard. */
 function App() {
@@ -189,6 +190,12 @@ function App() {
               Students
             </button>
             <button
+              className={`tab-btn ${activeTab === "simulations" ? "active" : ""}`}
+              onClick={() => setActiveTab("simulations")}
+            >
+              Simulations
+            </button>
+            <button
               className={`tab-btn ${activeTab === "observers" ? "active" : ""}`}
               onClick={() => setActiveTab("observers")}
             >
@@ -217,6 +224,8 @@ function App() {
           <main>
             {activeTab === "students" ? (
               <StudentCohortPanel />
+            ) : activeTab === "simulations" ? (
+              <SimulationsHub />
             ) : activeTab === "observers" ? (
               <ObserversPanel />
             ) : activeTab === "messages" ? (

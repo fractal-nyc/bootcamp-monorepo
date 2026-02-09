@@ -213,7 +213,6 @@ export const flows: AuthFlow[] = [
       "Still requires server-side storage (like sessions)",
       "Client must manage the token (store securely, attach to requests)",
       "Vulnerable to XSS if token is stored in localStorage",
-      "Don\u2019t check your API keys into GitHub!",
     ],
   },
 
@@ -224,7 +223,7 @@ export const flows: AuthFlow[] = [
     subtitle: "Long-lived keys that identify an application or developer, not a user session",
     entities: [
       { id: "developer", label: "Developer", icon: "\uD83D\uDC69\u200D\uD83D\uDCBB", color: "#6c8cff" },
-      { id: "service", label: "API Service\n(e.g. Anthropic)", icon: "\uD83D\uDD10", color: "#a78bfa" },
+      { id: "service", label: "API Service", icon: "\uD83D\uDD10", color: "#a78bfa" },
       { id: "db", label: "Key Store", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
     ],
     steps: [

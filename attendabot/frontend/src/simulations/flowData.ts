@@ -8,7 +8,12 @@ export const flows: AuthFlow[] = [
     subtitle: "No identity verification at all",
     entities: [
       { id: "client", label: "Client", icon: "\uD83D\uDCBB", color: "#6c8cff" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
     ],
     steps: [
       {
@@ -45,11 +50,27 @@ export const flows: AuthFlow[] = [
   {
     id: "password-hashing",
     title: "Password Storage",
-    subtitle: "How servers store and verify passwords without ever keeping the plaintext",
+    subtitle:
+      "How servers store and verify passwords without ever keeping the plaintext",
     entities: [
-      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
-      { id: "db", label: "User Database", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
+      {
+        id: "client",
+        label: "Browser",
+        icon: "\uD83C\uDF10",
+        color: "#6c8cff",
+      },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
+      {
+        id: "db",
+        label: "User Database",
+        icon: "\uD83D\uDDC4\uFE0F",
+        color: "#fb923c",
+      },
     ],
     steps: [
       {
@@ -66,7 +87,7 @@ export const flows: AuthFlow[] = [
         to: "server",
         label: "Generate salt",
         description:
-          "Server generates a random string called a \"salt\" \u2014 unique to this user. The salt prevents two users with the same password from having the same stored hash, and defeats precomputed \"rainbow table\" attacks.",
+          'Server generates a random string called a "salt" \u2014 unique to this user. The salt prevents two users with the same password from having the same stored hash, and defeats precomputed "rainbow table" attacks.',
         payload: `salt = randomBytes(16)\n\u2192 "a1b2c3d4e5f6..."\n\nWhy salt?\n  Without it, every user with\n  password "123456" would have the\n  same hash \u2014 cracking one cracks\n  them all.`,
         color: "#a78bfa",
       },
@@ -75,7 +96,7 @@ export const flows: AuthFlow[] = [
         to: "server",
         label: "Hash password + salt",
         description:
-          "Server concatenates the password with the salt and runs it through a slow hash function (like bcrypt, scrypt, or argon2). The \"cost\" parameter controls how slow it is \u2014 slow enough to make brute-force impractical, fast enough to not annoy users.",
+          'Server concatenates the password with the salt and runs it through a slow hash function (like bcrypt, scrypt, or argon2). The "cost" parameter controls how slow it is \u2014 slow enough to make brute-force impractical, fast enough to not annoy users.',
         payload: `hash = bcrypt(\n  "correct-horse-battery" + "a1b2c3d4e5f6...",\n  cost: 12\n)\n\n\u2192 "$2b$12$LJ3m4ks9Hx8Gk1e..."\n\nThis is a ONE-WAY function:\n  hash \u2192 password is infeasible\n  password \u2192 hash is easy`,
         color: "#a78bfa",
       },
@@ -138,8 +159,8 @@ export const flows: AuthFlow[] = [
         to: "client",
         label: "Login successful",
         description:
-          "The hashes match! The server now knows the user provided the correct password, without ever having stored it. From here, the server creates a session (see the Server Sessions+Browser Cookies flow).",
-        payload: `HTTP/1.1 200 OK\nSet-Cookie: session_id=s_abc123;\n  HttpOnly; Secure\n\n{ "message": "Welcome back, Alice!" }\n\n\u2192 See "Server Sessions+Browser Cookies" for\n  what happens next`,
+          "The hashes match! The server now knows the user provided the correct password, without ever having stored it. From here, the server creates a session (see the Server Sessions + Browser Cookies flow).",
+        payload: `HTTP/1.1 200 OK\nSet-Cookie: session_id=s_abc123;\n  HttpOnly; Secure\n\n{ "message": "Welcome back, Alice!" }\n\n\u2192 See "Server Sessions + Browser Cookies" for\n  what happens next`,
         color: "#4ade80",
       },
     ],
@@ -164,7 +185,12 @@ export const flows: AuthFlow[] = [
     subtitle: "Asymmetric keys: what one key locks, only the other can unlock",
     entities: [
       { id: "alice", label: "Alice", icon: "\uD83D\uDC69", color: "#6c8cff" },
-      { id: "math", label: "Crypto Engine", icon: "\uD83D\uDD10", color: "#a78bfa" },
+      {
+        id: "math",
+        label: "Crypto Engine",
+        icon: "\uD83D\uDD10",
+        color: "#a78bfa",
+      },
       { id: "bob", label: "Bob", icon: "\uD83D\uDC68", color: "#4ade80" },
     ],
     steps: [
@@ -258,21 +284,36 @@ export const flows: AuthFlow[] = [
     ],
     cons: [
       "More complex to understand than passwords or shared secrets",
-      "Private key loss = permanent lockout (no \"forgot password\" reset)",
+      'Private key loss = permanent lockout (no "forgot password" reset)',
       "Key management is the hard part \u2014 securely storing, rotating, and backing up keys",
       "Computationally more expensive than symmetric encryption (often used as a hybrid: public-key to exchange a symmetric key, then symmetric for bulk data)",
     ],
   },
 
-  // ── Server Sessions+Browser Cookies ──
+  // ── Server Sessions + Browser Cookies ──
   {
     id: "sessions",
-    title: "Server Sessions+Browser Cookies",
+    title: "Server Sessions + Browser Cookies",
     subtitle: "Stateful: server stores session records",
     entities: [
-      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
-      { id: "db", label: "Session Store", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
+      {
+        id: "client",
+        label: "Browser",
+        icon: "\uD83C\uDF10",
+        color: "#6c8cff",
+      },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
+      {
+        id: "db",
+        label: "Session Store",
+        icon: "\uD83D\uDDC4\uFE0F",
+        color: "#fb923c",
+      },
     ],
     steps: [
       {
@@ -357,11 +398,27 @@ export const flows: AuthFlow[] = [
   {
     id: "opaque-tokens",
     title: "Opaque Tokens",
-    subtitle: "Like sessions, but token in Authorization header instead of cookie",
+    subtitle:
+      "Like sessions, but token in Authorization header instead of cookie",
     entities: [
-      { id: "client", label: "Client App", icon: "\uD83D\uDCF1", color: "#6c8cff" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
-      { id: "db", label: "Token Store", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
+      {
+        id: "client",
+        label: "Client App",
+        icon: "\uD83D\uDCF1",
+        color: "#6c8cff",
+      },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
+      {
+        id: "db",
+        label: "Token Store",
+        icon: "\uD83D\uDDC4\uFE0F",
+        color: "#fb923c",
+      },
     ],
     steps: [
       {
@@ -445,11 +502,27 @@ export const flows: AuthFlow[] = [
   {
     id: "api-keys",
     title: "API Key Authentication",
-    subtitle: "Long-lived keys that identify an application or developer, not a user session",
+    subtitle:
+      "Long-lived keys that identify an application or developer, not a user session",
     entities: [
-      { id: "developer", label: "Developer", icon: "\uD83D\uDC69\u200D\uD83D\uDCBB", color: "#6c8cff" },
-      { id: "service", label: "API Service", icon: "\uD83D\uDD10", color: "#a78bfa" },
-      { id: "db", label: "Key Store", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
+      {
+        id: "developer",
+        label: "Developer",
+        icon: "\uD83D\uDC69\u200D\uD83D\uDCBB",
+        color: "#6c8cff",
+      },
+      {
+        id: "service",
+        label: "API Service",
+        icon: "\uD83D\uDD10",
+        color: "#a78bfa",
+      },
+      {
+        id: "db",
+        label: "Key Store",
+        icon: "\uD83D\uDDC4\uFE0F",
+        color: "#fb923c",
+      },
     ],
     steps: [
       {
@@ -538,7 +611,12 @@ export const flows: AuthFlow[] = [
     subtitle: "Stateless: the token IS the session",
     entities: [
       { id: "client", label: "Client", icon: "\uD83D\uDCBB", color: "#6c8cff" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
     ],
     steps: [
       {
@@ -554,7 +632,7 @@ export const flows: AuthFlow[] = [
         to: "server",
         label: "Create & sign JWT",
         description:
-          "Server constructs a payload (\"claims\") and cryptographically signs it. The result is three base64-encoded parts: header.payload.signature. This is NOT encryption \u2014 anyone can read the payload. The signature just proves it hasn\u2019t been tampered with.",
+          'Server constructs a payload ("claims") and cryptographically signs it. The result is three base64-encoded parts: header.payload.signature. This is NOT encryption \u2014 anyone can read the payload. The signature just proves it hasn\u2019t been tampered with.',
         payload: `HEADER:  { "alg": "HS256", "typ": "JWT" }\n\nPAYLOAD: { "sub": 42, "name": "alice",\n  "role": "user", "iat": 1705312000,\n  "exp": 1705398400 }\n\nSIGNATURE: HMAC-SHA256(\n  base64(header) + "." + base64(payload),\n  SECRET_KEY\n)`,
         color: "#a78bfa",
       },
@@ -571,7 +649,8 @@ export const flows: AuthFlow[] = [
         from: "client",
         to: "server",
         label: "Authorization: Bearer eyJ...",
-        description: "Client sends the JWT in the Authorization header on subsequent requests.",
+        description:
+          "Client sends the JWT in the Authorization header on subsequent requests.",
         payload: `GET /api/profile HTTP/1.1\nAuthorization: Bearer eyJhbGciOiJIUz...`,
         color: "#6c8cff",
       },
@@ -580,7 +659,7 @@ export const flows: AuthFlow[] = [
         to: "server",
         label: "Verify signature",
         description:
-          "Server recomputes the signature from the header+payload using its secret key and checks if it matches. NO database lookup needed! This is what makes JWT \"stateless.\"",
+          'Server recomputes the signature from the header+payload using its secret key and checks if it matches. NO database lookup needed! This is what makes JWT "stateless."',
         payload: `expected = HMAC-SHA256(\n  receivedHeader + "." + receivedPayload,\n  SECRET_KEY\n)\n\nreceived === expected  \u2192  \u2705 VALID\n\nAlso check: exp > now()  \u2192  \u2705 NOT EXPIRED`,
         color: "#a78bfa",
       },
@@ -614,9 +693,24 @@ export const flows: AuthFlow[] = [
     title: "OAuth 2.0 + OIDC",
     subtitle: "Delegated auth via a third-party identity provider",
     entities: [
-      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
-      { id: "app", label: "Your Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
-      { id: "provider", label: "Auth Provider\n(e.g. Google)", icon: "\uD83D\uDD10", color: "#a78bfa" },
+      {
+        id: "client",
+        label: "Browser",
+        icon: "\uD83C\uDF10",
+        color: "#6c8cff",
+      },
+      {
+        id: "app",
+        label: "Your Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
+      {
+        id: "provider",
+        label: "Auth Provider\n(e.g. Google)",
+        icon: "\uD83D\uDD10",
+        color: "#a78bfa",
+      },
     ],
     steps: [
       {
@@ -721,10 +815,30 @@ export const flows: AuthFlow[] = [
     title: "Magic Links",
     subtitle: "Passwordless login via a one-time link sent to your email",
     entities: [
-      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
-      { id: "db", label: "Token Store", icon: "\uD83D\uDDC4\uFE0F", color: "#fb923c" },
-      { id: "email", label: "Email Inbox", icon: "\uD83D\uDCE7", color: "#f472b6" },
+      {
+        id: "client",
+        label: "Browser",
+        icon: "\uD83C\uDF10",
+        color: "#6c8cff",
+      },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
+      {
+        id: "db",
+        label: "Token Store",
+        icon: "\uD83D\uDDC4\uFE0F",
+        color: "#fb923c",
+      },
+      {
+        id: "email",
+        label: "Email Inbox",
+        icon: "\uD83D\uDCE7",
+        color: "#f472b6",
+      },
     ],
     steps: [
       {
@@ -732,7 +846,7 @@ export const flows: AuthFlow[] = [
         to: "server",
         label: "Enter email address",
         description:
-          "User enters only their email address \u2014 no password field at all. This is the entire \"login form.\"",
+          'User enters only their email address \u2014 no password field at all. This is the entire "login form."',
         payload: `POST /auth/magic-link\n\n{ "email": "alice@gmail.com" }`,
         color: "#6c8cff",
       },
@@ -757,7 +871,7 @@ export const flows: AuthFlow[] = [
       {
         from: "server",
         to: "client",
-        label: "\"Check your email\"",
+        label: '"Check your email"',
         description:
           "Server tells the user to go check their email. The user must now leave your app and open their email client \u2014 this is the main friction point.",
         payload: `HTTP/1.1 200 OK\n\n{ "message": "Check your email!\n  We sent a login link to\n  alice@gmail.com" }`,
@@ -821,9 +935,24 @@ export const flows: AuthFlow[] = [
     title: "One-Time Passwords (OTP)",
     subtitle: "Short-lived codes via SMS, email, or authenticator app",
     entities: [
-      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
-      { id: "device", label: "Phone / Auth App", icon: "\uD83D\uDCF1", color: "#f472b6" },
+      {
+        id: "client",
+        label: "Browser",
+        icon: "\uD83C\uDF10",
+        color: "#6c8cff",
+      },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
+      {
+        id: "device",
+        label: "Phone / Auth App",
+        icon: "\uD83D\uDCF1",
+        color: "#f472b6",
+      },
     ],
     steps: [
       {
@@ -910,9 +1039,24 @@ export const flows: AuthFlow[] = [
     title: "Passkeys / WebAuthn",
     subtitle: "Public-key cryptography \u2014 phishing-resistant, passwordless",
     entities: [
-      { id: "client", label: "Browser", icon: "\uD83C\uDF10", color: "#6c8cff" },
-      { id: "device", label: "Device\n(Biometrics)", icon: "\uD83D\uDD11", color: "#f472b6" },
-      { id: "server", label: "Server", icon: "\uD83D\uDDA5\uFE0F", color: "#4ade80" },
+      {
+        id: "client",
+        label: "Browser",
+        icon: "\uD83C\uDF10",
+        color: "#6c8cff",
+      },
+      {
+        id: "device",
+        label: "Device\n(Biometrics)",
+        icon: "\uD83D\uDD11",
+        color: "#f472b6",
+      },
+      {
+        id: "server",
+        label: "Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
     ],
     steps: [
       {
@@ -1031,7 +1175,7 @@ export const flows: AuthFlow[] = [
       "Backed by FIDO Alliance + Apple, Google, Microsoft \u2014 credentials sync across devices",
     ],
     cons: [
-      "Relatively new \u2014 user education is still a hurdle (\"where did my password go?\")",
+      'Relatively new \u2014 user education is still a hurdle ("where did my password go?")',
       "Account recovery is harder if you lose all devices without sync set up",
       "Cross-platform sync is improving but still inconsistent across ecosystems",
       "Requires browser and OS support (widespread now, but not universal)",

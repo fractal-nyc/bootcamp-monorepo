@@ -186,6 +186,31 @@ export async function initializeDiscord(): Promise<Client> {
         }
       });
 
+      // Register messageUpdate listener to capture edited messages
+      discordClient.on("messageUpdate", async (_oldMessage, newMessage) => {
+        if (!MONITORED_CHANNEL_IDS.includes(newMessage.channelId)) return;
+        if (newMessage.author?.bot) return;
+
+        try {
+          // Fetch full message if partial (not in cache)
+          const message = newMessage.partial ? await newMessage.fetch() : newMessage;
+          const channel = message.channel as TextChannel;
+          logMessage({
+            discord_message_id: message.id,
+            channel_id: message.channelId,
+            channel_name: channel.name,
+            author_id: message.author.id,
+            display_name: message.member?.displayName || null,
+            username: message.author.username,
+            content: message.content,
+            created_at: message.createdAt.toISOString(),
+          });
+          console.log(`Updated edited message from ${message.author.username} in #${channel.name}`);
+        } catch (error) {
+          console.error("Failed to update edited message:", error);
+        }
+      });
+
       // Run backfill after ready
       backfillMonitoredChannels(discordClient).catch((error) => {
         console.error("Failed to backfill monitored channels", error);

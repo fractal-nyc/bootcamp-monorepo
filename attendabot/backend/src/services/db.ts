@@ -290,8 +290,10 @@ export function logMessage(message: MessageRecord): void {
   upsertUser(message.author_id, message.display_name, message.username);
 
   const stmt = db.prepare(`
-    INSERT OR IGNORE INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+    INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
     VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(discord_message_id) DO UPDATE SET
+      content = excluded.content
   `);
   stmt.run(
     message.discord_message_id,

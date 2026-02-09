@@ -134,6 +134,36 @@ describe("Database Service - Direct Tests", () => {
       expect(result.count).toBe(1);
     });
 
+    it("updates content on duplicate discord_message_id via upsert", () => {
+      const channel = createTestChannel(db);
+      const user = createTestUser(db);
+
+      createTestMessage(db, {
+        discordMessageId: "msg-1",
+        channelId: channel.channel_id,
+        authorId: user.author_id,
+        content: "Original content",
+      });
+
+      // Re-insert with updated content (simulates logMessage upsert after edit)
+      const stmt = db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(discord_message_id) DO UPDATE SET
+          content = excluded.content
+      `);
+      stmt.run("msg-1", channel.channel_id, user.author_id, "Edited with PRs", new Date().toISOString());
+
+      const row = db.prepare("SELECT content FROM messages WHERE discord_message_id = ?")
+        .get("msg-1") as { content: string };
+
+      expect(row.content).toBe("Edited with PRs");
+
+      const countResult = db.prepare("SELECT COUNT(*) as count FROM messages")
+        .get() as { count: number };
+      expect(countResult.count).toBe(1);
+    });
+
     it("retrieves messages ordered by newest first", () => {
       const channel = createTestChannel(db);
       const user = createTestUser(db);

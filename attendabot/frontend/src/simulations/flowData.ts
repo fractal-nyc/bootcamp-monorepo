@@ -18,6 +18,7 @@ export const flows: AuthFlow[] = [
         description:
           "Client sends a request with no credentials whatsoever. The server has no idea who is making the request.",
         payload: `GET /api/data HTTP/1.1\nHost: example.com\n\n(no credentials)`,
+        color: "#6c8cff",
       },
       {
         from: "server",
@@ -26,6 +27,7 @@ export const flows: AuthFlow[] = [
         description:
           "Server responds with the data. Anyone can access this endpoint \u2014 there is no identity check.",
         payload: `HTTP/1.1 200 OK\n\n{ "data": [ ... ] }`,
+        color: "#4ade80",
       },
     ],
     pros: [

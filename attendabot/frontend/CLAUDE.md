@@ -201,3 +201,4 @@ const { logs, status, clearLogs } = useWebSocket();
 - **No React Router**: Navigation is tab-based within App.tsx, not URL-based
 - **Styling**: CSS in App.css, no CSS modules or styled-components
 - **Two-click delete pattern**: Used for destructive actions (delete student, delete note). Click shows "Confirm?", click again deletes, blur resets.
+- **Role loading race condition**: App.tsx gates on `role` before rendering dashboards. If `role` is `null` (still loading from `getMe()`), a loading screen is shown — NOT the instructor dashboard. Rendering instructor components (e.g., `StudentCohortPanel`) before role is known causes 403s on instructor-only endpoints (`/api/cohorts`, `/api/observers`) which triggers the session expired banner for students.

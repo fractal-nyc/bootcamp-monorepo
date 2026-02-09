@@ -70,7 +70,7 @@ body {
 }
 
 .flow-header {
-  margin-bottom: var(--space-4);
+  margin-bottom: 0;
 }
 .flow-header h2 {
   font-size: var(--text-2xl);

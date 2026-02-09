@@ -80,11 +80,6 @@ export default function FlowDiagram({ flow }: { flow: AuthFlow }) {
 
   return (
     <div className="flow-diagram">
-      <div className="flow-header">
-        <h2>{flow.title}</h2>
-        <p className="flow-subtitle">{flow.subtitle}</p>
-      </div>
-
       <div className="flow-layout">
         {/* ── Left sidebar: controls, description, pros/cons ── */}
         <div className="flow-sidebar">
@@ -129,14 +124,19 @@ export default function FlowDiagram({ flow }: { flow: AuthFlow }) {
           </div>
 
           {/* Description panel */}
-          <div className={`desc-panel ${currentStep ? "visible" : ""}`}>
-            {currentStep && (
+          <div className="desc-panel visible">
+            {currentStep ? (
               <>
                 <p className="desc-text">{currentStep.description}</p>
                 {currentStep.payload && (
                   <pre className="desc-payload">{currentStep.payload}</pre>
                 )}
               </>
+            ) : (
+              <div className="flow-header">
+                <h2>{flow.title}</h2>
+                <p className="flow-subtitle">{flow.subtitle}</p>
+              </div>
             )}
           </div>
 

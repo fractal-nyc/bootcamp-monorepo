@@ -966,6 +966,8 @@ export interface MeResponse {
   studentId?: number;
   studentName?: string;
   cohortId?: number;
+  cohortStartDate?: string;
+  cohortEndDate?: string;
 }
 
 /** Fetches the current user's role and identity. */

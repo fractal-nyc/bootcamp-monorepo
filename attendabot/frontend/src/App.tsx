@@ -30,17 +30,18 @@ function App() {
   const [impersonating, setImpersonating] = useState<{ discordId: string; name: string; cohortId: number } | null>(null);
   const [impersonateStudents, setImpersonateStudents] = useState<{ discordId: string; name: string; cohortId: number }[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
-  const [studentCohortId, setStudentCohortId] = useState<number | null>(null);
+  const [studentCohortDates, setStudentCohortDates] = useState<{ startDate?: string; endDate?: string }>({});
 
   /** Fetches the user's role and identity after login. */
   const fetchRole = async () => {
     const me = await getMe();
     if (me) {
       setRole(me.role);
-      if (me.role === "student" && me.cohortId) {
-        setStudentCohortId(me.cohortId);
-        const allCohorts = await getCohorts();
-        setCohorts(allCohorts);
+      if (me.role === "student") {
+        setStudentCohortDates({
+          startDate: me.cohortStartDate,
+          endDate: me.cohortEndDate,
+        });
       }
     }
   };
@@ -114,14 +115,13 @@ function App() {
 
   // Student portal
   if (role === "student") {
-    const cohort = cohorts.find((c) => c.id === studentCohortId);
     return (
       <StudentPortal
         username={username}
         sessionInvalid={sessionInvalid}
         onLogout={handleLogout}
-        cohortStartDate={cohort?.startDate ?? undefined}
-        cohortEndDate={cohort?.endDate ?? undefined}
+        cohortStartDate={studentCohortDates.startDate}
+        cohortEndDate={studentCohortDates.endDate}
       />
     );
   }

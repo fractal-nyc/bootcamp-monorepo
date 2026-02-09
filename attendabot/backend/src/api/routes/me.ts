@@ -18,22 +18,31 @@ meRouter.get("/", authenticateToken, (req: AuthRequest, res: Response) => {
     studentId?: number;
     studentName?: string;
     cohortId?: number;
+    cohortStartDate?: string;
+    cohortEndDate?: string;
   } = {
     role: user.role,
     name: user.username,
     discordAccountId: user.discordAccountId,
   };
 
-  // If student, look up student record by discord_user_id
+  // If student, look up student record and cohort dates
   if (user.role === "student" && user.discordAccountId) {
     const db = getDatabase();
     const student = db
-      .prepare(`SELECT id, name, cohort_id FROM students WHERE discord_user_id = ?`)
-      .get(user.discordAccountId) as { id: number; name: string; cohort_id: number } | undefined;
+      .prepare(`
+        SELECT s.id, s.name, s.cohort_id, c.start_date, c.end_date
+        FROM students s
+        JOIN cohorts c ON s.cohort_id = c.id
+        WHERE s.discord_user_id = ?
+      `)
+      .get(user.discordAccountId) as { id: number; name: string; cohort_id: number; start_date: string | null; end_date: string | null } | undefined;
     if (student) {
       result.studentId = student.id;
       result.studentName = student.name;
       result.cohortId = student.cohort_id;
+      if (student.start_date) result.cohortStartDate = student.start_date;
+      if (student.end_date) result.cohortEndDate = student.end_date;
     }
   }
 

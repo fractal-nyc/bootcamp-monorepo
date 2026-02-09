@@ -126,7 +126,25 @@ function App() {
     );
   }
 
-  // Instructor admin dashboard (also shown while role is loading)
+  // Show loading state while role is being determined
+  if (!role) {
+    return (
+      <div className="app">
+        <header>
+          <h1>Attendabot</h1>
+          <div className="header-right">
+            {username && <span className="username">Logged in as {username}</span>}
+            <button onClick={handleLogout} className="logout-btn">
+              Logout
+            </button>
+          </div>
+        </header>
+        <main><p>Loading...</p></main>
+      </div>
+    );
+  }
+
+  // Instructor admin dashboard
   return (
     <div className="app">
       <header>

@@ -56,6 +56,51 @@ header h1 {
 }
 
 /* ========================================
+   Impersonation
+   ======================================== */
+.impersonate-select {
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  color: var(--color-charcoal);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  max-width: 200px;
+}
+
+.impersonate-banner {
+  background: #EEF2FF;
+  color: var(--color-charcoal);
+  padding: var(--space-3) var(--space-5);
+  border: 2px solid var(--color-accent);
+  margin-bottom: var(--space-5);
+  font-size: var(--text-base);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.impersonate-stop-btn {
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+  color: var(--color-charcoal);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: auto;
+}
+
+.impersonate-stop-btn:hover {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+/* ========================================
    Main Layout
    ======================================== */
 main {

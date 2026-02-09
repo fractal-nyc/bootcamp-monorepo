@@ -7,17 +7,22 @@ import { getMyEods } from "../api/client";
 import type { StudentEodMessage } from "../api/client";
 import { renderWithLinks } from "../utils/linkify";
 
+interface MyEodsProps {
+  studentDiscordId?: string;
+}
+
 /** Renders a list of the student's EOD messages. */
-export function MyEods() {
+export function MyEods({ studentDiscordId }: MyEodsProps) {
   const [messages, setMessages] = useState<StudentEodMessage[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMyEods(100).then((msgs) => {
+    setLoading(true);
+    getMyEods(100, studentDiscordId).then((msgs) => {
       setMessages(msgs);
       setLoading(false);
     });
-  }, []);
+  }, [studentDiscordId]);
 
   return (
     <div className="panel" style={{ gridColumn: "span 2" }}>

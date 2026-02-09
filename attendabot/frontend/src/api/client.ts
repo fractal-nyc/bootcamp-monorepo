@@ -983,10 +983,12 @@ export interface StudentEodMessage {
   channelName: string;
 }
 
-/** Fetches the student's own EOD messages. */
-export async function getMyEods(limit: number = 100): Promise<StudentEodMessage[]> {
+/** Fetches the student's own EOD messages. Instructors can pass a studentDiscordId to impersonate. */
+export async function getMyEods(limit: number = 100, studentDiscordId?: string): Promise<StudentEodMessage[]> {
   try {
-    const res = await fetchWithAuth(`${API_BASE}/student-portal/eods?limit=${limit}`);
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (studentDiscordId) params.append("studentDiscordId", studentDiscordId);
+    const res = await fetchWithAuth(`${API_BASE}/student-portal/eods?${params}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.messages;
@@ -1007,13 +1009,15 @@ export interface DailyStats {
   totalPrCount: number;
 }
 
-/** Fetches daily stats for the student over the given date range. */
+/** Fetches daily stats for the student over the given date range. Instructors can pass a studentDiscordId to impersonate. */
 export async function getMyStats(
   startDate: string,
-  endDate: string
+  endDate: string,
+  studentDiscordId?: string
 ): Promise<{ days: DailyStats[] } | null> {
   try {
     const params = new URLSearchParams({ startDate, endDate });
+    if (studentDiscordId) params.append("studentDiscordId", studentDiscordId);
     const res = await fetchWithAuth(`${API_BASE}/student-portal/stats?${params}`);
     if (!res.ok) return null;
     return res.json();

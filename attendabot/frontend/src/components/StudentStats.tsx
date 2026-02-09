@@ -6,25 +6,30 @@ import { useState, useEffect } from "react";
 import { getMyStats } from "../api/client";
 import type { DailyStats } from "../api/client";
 
+interface StudentStatsProps {
+  studentDiscordId?: string;
+}
+
 /** Renders a table of daily stats for the student over the last 30 days. */
-export function StudentStats() {
+export function StudentStats({ studentDiscordId }: StudentStatsProps) {
   const [days, setDays] = useState<DailyStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 30);
     const startStr = start.toISOString().split("T")[0];
     const endStr = end.toISOString().split("T")[0];
 
-    getMyStats(startStr, endStr).then((result) => {
+    getMyStats(startStr, endStr, studentDiscordId).then((result) => {
       if (result) {
         setDays(result.days);
       }
       setLoading(false);
     });
-  }, []);
+  }, [studentDiscordId]);
 
   if (loading) {
     return (

@@ -14,11 +14,50 @@ interface StudentPortalProps {
   username: string | null;
   sessionInvalid: boolean;
   onLogout: () => void;
+  studentDiscordId?: string;
 }
 
 /** Student portal with tabs for Stats, My EODs, and Simulations. */
-export function StudentPortal({ username, sessionInvalid, onLogout }: StudentPortalProps) {
+export function StudentPortal({ username, sessionInvalid, onLogout, studentDiscordId }: StudentPortalProps) {
   const [activeTab, setActiveTab] = useState<StudentTab>("stats");
+  const embedded = !!studentDiscordId;
+
+  const content = (
+    <>
+      <nav className="tab-navigation">
+        <button
+          className={`tab-btn ${activeTab === "stats" ? "active" : ""}`}
+          onClick={() => setActiveTab("stats")}
+        >
+          Stats
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "eods" ? "active" : ""}`}
+          onClick={() => setActiveTab("eods")}
+        >
+          My EODs
+        </button>
+        <button
+          className={`tab-btn ${activeTab === "simulations" ? "active" : ""}`}
+          onClick={() => setActiveTab("simulations")}
+        >
+          Simulations
+        </button>
+      </nav>
+
+      <main>
+        {activeTab === "stats" ? (
+          <StudentStats studentDiscordId={studentDiscordId} />
+        ) : activeTab === "eods" ? (
+          <MyEods studentDiscordId={studentDiscordId} />
+        ) : (
+          <SimulationsHub />
+        )}
+      </main>
+    </>
+  );
+
+  if (embedded) return content;
 
   return (
     <div className="app">
@@ -43,36 +82,7 @@ export function StudentPortal({ username, sessionInvalid, onLogout }: StudentPor
         </div>
       )}
 
-      <nav className="tab-navigation">
-        <button
-          className={`tab-btn ${activeTab === "stats" ? "active" : ""}`}
-          onClick={() => setActiveTab("stats")}
-        >
-          Stats
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "eods" ? "active" : ""}`}
-          onClick={() => setActiveTab("eods")}
-        >
-          My EODs
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "simulations" ? "active" : ""}`}
-          onClick={() => setActiveTab("simulations")}
-        >
-          Simulations
-        </button>
-      </nav>
-
-      <main>
-        {activeTab === "stats" ? (
-          <StudentStats />
-        ) : activeTab === "eods" ? (
-          <MyEods />
-        ) : (
-          <SimulationsHub />
-        )}
-      </main>
+      {content}
     </div>
   );
 }

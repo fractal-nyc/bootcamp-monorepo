@@ -4,7 +4,8 @@
  */
 
 import { useState, useEffect } from "react";
-import { setUsername as storeUsername, clearSession, onAuthFailure, getMe } from "./api/client";
+import { setUsername as storeUsername, clearSession, onAuthFailure, getMe, getCohorts, getStudentsByCohort } from "./api/client";
+import type { Student } from "./api/client";
 import { authClient } from "./lib/auth-client";
 import { Login } from "./components/Login";
 import { MessageFeed } from "./components/MessageFeed";
@@ -25,6 +26,8 @@ function App() {
   const [username, setUsername] = useState<string | null>(null);
   const [role, setRole] = useState<"instructor" | "student" | null>(null);
   const [sessionInvalid, setSessionInvalid] = useState(false);
+  const [impersonating, setImpersonating] = useState<{ discordId: string; name: string } | null>(null);
+  const [impersonateStudents, setImpersonateStudents] = useState<{ discordId: string; name: string }[]>([]);
 
   /** Fetches the user's role and identity after login. */
   const fetchRole = async () => {
@@ -54,6 +57,24 @@ function App() {
     return unsubscribe;
   }, []);
 
+  // Load students for impersonation dropdown when instructor
+  useEffect(() => {
+    if (role !== "instructor") return;
+    (async () => {
+      const cohorts = await getCohorts();
+      const allStudents: Student[] = [];
+      for (const cohort of cohorts) {
+        const students = await getStudentsByCohort(cohort.id);
+        allStudents.push(...students);
+      }
+      const withDiscord = allStudents
+        .filter((s) => s.discordUserId)
+        .map((s) => ({ discordId: s.discordUserId!, name: s.name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setImpersonateStudents(withDiscord);
+    })();
+  }, [role]);
+
   const handleLogout = async () => {
     try {
       await authClient.signOut();
@@ -65,6 +86,7 @@ function App() {
     setSessionInvalid(false);
     setUsername(null);
     setRole(null);
+    setImpersonating(null);
   };
 
   if (!loggedIn) {
@@ -99,11 +121,45 @@ function App() {
         <h1>Attendabot Admin</h1>
         <div className="header-right">
           {username && <span className="username">Logged in as {username}</span>}
+          {role === "instructor" && impersonateStudents.length > 0 && (
+            <select
+              className="impersonate-select"
+              value={impersonating?.discordId ?? ""}
+              onChange={(e) => {
+                const id = e.target.value;
+                if (!id) {
+                  setImpersonating(null);
+                  return;
+                }
+                const student = impersonateStudents.find((s) => s.discordId === id);
+                if (student) setImpersonating(student);
+              }}
+            >
+              <option value="">View as Student...</option>
+              {impersonateStudents.map((s) => (
+                <option key={s.discordId} value={s.discordId}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
           <button onClick={handleLogout} className="logout-btn">
             Logout
           </button>
         </div>
       </header>
+
+      {impersonating && (
+        <div className="impersonate-banner">
+          Viewing as <strong>{impersonating.name}</strong>
+          <button
+            className="impersonate-stop-btn"
+            onClick={() => setImpersonating(null)}
+          >
+            Stop
+          </button>
+        </div>
+      )}
 
       {sessionInvalid && (
         <div className="session-warning">
@@ -116,55 +172,66 @@ function App() {
         </div>
       )}
 
-      <nav className="tab-navigation">
-        <button
-          className={`tab-btn ${activeTab === "students" ? "active" : ""}`}
-          onClick={() => setActiveTab("students")}
-        >
-          Students
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "observers" ? "active" : ""}`}
-          onClick={() => setActiveTab("observers")}
-        >
-          Observers
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "messages" ? "active" : ""}`}
-          onClick={() => setActiveTab("messages")}
-        >
-          Messages
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "testing" ? "active" : ""}`}
-          onClick={() => setActiveTab("testing")}
-        >
-          Testing
-        </button>
-        <button
-          className={`tab-btn ${activeTab === "diagnostics" ? "active" : ""}`}
-          onClick={() => setActiveTab("diagnostics")}
-        >
-          Configuration
-        </button>
-      </nav>
+      {impersonating ? (
+        <StudentPortal
+          username={impersonating.name}
+          sessionInvalid={sessionInvalid}
+          onLogout={handleLogout}
+          studentDiscordId={impersonating.discordId}
+        />
+      ) : (
+        <>
+          <nav className="tab-navigation">
+            <button
+              className={`tab-btn ${activeTab === "students" ? "active" : ""}`}
+              onClick={() => setActiveTab("students")}
+            >
+              Students
+            </button>
+            <button
+              className={`tab-btn ${activeTab === "observers" ? "active" : ""}`}
+              onClick={() => setActiveTab("observers")}
+            >
+              Observers
+            </button>
+            <button
+              className={`tab-btn ${activeTab === "messages" ? "active" : ""}`}
+              onClick={() => setActiveTab("messages")}
+            >
+              Messages
+            </button>
+            <button
+              className={`tab-btn ${activeTab === "testing" ? "active" : ""}`}
+              onClick={() => setActiveTab("testing")}
+            >
+              Testing
+            </button>
+            <button
+              className={`tab-btn ${activeTab === "diagnostics" ? "active" : ""}`}
+              onClick={() => setActiveTab("diagnostics")}
+            >
+              Configuration
+            </button>
+          </nav>
 
-      <main>
-        {activeTab === "students" ? (
-          <StudentCohortPanel />
-        ) : activeTab === "observers" ? (
-          <ObserversPanel />
-        ) : activeTab === "messages" ? (
-          <>
-            <MessageFeed />
-            <UserMessages />
-          </>
-        ) : activeTab === "testing" ? (
-          <TestingPanel />
-        ) : (
-          <DiagnosticsPanel />
-        )}
-      </main>
+          <main>
+            {activeTab === "students" ? (
+              <StudentCohortPanel />
+            ) : activeTab === "observers" ? (
+              <ObserversPanel />
+            ) : activeTab === "messages" ? (
+              <>
+                <MessageFeed />
+                <UserMessages />
+              </>
+            ) : activeTab === "testing" ? (
+              <TestingPanel />
+            ) : (
+              <DiagnosticsPanel />
+            )}
+          </main>
+        </>
+      )}
     </div>
   );
 }

@@ -11,17 +11,33 @@ import { countPrsInMessage, isValidEodMessage } from "../../bot/index";
 
 export const studentPortalRouter = Router();
 
-/** Middleware that ensures the user is a student. */
-function requireStudent(req: AuthRequest, res: Response, next: () => void): void {
-  if (req.user?.role !== "student") {
-    res.status(403).json({ error: "Student access required" });
+/**
+ * Middleware that resolves the target student's Discord ID.
+ * - Students: uses their own discordAccountId.
+ * - Instructors: uses the `studentDiscordId` query parameter to impersonate.
+ * Stores the resolved ID in `res.locals.studentDiscordId`.
+ */
+function requireStudentAccess(req: AuthRequest, res: Response, next: () => void): void {
+  if (req.user?.role === "student") {
+    if (!req.user.discordAccountId) {
+      res.status(403).json({ error: "No Discord account linked" });
+      return;
+    }
+    res.locals.studentDiscordId = req.user.discordAccountId;
+    next();
     return;
   }
-  if (!req.user.discordAccountId) {
-    res.status(403).json({ error: "No Discord account linked" });
+  if (req.user?.role === "instructor") {
+    const studentDiscordId = req.query.studentDiscordId as string | undefined;
+    if (!studentDiscordId) {
+      res.status(400).json({ error: "studentDiscordId query parameter required for instructor impersonation" });
+      return;
+    }
+    res.locals.studentDiscordId = studentDiscordId;
+    next();
     return;
   }
-  next();
+  res.status(403).json({ error: "Student or instructor access required" });
 }
 
 /**
@@ -31,10 +47,10 @@ function requireStudent(req: AuthRequest, res: Response, next: () => void): void
 studentPortalRouter.get(
   "/eods",
   authenticateToken,
-  requireStudent,
+  requireStudentAccess,
   (req: AuthRequest, res: Response) => {
     const limit = Math.min(parseInt(req.query.limit as string) || 100, 500);
-    const discordId = req.user!.discordAccountId!;
+    const discordId = res.locals.studentDiscordId as string;
 
     const messages = getMessagesByUser(discordId, EOD_CHANNEL_ID, limit);
     res.json({
@@ -66,9 +82,9 @@ interface DailyStats {
 studentPortalRouter.get(
   "/stats",
   authenticateToken,
-  requireStudent,
+  requireStudentAccess,
   (req: AuthRequest, res: Response) => {
-    const discordId = req.user!.discordAccountId!;
+    const discordId = res.locals.studentDiscordId as string;
 
     // Default: last 30 days
     const endDate = (req.query.endDate as string) || new Date().toISOString().split("T")[0];

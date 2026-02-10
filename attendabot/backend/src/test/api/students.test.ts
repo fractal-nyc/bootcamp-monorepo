@@ -358,6 +358,163 @@ describe("Student API - Database Operations", () => {
   });
 });
 
+describe("Student Image API - Validation Logic", () => {
+  describe("image upload validation", () => {
+    it("validates image is required", () => {
+      const body = {};
+      const isValid = body.hasOwnProperty("image") && typeof (body as any).image === "string";
+      expect(isValid).toBe(false);
+    });
+
+    it("validates image must be a string", () => {
+      const body = { image: 123 };
+      const isValid = typeof body.image === "string";
+      expect(isValid).toBe(false);
+    });
+
+    it("validates image must be a data URL", () => {
+      const body = { image: "not-a-data-url" };
+      const isValid = typeof body.image === "string" && body.image.startsWith("data:image/");
+      expect(isValid).toBe(false);
+    });
+
+    it("rejects non-image data URLs", () => {
+      const body = { image: "data:text/plain;base64,SGVsbG8=" };
+      const isValid = body.image.startsWith("data:image/");
+      expect(isValid).toBe(false);
+    });
+
+    it("accepts valid PNG data URL", () => {
+      const body = { image: "data:image/png;base64,iVBORw0KGgo=" };
+      const isValid = typeof body.image === "string" && body.image.startsWith("data:image/");
+      expect(isValid).toBe(true);
+    });
+
+    it("accepts valid JPEG data URL", () => {
+      const body = { image: "data:image/jpeg;base64,/9j/4AAQ=" };
+      const isValid = typeof body.image === "string" && body.image.startsWith("data:image/");
+      expect(isValid).toBe(true);
+    });
+
+    it("accepts valid WebP data URL", () => {
+      const body = { image: "data:image/webp;base64,UklGR=" };
+      const isValid = typeof body.image === "string" && body.image.startsWith("data:image/");
+      expect(isValid).toBe(true);
+    });
+  });
+});
+
+describe("Student Image API - Database Operations", () => {
+  let db: Database.Database;
+  let cohortId: number;
+
+  beforeEach(() => {
+    db = createTestDatabase();
+    const cohort = createTestCohort(db, "Test2026");
+    cohortId = cohort.id;
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  describe("get student image", () => {
+    it("returns null for student with no image", () => {
+      const student = createTestStudent(db, { name: "No Image", cohortId });
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const result = stmt.get(student.id) as { profile_image: string | null };
+
+      expect(result.profile_image).toBeNull();
+    });
+
+    it("returns image data for student with image", () => {
+      const student = createTestStudent(db, { name: "Has Image", cohortId });
+      const imageData = "data:image/png;base64,iVBORw0KGgo=";
+
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?").run(imageData, student.id);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const result = stmt.get(student.id) as { profile_image: string };
+
+      expect(result.profile_image).toBe(imageData);
+    });
+  });
+
+  describe("update student image", () => {
+    it("sets image for a student", () => {
+      const student = createTestStudent(db, { name: "Test", cohortId });
+      const imageData = "data:image/png;base64,iVBORw0KGgo=";
+
+      const result = db.prepare("UPDATE students SET profile_image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(imageData, student.id);
+
+      expect(result.changes).toBe(1);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const row = stmt.get(student.id) as { profile_image: string };
+      expect(row.profile_image).toBe(imageData);
+    });
+
+    it("replaces existing image", () => {
+      const student = createTestStudent(db, { name: "Test", cohortId });
+
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?")
+        .run("data:image/png;base64,OLD", student.id);
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?")
+        .run("data:image/jpeg;base64,NEW", student.id);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const row = stmt.get(student.id) as { profile_image: string };
+      expect(row.profile_image).toBe("data:image/jpeg;base64,NEW");
+    });
+
+    it("returns 0 changes for non-existent student", () => {
+      const result = db.prepare("UPDATE students SET profile_image = ? WHERE id = ?")
+        .run("data:image/png;base64,AAAA", 9999);
+
+      expect(result.changes).toBe(0);
+    });
+  });
+
+  describe("delete student image", () => {
+    it("removes image from a student", () => {
+      const student = createTestStudent(db, { name: "Test", cohortId });
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?")
+        .run("data:image/png;base64,AAAA", student.id);
+
+      const result = db.prepare("UPDATE students SET profile_image = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+        .run(student.id);
+
+      expect(result.changes).toBe(1);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      const row = stmt.get(student.id) as { profile_image: string | null };
+      expect(row.profile_image).toBeNull();
+    });
+
+    it("returns 0 changes for non-existent student", () => {
+      const result = db.prepare("UPDATE students SET profile_image = NULL WHERE id = ?")
+        .run(9999);
+
+      expect(result.changes).toBe(0);
+    });
+  });
+
+  describe("image persistence through student operations", () => {
+    it("deleting a student also removes image data", () => {
+      const student = createTestStudent(db, { name: "Test", cohortId });
+      db.prepare("UPDATE students SET profile_image = ? WHERE id = ?")
+        .run("data:image/png;base64,AAAA", student.id);
+
+      db.prepare("DELETE FROM students WHERE id = ?").run(student.id);
+
+      const stmt = db.prepare("SELECT profile_image FROM students WHERE id = ?");
+      expect(stmt.get(student.id)).toBeUndefined();
+    });
+  });
+});
+
 describe("Cohort API - Database Operations", () => {
   let db: Database.Database;
 
@@ -386,6 +543,138 @@ describe("Cohort API - Database Operations", () => {
       expect(cohorts.length).toBe(2);
       expect(cohorts[0].name).toBe("Fa2025");
       expect(cohorts[1].name).toBe("Sp2026");
+    });
+  });
+});
+
+describe("Refresh Messages - Validation Logic", () => {
+  let db: Database.Database;
+
+  beforeEach(() => {
+    db = createTestDatabase();
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  describe("cohortId parameter validation", () => {
+    it("rejects non-numeric cohort ID", () => {
+      const parsed = parseInt("abc", 10);
+      expect(isNaN(parsed)).toBe(true);
+    });
+
+    it("accepts valid numeric cohort ID", () => {
+      const parsed = parseInt("5", 10);
+      expect(isNaN(parsed)).toBe(false);
+      expect(parsed).toBe(5);
+    });
+  });
+
+  describe("cohort lookup", () => {
+    it("returns undefined for non-existent cohort", () => {
+      const stmt = db.prepare("SELECT * FROM cohorts WHERE id = ?");
+      const cohort = stmt.get(9999);
+      expect(cohort).toBeUndefined();
+    });
+
+    it("finds existing cohort by ID", () => {
+      const created = createTestCohort(db, "Sp2026");
+
+      const stmt = db.prepare("SELECT * FROM cohorts WHERE id = ?");
+      const cohort = stmt.get(created.id) as { id: number; name: string };
+
+      expect(cohort).toBeDefined();
+      expect(cohort.name).toBe("Sp2026");
+    });
+  });
+
+  describe("start_date validation", () => {
+    it("rejects cohort with no start_date", () => {
+      const cohort = createTestCohort(db, "NoDate");
+
+      const stmt = db.prepare("SELECT start_date FROM cohorts WHERE id = ?");
+      const row = stmt.get(cohort.id) as { start_date: string | null };
+
+      expect(row.start_date).toBeNull();
+    });
+
+    it("accepts cohort with start_date", () => {
+      const cohort = createTestCohort(db, "HasDate");
+      db.prepare("UPDATE cohorts SET start_date = ? WHERE id = ?")
+        .run("2026-02-02", cohort.id);
+
+      const stmt = db.prepare("SELECT start_date FROM cohorts WHERE id = ?");
+      const row = stmt.get(cohort.id) as { start_date: string };
+
+      expect(row.start_date).toBe("2026-02-02");
+    });
+
+    it("parses start_date into a valid Date", () => {
+      const since = new Date("2026-02-02");
+      expect(since.getTime()).not.toBeNaN();
+      expect(since.toISOString()).toBe("2026-02-02T00:00:00.000Z");
+    });
+  });
+
+  describe("message upsert on refresh", () => {
+    it("inserts new messages into the database", () => {
+      const channel = createTestChannel(db, "ch-1", "eod");
+      const user = createTestUser(db, "user-1", "testuser");
+
+      db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run("msg-1", channel.channel_id, user.author_id, "Original EOD", "2026-02-06T18:00:00.000Z");
+
+      const stmt = db.prepare("SELECT content FROM messages WHERE discord_message_id = ?");
+      const row = stmt.get("msg-1") as { content: string };
+      expect(row.content).toBe("Original EOD");
+    });
+
+    it("upserts edited messages to update content", () => {
+      const channel = createTestChannel(db, "ch-1", "eod");
+      const user = createTestUser(db, "user-1", "testuser");
+
+      // Insert original
+      db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run("msg-1", channel.channel_id, user.author_id, "Original EOD", "2026-02-06T18:00:00.000Z");
+
+      // Upsert with updated content (same discord_message_id)
+      db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(discord_message_id) DO UPDATE SET content = excluded.content
+      `).run("msg-1", channel.channel_id, user.author_id, "Updated EOD with 9 PRs", "2026-02-06T18:00:00.000Z");
+
+      const stmt = db.prepare("SELECT content FROM messages WHERE discord_message_id = ?");
+      const row = stmt.get("msg-1") as { content: string };
+      expect(row.content).toBe("Updated EOD with 9 PRs");
+    });
+
+    it("does not create duplicate rows on upsert", () => {
+      const channel = createTestChannel(db, "ch-1", "eod");
+      const user = createTestUser(db, "user-1", "testuser");
+
+      const insertStmt = db.prepare(`
+        INSERT INTO messages (discord_message_id, channel_id, author_id, content, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(discord_message_id) DO UPDATE SET content = excluded.content
+      `);
+
+      insertStmt.run("msg-1", channel.channel_id, user.author_id, "Version 1", "2026-02-06T18:00:00.000Z");
+      insertStmt.run("msg-1", channel.channel_id, user.author_id, "Version 2", "2026-02-06T18:00:00.000Z");
+      insertStmt.run("msg-1", channel.channel_id, user.author_id, "Version 3", "2026-02-06T18:00:00.000Z");
+
+      const count = db.prepare("SELECT COUNT(*) as count FROM messages WHERE discord_message_id = ?")
+        .get("msg-1") as { count: number };
+      expect(count.count).toBe(1);
+
+      const row = db.prepare("SELECT content FROM messages WHERE discord_message_id = ?")
+        .get("msg-1") as { content: string };
+      expect(row.content).toBe("Version 3");
     });
   });
 });

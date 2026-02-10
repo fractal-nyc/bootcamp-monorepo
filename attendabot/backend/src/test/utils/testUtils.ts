@@ -60,6 +60,10 @@ export function createTestDatabase(): Database.Database {
     CREATE TABLE IF NOT EXISTS cohorts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
+      start_date TEXT,
+      end_date TEXT,
+      break_start TEXT,
+      break_end TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -73,6 +77,7 @@ export function createTestDatabase(): Database.Database {
       cohort_id INTEGER NOT NULL REFERENCES cohorts(id),
       status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'graduated', 'withdrawn')),
       current_internship TEXT,
+      profile_image TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )

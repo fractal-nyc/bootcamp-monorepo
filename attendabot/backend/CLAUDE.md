@@ -21,14 +21,16 @@ src/
 │   ├── index.ts          # Express app setup, route mounting, static serving
 │   ├── websocket.ts      # WebSocket server for real-time log streaming
 │   ├── middleware/
-│   │   ├── auth.ts       # JWT authentication (generateToken, verifyCredentials, authenticateToken)
+│   │   ├── auth.ts       # BetterAuth session middleware (authenticateToken)
 │   │   └── cache.ts      # Response caching middleware
 │   └── routes/
-│       ├── auth.ts       # POST /login
 │       ├── students.ts   # CRUD for students, cohorts, notes
 │       ├── messages.ts   # GET messages with filters
 │       ├── channels.ts   # GET channels
 │       ├── users.ts      # GET users
+│       ├── observers.ts  # GET/sync observers from Discord @instructors role
+│       ├── featureRequests.ts  # CRUD for feature requests
+│       ├── featureFlags.ts     # GET/PUT feature flags
 │       ├── llm.ts        # AI summaries and sentiment
 │       ├── status.ts     # Health check, stats
 │       └── testing.ts    # Test utilities (dev only)
@@ -46,27 +48,35 @@ src/
 
 ## API Routes
 
-All routes prefixed with `/api/`. Auth required unless noted.
+All routes prefixed with `/api/`. Auth required (BetterAuth session cookie) unless noted.
+
+BetterAuth OAuth routes are mounted at `/api/auth/better/*` (handled by BetterAuth directly, not Express routes).
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/auth/login` | Login (no auth required) |
 | GET | `/students` | List all students |
 | GET | `/students/:id` | Get student by ID |
 | POST | `/students` | Create student |
-| PUT | `/students/:id` | Update student |
+| PUT | `/students/:id` | Update student (includes observerId) |
 | DELETE | `/students/:id` | Delete student |
-| GET | `/students/:id/notes` | Get student notes |
+| GET | `/students/:id/feed` | Get interleaved EOD + notes feed |
 | POST | `/students/:id/notes` | Add note to student |
+| DELETE | `/students/:id/notes/:noteId` | Delete instructor note |
 | GET | `/cohorts` | List cohorts |
 | POST | `/cohorts` | Create cohort |
+| GET | `/observers` | List observers (instructors) |
+| POST | `/observers/sync` | Sync observers from Discord @instructors role |
+| GET | `/feature-requests` | List feature requests |
+| POST | `/feature-requests` | Create feature request |
+| PUT | `/feature-requests/:id` | Update feature request |
+| DELETE | `/feature-requests/:id` | Delete feature request |
+| GET | `/feature-flags` | List feature flags |
+| PUT | `/feature-flags/:key` | Toggle feature flag |
 | GET | `/messages` | Query messages (filters: channel, author, date range) |
 | GET | `/channels` | List Discord channels |
 | GET | `/users` | List Discord users |
-| GET | `/llm/student/:id/summary` | Generate AI summary for student |
-| GET | `/llm/cohort/:id/sentiment` | Get cohort sentiment analysis |
+| GET | `/llm/student/:id/summary/:date` | Generate AI summary for student |
 | GET | `/status` | Health check + stats |
-| GET | `/status/stats` | Detailed statistics |
 
 ## Database Schema
 
@@ -81,8 +91,13 @@ activity_log (id PK, event_type, details, created_at)
 
 -- Student management
 cohorts (id PK, name UNIQUE, created_at)
-students (id PK, name, discord_user_id FK?, cohort_id FK, status, current_internship, timestamps)
+students (id PK, name, discord_user_id FK?, cohort_id FK, status, current_internship, observer_id FK?, timestamps)
 instructor_notes (id PK, student_id FK CASCADE, author, content, created_at)
+observers (id PK, discord_user_id UNIQUE, display_name, username, timestamps)
+
+-- Feature management
+feature_requests (id PK, title, description, priority, author, status, created_at)
+feature_flags (key PK, enabled, description, updated_at)
 
 -- AI caching
 student_summaries (id PK, student_id FK CASCADE, date, summary, UNIQUE(student_id, date))
@@ -99,7 +114,16 @@ CURRENT_COHORT_ROLE_ID    // Discord role ID to mention
 ATTENDANCE_CHANNEL_ID     // Where attendance is posted
 EOD_CHANNEL_ID            // Where EOD updates are posted
 DAILY_BRIEFING_CHANNEL_ID // Where daily briefings go (instructors)
+INSTRUCTORS_ROLE_ID       // Discord @instructors role ID for observer sync
 ```
+
+## Authentication
+
+Authentication uses **BetterAuth** with Discord OAuth. There is no JWT or password-based login.
+
+- **Middleware**: `authenticateToken` in `api/middleware/auth.ts` verifies BetterAuth session cookies
+- **WebSocket**: `websocket.ts` verifies session cookies on the upgrade request via `auth.api.getSession()`
+- **BetterAuth routes**: Mounted at `/api/auth/better/*` in `api/index.ts` via `toNodeHandler(auth)`
 
 ## Adding a New API Route
 

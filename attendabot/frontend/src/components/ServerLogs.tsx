@@ -6,7 +6,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import type { LogEntry, ConnectionStatus } from "../hooks/useWebSocket";
-import { getToken } from "../api/client";
 
 /** Available log level filters. */
 type LogFilter = "all" | "info" | "warn" | "error";
@@ -59,8 +58,7 @@ function StatusIndicator({ status }: { status: ConnectionStatus }) {
 
 /** Real-time server log viewer with filtering and auto-scroll. */
 export function ServerLogs() {
-  const token = getToken();
-  const { logs, status, clearLogs } = useWebSocket(token);
+  const { logs, status, clearLogs } = useWebSocket();
   const [filter, setFilter] = useState<LogFilter>("all");
   const [autoScroll, setAutoScroll] = useState(true);
   const logsContainerRef = useRef<HTMLDivElement>(null);

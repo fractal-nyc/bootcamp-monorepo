@@ -1,0 +1,402 @@
+/* ── Simulations page – Fractal design system ── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+}
+
+#root {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6);
+}
+
+/* ── Header ── */
+.app-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-1);
+}
+.app-subtitle {
+  color: var(--color-slate);
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-5);
+}
+
+/* ── Tabs ── */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--space-6);
+  border: 2px solid var(--color-charcoal);
+}
+.tab-btn {
+  background: var(--color-white);
+  border: none;
+  border-right: 2px solid var(--color-charcoal);
+  box-shadow: none;
+  color: var(--color-slate);
+  padding: var(--space-3) var(--space-5);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+.tab-btn:last-child {
+  border-right: none;
+}
+.tab-btn:hover {
+  color: var(--color-charcoal);
+  background: var(--color-platinum);
+}
+.tab-btn.active {
+  color: var(--color-white);
+  background: var(--color-charcoal);
+}
+
+/* ── Flow Diagram ── */
+.flow-diagram {
+  max-width: 100%;
+}
+
+.flow-header {
+  margin-bottom: 0;
+}
+.flow-header h2 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.flow-subtitle {
+  color: var(--color-slate);
+  font-size: var(--text-xl);
+}
+
+/* ── Two-Column Layout ── */
+.flow-layout {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.flow-sidebar {
+  width: 38%;
+  min-width: 320px;
+  flex-shrink: 0;
+}
+
+.flow-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Entity Row ── */
+.entity-row {
+  display: flex;
+  margin-bottom: 0;
+}
+.entity-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border: 2px solid var(--entity-color, var(--color-charcoal));
+  background: var(--color-white);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+  margin: 0 6%;
+  flex: 1;
+  text-align: center;
+}
+.entity-icon {
+  font-size: var(--text-2xl);
+}
+.entity-label {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  white-space: pre-line;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ── Sequence Area ── */
+.seq-area {
+  position: relative;
+  margin: 0;
+  overflow: visible;
+}
+
+/* ── Lifelines ── */
+.lifeline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed;
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+
+.lifeline-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.3s, box-shadow 0.3s;
+}
+.lifeline-dot.visible {
+  opacity: 0.5;
+}
+.lifeline-dot.active {
+  opacity: 1;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ── Arrows ── */
+.arrow-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+.arrow-row.active .arrow-line {
+  animation: arrowSlide 0.45s ease-out both;
+}
+.arrow-row.past .arrow-line {
+  opacity: 0.35;
+}
+
+/* LTR: arrow grows from left, head on right */
+.arrow-row.ltr .arrow-line {
+  transform-origin: left center;
+}
+.arrow-row.ltr .arrow-head {
+  right: -7px;
+  border-width: 5px 0 5px 8px;
+}
+
+/* RTL: arrow grows from right, head on left */
+.arrow-row.rtl .arrow-line {
+  transform-origin: right center;
+}
+.arrow-row.rtl .arrow-head {
+  left: -7px;
+  right: auto;
+  border-width: 5px 8px 5px 0;
+}
+
+.arrow-line {
+  position: absolute;
+  height: 2px;
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.arrow-label {
+  position: absolute;
+  bottom: 6px;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--color-charcoal);
+  background: var(--color-fog);
+  padding: 0 var(--space-2);
+  letter-spacing: 0.02em;
+}
+.arrow-head {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+@keyframes arrowSlide {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* ── Self-referencing Arrow (loop) ── */
+.self-arrow {
+  position: absolute;
+  border: 2px solid;
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+}
+.self-arrow.active {
+  animation: loopFade 0.45s ease-out both;
+}
+.self-arrow.past {
+  opacity: 0.35;
+}
+.self-arrow .arrow-label {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--color-fog);
+  padding: 0 var(--space-2);
+  bottom: auto;
+}
+
+@keyframes loopFade {
+  from { opacity: 0; transform: scaleY(0); }
+  to   { opacity: 1; transform: scaleY(1); }
+}
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  margin-bottom: var(--space-4);
+}
+.ctrl-btn {
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  color: var(--color-charcoal);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-lg);
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: background 0.15s;
+}
+.ctrl-btn:hover:not(:disabled) {
+  background: var(--color-platinum);
+}
+.ctrl-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ctrl-primary {
+  background: var(--color-charcoal);
+  border-color: var(--color-charcoal);
+  color: var(--color-white);
+}
+.ctrl-primary:hover:not(:disabled) {
+  background: var(--color-slate) !important;
+  border-color: var(--color-slate) !important;
+}
+.step-counter {
+  margin-left: auto;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-slate);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ── Description Panel ── */
+.desc-panel {
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.15);
+  padding: var(--space-4) var(--space-5);
+  min-height: 60px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s, transform 0.3s;
+  margin-bottom: var(--space-4);
+}
+.desc-panel.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.desc-text {
+  font-size: var(--text-xl);
+  line-height: 1.55;
+  margin-bottom: var(--space-3);
+  color: var(--color-charcoal);
+}
+.desc-payload {
+  background: var(--color-fog);
+  border: 2px solid var(--color-line);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-lg);
+  line-height: 1.45;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  color: var(--color-charcoal);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ── Pros & Cons ── */
+.pros-cons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.pros-col,
+.cons-col {
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.15);
+  padding: var(--space-4) var(--space-5);
+}
+.pros-col h3 {
+  color: #2d7a4f;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+}
+.cons-col h3 {
+  color: var(--color-error);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+}
+.pros-col ul,
+.cons-col ul {
+  list-style: none;
+  padding: 0;
+}
+.pros-col li,
+.cons-col li {
+  font-size: var(--text-xl);
+  line-height: 1.45;
+  padding: var(--space-1) 0;
+  color: var(--color-slate);
+}
+.pros-col li::before {
+  content: "+ ";
+  color: #2d7a4f;
+  font-weight: 700;
+}
+.cons-col li::before {
+  content: "- ";
+  color: var(--color-error);
+  font-weight: 700;
+}

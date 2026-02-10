@@ -2,24 +2,44 @@
  * @fileoverview Sortable table displaying students in a cohort.
  */
 
-import { useState, useMemo } from "react";
-import type { Student } from "../api/client";
+import { useState, useMemo, useEffect } from "react";
+import type { Student, Observer } from "../api/client";
+import { getStudentImage } from "../api/client";
 
 /** Props for the StudentTable component. */
 interface StudentTableProps {
   students: Student[];
+  observers: Observer[];
   onStudentClick: (student: Student) => void;
   onDeleteStudent: (student: Student) => void;
+  onObserverChange: (student: Student, observerId: number | null) => void;
 }
 
-type SortField = "name" | "discordHandle" | "status" | "lastCheckIn" | "currentInternship";
+type SortField = "name" | "discordHandle" | "status" | "lastCheckIn" | "currentInternship" | "observerId";
 type SortDirection = "asc" | "desc";
 
 /** Sortable table displaying students with clickable names. */
-export function StudentTable({ students, onStudentClick, onDeleteStudent }: StudentTableProps) {
+export function StudentTable({ students, observers, onStudentClick, onDeleteStudent, onObserverChange }: StudentTableProps) {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [studentImages, setStudentImages] = useState<Record<number, string | null>>({});
+
+  // Load profile images for all students
+  useEffect(() => {
+    const loadImages = async () => {
+      const images: Record<number, string | null> = {};
+      await Promise.all(
+        students.map(async (s) => {
+          images[s.id] = await getStudentImage(s.id);
+        })
+      );
+      setStudentImages(images);
+    };
+    if (students.length > 0) {
+      loadImages();
+    }
+  }, [students]);
 
   const sortedStudents = useMemo(() => {
     const sorted = [...students].sort((a, b) => {
@@ -47,6 +67,12 @@ export function StudentTable({ students, onStudentClick, onDeleteStudent }: Stud
           aVal = a.currentInternship;
           bVal = b.currentInternship;
           break;
+        case "observerId": {
+          const observerMap = new Map(observers.map((o) => [o.id, o.displayName || o.username]));
+          aVal = a.observerId ? observerMap.get(a.observerId) || null : null;
+          bVal = b.observerId ? observerMap.get(b.observerId) || null : null;
+          break;
+        }
       }
 
       // Handle nulls
@@ -134,13 +160,16 @@ export function StudentTable({ students, onStudentClick, onDeleteStudent }: Stud
           <th onClick={() => handleSort("currentInternship")} className="sortable">
             Internship{getSortIndicator("currentInternship")}
           </th>
+          <th onClick={() => handleSort("observerId")} className="sortable">
+            Observer{getSortIndicator("observerId")}
+          </th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {sortedStudents.length === 0 ? (
           <tr>
-            <td colSpan={6} className="no-students">
+            <td colSpan={7} className="no-students">
               No students in this cohort
             </td>
           </tr>
@@ -148,12 +177,25 @@ export function StudentTable({ students, onStudentClick, onDeleteStudent }: Stud
           sortedStudents.map((student) => (
             <tr key={student.id}>
               <td>
-                <button
-                  className="student-name-link"
-                  onClick={() => onStudentClick(student)}
-                >
-                  {student.name}
-                </button>
+                <div className="student-name-cell">
+                  {studentImages[student.id] ? (
+                    <img
+                      src={studentImages[student.id]!}
+                      alt={student.name}
+                      className="student-avatar"
+                    />
+                  ) : (
+                    <span className="student-avatar-placeholder">
+                      {student.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <button
+                    className="student-name-link"
+                    onClick={() => onStudentClick(student)}
+                  >
+                    {student.name}
+                  </button>
+                </div>
               </td>
               <td>{student.discordHandle ? `@${student.discordHandle}` : "—"}</td>
               <td>
@@ -163,6 +205,24 @@ export function StudentTable({ students, onStudentClick, onDeleteStudent }: Stud
               </td>
               <td>{formatDate(student.lastCheckIn)}</td>
               <td>{student.currentInternship || "—"}</td>
+              <td>
+                <select
+                  className="observer-select"
+                  value={student.observerId ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onObserverChange(student, val ? Number(val) : null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <option value="">None</option>
+                  {observers.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.displayName || o.username}
+                    </option>
+                  ))}
+                </select>
+              </td>
               <td>
                 <button
                   className={`delete-btn ${deleteConfirm === student.id ? "confirm" : ""}`}

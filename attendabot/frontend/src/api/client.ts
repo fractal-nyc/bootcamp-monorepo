@@ -1,21 +1,11 @@
 /**
  * @fileoverview API client for communicating with the attendabot backend.
- * Handles authentication, status, channels, messages, and user data.
+ * Authentication is handled by BetterAuth session cookies.
  */
 
 const API_BASE = "/api";
 
-/** Gets the JWT token from localStorage. */
-export function getToken(): string | null {
-  return localStorage.getItem("token");
-}
-
-/** Stores the JWT token in localStorage. */
-export function setToken(token: string): void {
-  localStorage.setItem("token", token);
-}
-
-/** Stores the username in localStorage. */
+/** Stores the username in localStorage for display purposes. */
 export function setUsername(username: string): void {
   localStorage.setItem("username", username);
 }
@@ -25,15 +15,9 @@ export function getUsername(): string | null {
   return localStorage.getItem("username");
 }
 
-/** Removes the JWT token and username from localStorage. */
-export function clearToken(): void {
-  localStorage.removeItem("token");
+/** Clears the stored username from localStorage. */
+export function clearSession(): void {
   localStorage.removeItem("username");
-}
-
-/** Returns whether a JWT token exists in localStorage. */
-export function isLoggedIn(): boolean {
-  return !!getToken();
 }
 
 /** Callback invoked when an API call receives a 401/403 response. */
@@ -49,110 +33,24 @@ export function onAuthFailure(callback: () => void): () => void {
   };
 }
 
-/**
- * Verifies the current session token is still valid by making a lightweight API call.
- * Returns true if the session is valid, false if the token is expired/invalid.
- */
-export async function verifySession(): Promise<boolean> {
-  const token = getToken();
-  if (!token) return false;
-
-  try {
-    const res = await fetch(`${API_BASE}/status`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.status === 401 || res.status === 403) {
-      return false;
-    }
-    return res.ok;
-  } catch {
-    // Network error -- can't determine auth state, assume OK
-    return true;
-  }
-}
-
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = getToken();
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
 
-  if (token) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, headers, credentials: "include" });
 
   if (res.status === 401 || res.status === 403) {
-    clearToken();
     if (authFailureCallback) {
       authFailureCallback();
     }
   }
 
   return res;
-}
-
-/** Authenticates with the backend and stores the returned JWT token. */
-export async function login(
-  password: string,
-  username?: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, username }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      return { success: false, error: data.error || "Login failed" };
-    }
-
-    const data = await res.json();
-    setToken(data.token);
-    if (data.username) {
-      setUsername(data.username);
-    }
-    return { success: true };
-  } catch (error) {
-    console.log(error);
-    return { success: false, error: "Network error" };
-  }
-}
-
-/** Fetches the list of valid usernames for login. */
-export async function getUsernames(): Promise<string[]> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/usernames`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.usernames || [];
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
-
-/** Login page configuration from the server. */
-export interface LoginConfig {
-  passwordLoginEnabled: boolean;
-}
-
-/** Fetches login page configuration (public, no auth required). */
-export async function getLoginConfig(): Promise<LoginConfig> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/login-config`);
-    if (!res.ok) return { passwordLoginEnabled: true };
-    return await res.json();
-  } catch {
-    return { passwordLoginEnabled: true };
-  }
 }
 
 /** Bot status including connection state, stats, and scheduled jobs. */
@@ -179,12 +77,7 @@ export interface BotStatus {
 export async function getStatus(): Promise<BotStatus | null> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/status`);
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        clearToken();
-      }
-      return null;
-    }
+    if (!res.ok) return null;
     return res.json();
   } catch (error) {
     console.error(error);
@@ -334,6 +227,10 @@ export async function syncDisplayNames(): Promise<{
 export interface Cohort {
   id: number;
   name: string;
+  startDate: string | null;
+  endDate: string | null;
+  breakStart: string | null;
+  breakEnd: string | null;
 }
 
 /** A student in a cohort. */
@@ -346,6 +243,7 @@ export interface Student {
   status: "active" | "inactive" | "graduated" | "withdrawn";
   lastCheckIn: string | null;
   currentInternship: string | null;
+  observerId: number | null;
 }
 
 /** A feed item (EOD message or instructor note). */
@@ -363,9 +261,13 @@ export async function getCohorts(): Promise<Cohort[]> {
     const res = await fetchWithAuth(`${API_BASE}/cohorts`);
     if (!res.ok) return [];
     const data = await res.json();
-    return data.cohorts.map((c: { id: number; name: string }) => ({
+    return data.cohorts.map((c: { id: number; name: string; start_date: string | null; end_date: string | null; break_start: string | null; break_end: string | null }) => ({
       id: c.id,
       name: c.name,
+      startDate: c.start_date,
+      endDate: c.end_date,
+      breakStart: c.break_start,
+      breakEnd: c.break_end,
     }));
   } catch (error) {
     console.error(error);
@@ -388,6 +290,7 @@ export async function getStudentsByCohort(cohortId: number): Promise<Student[]> 
       status: string;
       last_check_in: string | null;
       current_internship: string | null;
+      observer_id: number | null;
     }) => ({
       id: s.id,
       name: s.name,
@@ -397,6 +300,7 @@ export async function getStudentsByCohort(cohortId: number): Promise<Student[]> 
       status: s.status as Student["status"],
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     }));
   } catch (error) {
     console.error(error);
@@ -420,6 +324,7 @@ export async function getStudent(id: number): Promise<Student | null> {
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -455,6 +360,7 @@ export async function createStudent(input: CreateStudentInput): Promise<Student 
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -469,6 +375,7 @@ export interface UpdateStudentInput {
   cohortId?: number;
   status?: Student["status"];
   currentInternship?: string | null;
+  observerId?: number | null;
 }
 
 /** Updates a student. */
@@ -490,6 +397,7 @@ export async function updateStudent(id: number, input: UpdateStudentInput): Prom
       status: s.status,
       lastCheckIn: s.last_check_in,
       currentInternship: s.current_internship,
+      observerId: s.observer_id,
     };
   } catch (error) {
     console.error(error);
@@ -501,6 +409,53 @@ export async function updateStudent(id: number, input: UpdateStudentInput): Prom
 export async function deleteStudent(id: number): Promise<boolean> {
   try {
     const res = await fetchWithAuth(`${API_BASE}/students/${id}`, {
+      method: "DELETE",
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+/** Fetches a student's profile image as a base64 data URL. */
+export async function getStudentImage(studentId: number): Promise<string | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/image`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.image ?? null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Uploads a profile image for a student. Reads the file and sends as base64 data URL. */
+export async function uploadStudentImage(studentId: number, file: File): Promise<boolean> {
+  try {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/image`, {
+      method: "PUT",
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+/** Removes a student's profile image. */
+export async function deleteStudentImage(studentId: number): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/image`, {
       method: "DELETE",
     });
     return res.ok;
@@ -542,6 +497,19 @@ export async function createNote(studentId: number, content: string): Promise<bo
     const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes`, {
       method: "POST",
       body: JSON.stringify({ content, author: username }),
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+/** Deletes an instructor note. Returns true if deleted. */
+export async function deleteNote(studentId: number, noteId: number): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes/${noteId}`, {
+      method: "DELETE",
     });
     return res.ok;
   } catch (error) {
@@ -845,6 +813,143 @@ export async function getFeatureFlags(): Promise<FeatureFlag[]> {
   }
 }
 
+// ============================================================================
+// Observers API
+// ============================================================================
+
+/** An observer (instructor). */
+export interface Observer {
+  id: number;
+  discordUserId: string;
+  displayName: string | null;
+  username: string;
+}
+
+/** Fetches all observers. */
+export async function getObservers(): Promise<Observer[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/observers`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.observers.map((o: {
+      id: number;
+      discord_user_id: string;
+      display_name: string | null;
+      username: string;
+    }) => ({
+      id: o.id,
+      discordUserId: o.discord_user_id,
+      displayName: o.display_name,
+      username: o.username,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Re-fetches Discord messages since cohort start date and upserts them into the database. */
+export async function refreshMessages(cohortId: number): Promise<{
+  success: boolean;
+  messagesProcessed?: number;
+  error?: string;
+}> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/cohorts/${cohortId}/refresh-messages`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || "Refresh failed" };
+    }
+    return { success: true, messagesProcessed: data.messagesProcessed };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Network error" };
+  }
+}
+
+/** Syncs observers from the Discord @instructors role. */
+export async function syncObservers(): Promise<Observer[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/observers/sync`, {
+      method: "POST",
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.observers.map((o: {
+      id: number;
+      discord_user_id: string;
+      display_name: string | null;
+      username: string;
+    }) => ({
+      id: o.id,
+      discordUserId: o.discord_user_id,
+      displayName: o.display_name,
+      username: o.username,
+    }));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+// ============================================================================
+// Database Viewer API
+// ============================================================================
+
+/** Column metadata for a database table. */
+export interface DbColumn {
+  name: string;
+  type: string;
+  pk: boolean;
+}
+
+/** Response from the table data endpoint. */
+export interface DbTableData {
+  table: string;
+  columns: DbColumn[];
+  rows: Record<string, unknown>[];
+  totalRows: number;
+  limit: number;
+  offset: number;
+}
+
+/** Fetches the list of all database tables. */
+export async function getDbTables(): Promise<string[]> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/database/tables`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.tables;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Fetches rows and column info for a specific table. */
+export async function getDbTableData(
+  tableName: string,
+  limit: number = 100,
+  offset: number = 0
+): Promise<DbTableData | null> {
+  try {
+    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+    const res = await fetchWithAuth(`${API_BASE}/database/tables/${encodeURIComponent(tableName)}?${params}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+/** Triggers a download of the raw SQLite database file. */
+export function downloadDatabase(): void {
+  window.open(`${API_BASE}/database/download`, "_blank");
+}
+
 /** Updates a feature flag's enabled state. */
 export async function updateFeatureFlag(
   key: string,
@@ -864,6 +969,90 @@ export async function updateFeatureFlag(
       description: f.description,
       updatedAt: f.updated_at,
     };
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+// ============================================================================
+// Identity / Role API
+// ============================================================================
+
+/** Response from GET /api/auth/me. */
+export interface MeResponse {
+  role: "instructor" | "student";
+  name: string;
+  discordAccountId?: string;
+  studentId?: number;
+  studentName?: string;
+  cohortId?: number;
+  cohortStartDate?: string;
+  cohortEndDate?: string;
+}
+
+/** Fetches the current user's role and identity. */
+export async function getMe(): Promise<MeResponse | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/auth/me`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+// ============================================================================
+// Student Portal API
+// ============================================================================
+
+/** An EOD message for the student portal. */
+export interface StudentEodMessage {
+  id: string;
+  content: string;
+  createdAt: string;
+  channelName: string;
+}
+
+/** Fetches the student's own EOD messages. Instructors can pass a studentDiscordId to impersonate. */
+export async function getMyEods(limit: number = 100, studentDiscordId?: string): Promise<StudentEodMessage[]> {
+  try {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (studentDiscordId) params.append("studentDiscordId", studentDiscordId);
+    const res = await fetchWithAuth(`${API_BASE}/student-portal/eods?${params}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.messages;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+/** Daily stats for a student. */
+export interface DailyStats {
+  date: string;
+  attendancePosted: boolean;
+  attendanceOnTime: boolean;
+  middayPrPosted: boolean;
+  middayPrCount: number;
+  eodPosted: boolean;
+  totalPrCount: number;
+}
+
+/** Fetches daily stats for the student over the given date range. Instructors can pass a studentDiscordId to impersonate. */
+export async function getMyStats(
+  startDate: string,
+  endDate: string,
+  studentDiscordId?: string
+): Promise<{ days: DailyStats[] } | null> {
+  try {
+    const params = new URLSearchParams({ startDate, endDate });
+    if (studentDiscordId) params.append("studentDiscordId", studentDiscordId);
+    const res = await fetchWithAuth(`${API_BASE}/student-portal/stats?${params}`);
+    if (!res.ok) return null;
+    return res.json();
   } catch (error) {
     console.error(error);
     return null;

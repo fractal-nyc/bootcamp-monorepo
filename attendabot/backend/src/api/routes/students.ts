@@ -13,7 +13,14 @@ import {
   deleteStudent,
   getStudentFeed,
   createInstructorNote,
+  deleteInstructorNote,
+  getStudentImage,
+  updateStudentImage,
+  deleteStudentImage,
+  logMessage,
 } from "../../services/db";
+import { fetchTextChannel, fetchMessagesSince } from "../../services/discord";
+import { MONITORED_CHANNEL_IDS } from "../../bot/constants";
 
 /** Router for student endpoints. */
 export const studentsRouter = Router();
@@ -120,7 +127,7 @@ studentsRouter.put("/:id", (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const { name, discordUserId, cohortId, status, currentInternship } = req.body;
+    const { name, discordUserId, cohortId, status, currentInternship, observerId } = req.body;
 
     const student = updateStudent(id, {
       name,
@@ -128,6 +135,7 @@ studentsRouter.put("/:id", (req: AuthRequest, res: Response) => {
       cohortId,
       status,
       currentInternship,
+      observerId,
     });
 
     if (!student) {
@@ -215,5 +223,150 @@ studentsRouter.post("/:id/notes", (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error creating note:", error);
     res.status(500).json({ error: "Failed to create note" });
+  }
+});
+
+/** DELETE /api/students/:id/notes/:noteId - Delete an instructor note */
+studentsRouter.delete("/:id/notes/:noteId", (req: AuthRequest, res: Response) => {
+  try {
+    const noteId = parseInt(req.params.noteId, 10);
+    if (isNaN(noteId)) {
+      res.status(400).json({ error: "Invalid note ID" });
+      return;
+    }
+
+    const deleted = deleteInstructorNote(noteId);
+    if (!deleted) {
+      res.status(404).json({ error: "Note not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting note:", error);
+    res.status(500).json({ error: "Failed to delete note" });
+  }
+});
+
+/** GET /api/students/:id/image - Get a student's profile image */
+studentsRouter.get("/:id/image", (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid student ID" });
+      return;
+    }
+
+    const image = getStudentImage(id);
+    res.json({ image });
+  } catch (error) {
+    console.error("Error fetching student image:", error);
+    res.status(500).json({ error: "Failed to fetch student image" });
+  }
+});
+
+/** PUT /api/students/:id/image - Upload/update a student's profile image */
+studentsRouter.put("/:id/image", (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid student ID" });
+      return;
+    }
+
+    const { image } = req.body;
+    if (!image || typeof image !== "string") {
+      res.status(400).json({ error: "image is required and must be a base64 data URL string" });
+      return;
+    }
+
+    if (!image.startsWith("data:image/")) {
+      res.status(400).json({ error: "image must be a valid data URL (data:image/...)" });
+      return;
+    }
+
+    const updated = updateStudentImage(id, image);
+    if (!updated) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error updating student image:", error);
+    res.status(500).json({ error: "Failed to update student image" });
+  }
+});
+
+/** DELETE /api/students/:id/image - Remove a student's profile image */
+studentsRouter.delete("/:id/image", (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid student ID" });
+      return;
+    }
+
+    const deleted = deleteStudentImage(id);
+    if (!deleted) {
+      res.status(404).json({ error: "Student not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting student image:", error);
+    res.status(500).json({ error: "Failed to delete student image" });
+  }
+});
+
+/** POST /api/cohorts/:cohortId/refresh-messages - Re-fetch Discord messages since cohort start date. */
+cohortsRouter.post("/:cohortId/refresh-messages", async (req: AuthRequest, res: Response) => {
+  try {
+    const cohortId = parseInt(req.params.cohortId, 10);
+    if (isNaN(cohortId)) {
+      res.status(400).json({ error: "Invalid cohort ID" });
+      return;
+    }
+
+    const cohorts = getCohorts();
+    const cohort = cohorts.find((c) => c.id === cohortId);
+    if (!cohort) {
+      res.status(404).json({ error: "Cohort not found" });
+      return;
+    }
+
+    if (!cohort.start_date) {
+      res.status(400).json({ error: "Cohort has no start date" });
+      return;
+    }
+
+    const since = new Date(cohort.start_date);
+    let messagesProcessed = 0;
+
+    for (const channelId of MONITORED_CHANNEL_IDS) {
+      const channel = await fetchTextChannel(channelId);
+      const messages = await fetchMessagesSince(channel, since);
+
+      for (const message of messages) {
+        logMessage({
+          discord_message_id: message.id,
+          channel_id: message.channelId,
+          channel_name: channel.name,
+          author_id: message.author.id,
+          display_name: message.member?.displayName || null,
+          username: message.author.username,
+          content: message.content,
+          created_at: message.createdAt.toISOString(),
+        });
+        messagesProcessed++;
+      }
+    }
+
+    console.log(`Refreshed ${messagesProcessed} messages for cohort ${cohort.name}`);
+    res.json({ success: true, messagesProcessed });
+  } catch (error) {
+    console.error("Error refreshing messages:", error);
+    res.status(500).json({ error: "Failed to refresh messages" });
   }
 });

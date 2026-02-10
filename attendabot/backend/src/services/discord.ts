@@ -11,12 +11,13 @@ import {
   TextChannel,
 } from "discord.js";
 import dotenv from "dotenv";
-import { logMessage, getMessageCountByChannel, getAllUsers, upsertUser } from "./db";
+import { logMessage, getMessageCountByChannel, getAllUsers, upsertUser, upsertObserver, type ObserverRecord } from "./db";
 import {
   MONITORED_CHANNEL_IDS,
   BOT_TEST_CHANNEL_ID,
   SP2026_COHORT_ROLE_ID,
   FA2025_COHORT_ROLE_ID,
+  INSTRUCTORS_ROLE_ID,
 } from "../bot/constants";
 
 dotenv.config();
@@ -66,11 +67,45 @@ export async function sendDirectMessage(userId: string, message: string): Promis
   }
 }
 
+/** Discord's maximum message length. */
+const DISCORD_MAX_LENGTH = 2000;
+
 /**
- * Sends a message to a text channel.
+ * Splits a message into chunks that fit within Discord's 2000 character limit.
+ * Splits on newline boundaries to avoid breaking lines mid-sentence.
+ */
+export function splitMessage(message: string, maxLength = DISCORD_MAX_LENGTH): string[] {
+  if (message.length <= maxLength) return [message];
+
+  const chunks: string[] = [];
+  let remaining = message;
+
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLength) {
+      chunks.push(remaining);
+      break;
+    }
+
+    // Find the last newline within the limit
+    let splitIndex = remaining.lastIndexOf("\n", maxLength);
+    if (splitIndex <= 0) {
+      // No newline found; hard-split at the limit
+      splitIndex = maxLength;
+    }
+
+    chunks.push(remaining.slice(0, splitIndex));
+    remaining = remaining.slice(splitIndex + 1); // +1 to skip the newline
+  }
+
+  return chunks;
+}
+
+/**
+ * Sends a message to a text channel, automatically splitting into
+ * multiple messages if the content exceeds Discord's 2000 character limit.
  * @param channelId - The Discord channel ID to send the message to.
  * @param message - The message content to send.
- * @returns True if the message was sent successfully, false otherwise.
+ * @returns True if all messages were sent successfully, false otherwise.
  */
 export async function sendChannelMessage(channelId: string, message: string): Promise<boolean> {
   const discordClient = getDiscordClient();
@@ -82,7 +117,10 @@ export async function sendChannelMessage(channelId: string, message: string): Pr
       console.error(`Channel ${channelId} is not a text channel or not found`);
       return false;
     }
-    await (channel as TextChannel).send(message);
+    const chunks = splitMessage(message);
+    for (const chunk of chunks) {
+      await (channel as TextChannel).send(chunk);
+    }
     return true;
   } catch (error) {
     console.error(`Failed to send message to channel ${channelId}:`, error);
@@ -109,7 +147,7 @@ export async function initializeDiscord(): Promise<Client> {
   }
 
   readyPromise = new Promise<void>((resolve, reject) => {
-    discordClient.once("ready", () => {
+    discordClient.once("clientReady", () => {
       isReady = true;
       console.log(
         `Discord client logged in as ${
@@ -145,6 +183,31 @@ export async function initializeDiscord(): Promise<Client> {
           console.log(`Logged message from ${message.author.username} in #${channel.name}`);
         } catch (error) {
           console.error("Failed to log message:", error);
+        }
+      });
+
+      // Register messageUpdate listener to capture edited messages
+      discordClient.on("messageUpdate", async (_oldMessage, newMessage) => {
+        if (!MONITORED_CHANNEL_IDS.includes(newMessage.channelId)) return;
+        if (newMessage.author?.bot) return;
+
+        try {
+          // Fetch full message if partial (not in cache)
+          const message = newMessage.partial ? await newMessage.fetch() : newMessage;
+          const channel = message.channel as TextChannel;
+          logMessage({
+            discord_message_id: message.id,
+            channel_id: message.channelId,
+            channel_name: channel.name,
+            author_id: message.author.id,
+            display_name: message.member?.displayName || null,
+            username: message.author.username,
+            content: message.content,
+            created_at: message.createdAt.toISOString(),
+          });
+          console.log(`Updated edited message from ${message.author.username} in #${channel.name}`);
+        } catch (error) {
+          console.error("Failed to update edited message:", error);
         }
       });
 
@@ -378,4 +441,36 @@ export async function syncUserDisplayNames(): Promise<number> {
 
   console.log(`Synced display names for ${updatedCount} users`);
   return updatedCount;
+}
+
+/** Syncs observers from the Discord @instructors role into the observers table. */
+export async function syncObserversFromDiscord(): Promise<ObserverRecord[]> {
+  const discordClient = getDiscordClient();
+
+  if (!isReady) {
+    throw new Error("Discord client is not ready. Call initializeDiscord() first.");
+  }
+
+  const channel = await discordClient.channels.fetch(MONITORED_CHANNEL_IDS[0]);
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    throw new Error("Could not fetch channel to get guild");
+  }
+
+  const guild = (channel as TextChannel).guild;
+  await guild.members.fetch();
+
+  const role = guild.roles.cache.get(INSTRUCTORS_ROLE_ID);
+  if (!role) {
+    throw new Error(`Instructors role ${INSTRUCTORS_ROLE_ID} not found in guild`);
+  }
+
+  const observers: ObserverRecord[] = [];
+  for (const [memberId, member] of role.members) {
+    const observer = upsertObserver(memberId, member.displayName, member.user.username);
+    observers.push(observer);
+    console.log(`Synced observer ${member.user.username}: ${member.displayName}`);
+  }
+
+  console.log(`Synced ${observers.length} observers from @instructors role`);
+  return observers;
 }

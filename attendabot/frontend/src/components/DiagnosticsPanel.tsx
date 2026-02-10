@@ -7,6 +7,7 @@ import { StatusPanel } from "./StatusPanel";
 import { ServerLogs } from "./ServerLogs";
 import { FeatureRequestsPanel } from "./FeatureRequestsPanel";
 import { FeatureFlagsPanel } from "./FeatureFlagsPanel";
+import { DatabaseViewerPanel } from "./DatabaseViewerPanel";
 
 /** Container component for diagnostics tab content. */
 export function DiagnosticsPanel() {
@@ -14,6 +15,7 @@ export function DiagnosticsPanel() {
     <>
       <StatusPanel />
       <FeatureFlagsPanel />
+      <DatabaseViewerPanel />
       <ServerLogs />
       <FeatureRequestsPanel />
     </>

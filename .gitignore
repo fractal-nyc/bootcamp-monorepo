@@ -186,3 +186,7 @@ dist
 **/db/*.db
 
 tmpclaude-*
+
+# Windows NUL device artifact (created by MSYS2/Git Bash)
+nul
+NUL

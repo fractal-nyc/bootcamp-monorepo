@@ -1,6 +1,6 @@
 /**
  * @fileoverview WebSocket hook for real-time server log streaming.
- * Handles connection lifecycle, auto-reconnect with backoff, and authentication.
+ * Handles connection lifecycle, auto-reconnect with backoff, and authentication via session cookies.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -38,10 +38,10 @@ const BASE_RECONNECT_DELAY = 1000;
 
 /**
  * Hook for connecting to the WebSocket server and receiving logs.
- * @param token - JWT token for authentication.
+ * Authentication is handled via session cookies sent with the upgrade request.
  * @returns Connection status and log entries.
  */
-export function useWebSocket(token: string | null): UseWebSocketResult {
+export function useWebSocket(): UseWebSocketResult {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const wsRef = useRef<WebSocket | null>(null);
@@ -54,16 +54,10 @@ export function useWebSocket(token: string | null): UseWebSocketResult {
   }, []);
 
   useEffect(() => {
-    if (!token) {
-      setStatus("disconnected");
-      return;
-    }
-
     /** Connects to the WebSocket server. */
     const connect = () => {
-      // Build WebSocket URL (works in both dev and prod)
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws/logs?token=${encodeURIComponent(token)}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws/logs`;
 
       setStatus("connecting");
       const ws = new WebSocket(wsUrl);
@@ -106,7 +100,7 @@ export function useWebSocket(token: string | null): UseWebSocketResult {
 
     connect();
 
-    // Cleanup on unmount or token change
+    // Cleanup on unmount
     return () => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -116,7 +110,7 @@ export function useWebSocket(token: string | null): UseWebSocketResult {
         wsRef.current = null;
       }
     };
-  }, [token]);
+  }, []);
 
   return { logs, status, clearLogs };
 }

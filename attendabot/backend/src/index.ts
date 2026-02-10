@@ -12,6 +12,7 @@ import { initializeLogger } from "./services/logger";
 initializeLogger();
 
 import { initializeDiscord } from "./services/discord";
+import { initApiKeys } from "./services/apiKeys";
 import { startApiServer } from "./api";
 import { startBot } from "./bot";
 
@@ -24,6 +25,9 @@ async function main(): Promise<void> {
   try {
     // Initialize Discord client first
     await initializeDiscord();
+
+    // Load API key from environment
+    initApiKeys();
 
     // Start the bot (schedules cron jobs)
     startBot();

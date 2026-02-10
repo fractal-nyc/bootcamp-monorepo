@@ -20,13 +20,40 @@ function getAllowedDiscordUserIds(): Set<string> {
   );
 }
 
+/** Parses the DISCORD_ALLOWED_STUDENT_IDS env var into a Set of allowed student Discord user IDs. */
+function getAllowedStudentIds(): Set<string> {
+  const raw = process.env.DISCORD_ALLOWED_STUDENT_IDS || "";
+  return new Set(
+    raw
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean),
+  );
+}
+
+/**
+ * Determines the role for a given Discord account ID.
+ * - If DISCORD_ALLOWED_USER_IDS is empty, returns "instructor" (backwards compatible)
+ * - If the ID is in DISCORD_ALLOWED_USER_IDS, returns "instructor"
+ * - If the ID is in DISCORD_ALLOWED_STUDENT_IDS, returns "student"
+ * - Otherwise returns null (rejected)
+ */
+export function getUserRole(discordAccountId: string): "instructor" | "student" | null {
+  const instructorIds = getAllowedDiscordUserIds();
+  if (instructorIds.size === 0) return "instructor";
+  if (instructorIds.has(discordAccountId)) return "instructor";
+  const studentIds = getAllowedStudentIds();
+  if (studentIds.has(discordAccountId)) return "student";
+  return null;
+}
+
 /** Returns the BetterAuth database instance and ensures auth tables exist. */
-function getAuthDatabase(): Database.Database {
+export function getAuthDatabase(): Database.Database {
   const dbDir = path.join(__dirname, "../db");
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
   }
-  const dbPath = path.join(dbDir, "attendabot.db");
+  const dbPath = path.join(dbDir, "auth.db");
   const db = new Database(dbPath);
 
   // Create BetterAuth tables if they don't exist
@@ -107,8 +134,8 @@ export const auth = betterAuth({
       create: {
         before: async (account) => {
           if (account.providerId === "discord") {
-            const allowed = getAllowedDiscordUserIds();
-            if (allowed.size > 0 && !allowed.has(account.accountId)) {
+            const role = getUserRole(account.accountId);
+            if (role === null) {
               throw new APIError("FORBIDDEN", {
                 message:
                   "Your Discord account is not authorized to access this application.",
@@ -122,9 +149,9 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (session) => {
-          // Check if this user's Discord account is on the allowlist
-          const allowed = getAllowedDiscordUserIds();
-          if (allowed.size === 0) return { data: session };
+          // Check if this user's Discord account is on either allowlist
+          const instructorIds = getAllowedDiscordUserIds();
+          if (instructorIds.size === 0) return { data: session };
 
           const db = getAuthDatabase();
           const account = db
@@ -133,11 +160,14 @@ export const auth = betterAuth({
             )
             .get(session.userId) as { accountId: string } | undefined;
 
-          if (account && !allowed.has(account.accountId)) {
-            throw new APIError("FORBIDDEN", {
-              message:
-                "Your Discord account is not authorized to access this application.",
-            });
+          if (account) {
+            const role = getUserRole(account.accountId);
+            if (role === null) {
+              throw new APIError("FORBIDDEN", {
+                message:
+                  "Your Discord account is not authorized to access this application.",
+              });
+            }
           }
           return { data: session };
         },

@@ -17,7 +17,7 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
   "EOD Verification": "DMs students who haven't posted an EOD update and posts the PR leaderboard.",
 };
 
-/** Converts a cron expression to 12-hour time format (e.g., "9:45 AM ET"). */
+/** Converts a cron expression to 12-hour time format (e.g., "9:45 AM ET, Mon-Sat"). */
 function cronToTime(cron: string): string {
   const parts = cron.split(" ");
   if (parts.length < 2) return cron;
@@ -31,7 +31,24 @@ function cronToTime(cron: string): string {
   const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   const minuteStr = minute.toString().padStart(2, "0");
 
-  return `${hour12}:${minuteStr} ${period} ET`;
+  let time = `${hour12}:${minuteStr} ${period} ET`;
+
+  // Show day-of-week restriction if not every day
+  const dow = parts[4];
+  if (dow && dow !== "*") {
+    const dayNames: Record<string, string> = {
+      "0": "Sun", "1": "Mon", "2": "Tue", "3": "Wed",
+      "4": "Thu", "5": "Fri", "6": "Sat",
+    };
+    if (dow.includes("-")) {
+      const [start, end] = dow.split("-");
+      time += `, ${dayNames[start] || start}-${dayNames[end] || end}`;
+    } else {
+      time += `, ${dow.split(",").map((d: string) => dayNames[d] || d).join(",")}`;
+    }
+  }
+
+  return time;
 }
 
 /** Formats milliseconds as a human-readable duration string. */

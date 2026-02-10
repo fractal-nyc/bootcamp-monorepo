@@ -56,6 +56,51 @@ header h1 {
 }
 
 /* ========================================
+   Impersonation
+   ======================================== */
+.impersonate-select {
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  color: var(--color-charcoal);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  max-width: 200px;
+}
+
+.impersonate-banner {
+  background: #EEF2FF;
+  color: var(--color-charcoal);
+  padding: var(--space-3) var(--space-5);
+  border: 2px solid var(--color-accent);
+  margin-bottom: var(--space-5);
+  font-size: var(--text-base);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.impersonate-stop-btn {
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+  color: var(--color-charcoal);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: auto;
+}
+
+.impersonate-stop-btn:hover {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+/* ========================================
    Main Layout
    ======================================== */
 main {
@@ -685,6 +730,38 @@ button:disabled {
   box-shadow: none;
 }
 
+/* Student Name Cell with Avatar */
+.student-name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.student-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-charcoal);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.student-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-line);
+  background: var(--color-platinum);
+  color: var(--color-slate);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
 .no-students {
   color: var(--color-slate);
   text-align: center;
@@ -717,6 +794,45 @@ button:disabled {
   background: var(--color-error);
   border-color: var(--color-error);
   color: var(--color-white);
+}
+
+.delete-note-btn {
+  margin-left: auto;
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  box-shadow: none;
+  color: var(--color-slate);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.delete-note-btn:hover {
+  background: var(--color-platinum);
+  color: var(--color-charcoal);
+  transform: none;
+}
+
+.delete-note-btn.confirm {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-white);
+}
+
+.observer-select {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-base);
+  font-family: var(--font-primary);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  cursor: pointer;
+}
+
+.observer-select:hover {
+  border-color: var(--color-charcoal);
+  background: var(--color-fog);
 }
 
 /* ========================================
@@ -914,6 +1030,83 @@ button:disabled {
   padding-bottom: var(--space-3);
 }
 
+/* Student Profile Image (Sidebar) */
+.student-profile-image-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: 2px solid var(--color-line);
+}
+
+.student-profile-image {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 3px solid var(--color-charcoal);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.15);
+  object-fit: cover;
+}
+
+.student-profile-image-placeholder {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 3px solid var(--color-line);
+  background: var(--color-platinum);
+  color: var(--color-slate);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.image-upload-controls {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.image-upload-btn {
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+  color: var(--color-charcoal);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.image-upload-btn:hover {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.image-remove-btn {
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  box-shadow: none;
+  color: var(--color-slate);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.image-remove-btn:hover {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-white);
+  transform: none;
+}
+
 .student-detail h3:first-child {
   margin-top: 0;
 }
@@ -1041,6 +1234,7 @@ button:disabled {
 .student-ai-summary .summary-meta {
   color: var(--color-slate);
   font-size: var(--text-xs);
+  font-weight: 400;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1738,6 +1932,15 @@ button:disabled {
   border-bottom: 2px solid var(--color-charcoal);
 }
 
+.fr-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.fr-table th.sortable:hover {
+  color: var(--color-charcoal);
+}
+
 /* Feature Request Status Badges */
 .status-new {
   background: var(--color-white);
@@ -1940,6 +2143,311 @@ button:disabled {
 }
 
 /* ========================================
+   Database Viewer
+   ======================================== */
+.db-viewer-panel {
+  grid-column: span 2;
+}
+
+.db-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.db-table-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.db-table-select label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-slate);
+}
+
+.db-table-select select {
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-charcoal);
+  background: var(--color-white);
+  color: var(--color-charcoal);
+  font-size: var(--text-base);
+  font-family: var(--font-primary);
+}
+
+.db-row-count {
+  font-size: var(--text-sm);
+  color: var(--color-slate);
+  font-weight: 700;
+}
+
+.db-download-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.db-download-btn:hover {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.db-table-wrapper {
+  overflow-x: auto;
+  border: 2px solid var(--color-charcoal);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-lg);
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+}
+
+.db-table th,
+.db-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-line);
+  white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.db-table th {
+  position: sticky;
+  top: 0;
+  color: var(--color-slate);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--color-platinum);
+  border-bottom: 2px solid var(--color-charcoal);
+  z-index: 1;
+}
+
+.db-pk-badge {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  font-size: 0.55rem;
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  vertical-align: middle;
+}
+
+.db-table tbody tr:hover {
+  background: var(--color-fog);
+}
+
+.db-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.db-page-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.db-page-btn:hover:not(:disabled) {
+  background: var(--color-charcoal);
+  color: var(--color-white);
+  transform: none;
+}
+
+.db-page-btn:disabled {
+  background: var(--color-platinum);
+  color: var(--color-slate);
+  border-color: var(--color-slate);
+  box-shadow: none;
+}
+
+.db-page-info {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-slate);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ========================================
+   Student Randomizer
+   ======================================== */
+.randomizer-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 2px solid var(--color-line);
+}
+
+.randomizer-section h3 {
+  margin-top: 0;
+}
+
+.randomizer-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.randomizer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.randomizer-row label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-slate);
+}
+
+.group-count-control {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--color-charcoal);
+}
+
+.group-count-btn {
+  background: var(--color-white);
+  border: none;
+  box-shadow: none;
+  color: var(--color-charcoal);
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-base);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.group-count-btn:hover:not(:disabled) {
+  background: var(--color-platinum);
+  transform: none;
+}
+
+.group-count-btn:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.group-count-btn:disabled {
+  color: var(--color-line);
+  background: var(--color-white);
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+.group-count-value {
+  width: 36px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--text-base);
+  border-left: 2px solid var(--color-charcoal);
+  border-right: 2px solid var(--color-charcoal);
+  line-height: 32px;
+}
+
+.shuffle-btn {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-sm);
+}
+
+.randomizer-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.randomizer-results.multi-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.randomizer-group {
+  background: var(--color-white);
+  border: 2px solid var(--color-line);
+}
+
+.randomizer-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-platinum);
+  border-bottom: 2px solid var(--color-line);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-charcoal);
+}
+
+.randomizer-group-count {
+  font-size: var(--text-xs);
+  color: var(--color-slate);
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  padding: var(--space-1) var(--space-3);
+}
+
+.randomizer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.randomizer-item {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-base);
+  counter-increment: randomizer-counter;
+}
+
+.randomizer-item::before {
+  content: counter(randomizer-counter) ".";
+  display: inline-block;
+  min-width: 1.8em;
+  font-weight: 700;
+  color: var(--color-slate);
+}
+
+.randomizer-group {
+  counter-reset: randomizer-counter;
+}
+
+.randomizer-item:last-child {
+  border-bottom: none;
+}
+
+/* ========================================
    Responsive
    ======================================== */
 @media (max-width: 768px) {
@@ -1953,6 +2461,15 @@ button:disabled {
 
   .feature-requests-panel {
     grid-column: span 1;
+  }
+
+  .db-viewer-panel {
+    grid-column: span 1;
+  }
+
+  .db-controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   header h1 {

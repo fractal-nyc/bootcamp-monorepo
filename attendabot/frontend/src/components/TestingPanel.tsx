@@ -45,9 +45,10 @@ export function TestingPanel() {
 
   useEffect(() => {
     getCohorts().then((c) => {
-      setCohorts(c);
-      if (c.length > 0) {
-        setSelectedCohortId(c[0].id);
+      const sorted = [...c].sort((a, b) => b.id - a.id);
+      setCohorts(sorted);
+      if (sorted.length > 0) {
+        setSelectedCohortId(sorted[0].id);
       }
     });
   }, []);

@@ -1,10 +1,10 @@
-/**
+ /**
  * @fileoverview Tests for daily briefing helper functions (bot/index.ts).
  * Tests the countPrsInMessage function and date/time utilities.
  */
 
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage } from "../../bot/index";
+import { countPrsInMessage, isValidEodMessage, getPreviousDayRangeET } from "../../bot/index";
 
 describe("Daily Briefing - PR Counting", () => {
   describe("countPrsInMessage", () => {
@@ -111,39 +111,46 @@ describe("Daily Briefing - Date Utilities", () => {
       expect(eightAm.getUTCHours()).toBe(13); // 8 AM ET = 1 PM UTC
     });
 
-    it("calculates 1 PM ET correctly", () => {
-      const onePm = new Date("2024-01-15T13:00:00-05:00");
-      expect(onePm.getUTCHours()).toBe(18); // 1 PM ET = 6 PM UTC
+    it("calculates 2 PM ET correctly", () => {
+      const twoPm = new Date("2024-01-15T14:00:00-05:00");
+      expect(twoPm.getUTCHours()).toBe(19); // 2 PM ET = 7 PM UTC
     });
   });
 
-  describe("Previous day range calculation", () => {
-    it("calculates previous day boundaries", () => {
-      const today = "2024-01-16";
-      const [year, month, day] = today.split("-").map(Number);
-      const yesterday = new Date(year, month - 1, day - 1);
+  describe("Previous day range calculation (getPreviousDayRangeET)", () => {
+    it("looks back 1 day on a normal weekday (Tuesday)", () => {
+      // 2024-01-16 is a Tuesday
+      const { start } = getPreviousDayRangeET("2024-01-16");
+      expect(start).toContain("2024-01-15");
+    });
 
-      expect(yesterday.getDate()).toBe(15);
-      expect(yesterday.getMonth()).toBe(0); // January
+    it("looks back 2 days on Monday (to Saturday)", () => {
+      // 2024-01-15 is a Monday
+      const { start } = getPreviousDayRangeET("2024-01-15");
+      expect(start).toContain("2024-01-13"); // Saturday
+    });
+
+    it("looks back 1 day on other weekdays", () => {
+      // Wed 2024-01-17 -> Tue 2024-01-16
+      expect(getPreviousDayRangeET("2024-01-17").start).toContain("2024-01-16");
+      // Thu 2024-01-18 -> Wed 2024-01-17
+      expect(getPreviousDayRangeET("2024-01-18").start).toContain("2024-01-17");
+      // Fri 2024-01-19 -> Thu 2024-01-18
+      expect(getPreviousDayRangeET("2024-01-19").start).toContain("2024-01-18");
+      // Sat 2024-01-20 -> Fri 2024-01-19
+      expect(getPreviousDayRangeET("2024-01-20").start).toContain("2024-01-19");
     });
 
     it("handles month boundaries", () => {
-      const today = "2024-02-01";
-      const [year, month, day] = today.split("-").map(Number);
-      const yesterday = new Date(year, month - 1, day - 1);
-
-      expect(yesterday.getDate()).toBe(31);
-      expect(yesterday.getMonth()).toBe(0); // January
+      // 2024-02-01 is a Thursday
+      const { start } = getPreviousDayRangeET("2024-02-01");
+      expect(start).toContain("2024-01-31");
     });
 
     it("handles year boundaries", () => {
-      const today = "2024-01-01";
-      const [year, month, day] = today.split("-").map(Number);
-      const yesterday = new Date(year, month - 1, day - 1);
-
-      expect(yesterday.getDate()).toBe(31);
-      expect(yesterday.getMonth()).toBe(11); // December
-      expect(yesterday.getFullYear()).toBe(2023);
+      // 2024-01-01 is a Monday -> should look back to 2023-12-30 (Saturday)
+      const { start } = getPreviousDayRangeET("2024-01-01");
+      expect(start).toContain("2023-12-30");
     });
   });
 });
@@ -188,19 +195,19 @@ describe("Daily Briefing - Student Categorization Logic", () => {
       expect(isLowPr).toBe(true);
     });
 
-    it("categorizes as late midday PR when first PR after 1 PM", () => {
-      const onePmET = "2024-01-15T18:00:00Z"; // 1 PM ET in UTC
-      const firstPrTime = "2024-01-15T19:00:00Z"; // 2 PM ET
+    it("categorizes as late midday PR when first PR after 2 PM", () => {
+      const twoPmET = "2024-01-15T19:00:00Z"; // 2 PM ET in UTC
+      const firstPrTime = "2024-01-15T20:00:00Z"; // 3 PM ET
 
-      const isLatePr = firstPrTime > onePmET;
+      const isLatePr = firstPrTime > twoPmET;
       expect(isLatePr).toBe(true);
     });
 
-    it("categorizes as on-time PR when first PR before 1 PM", () => {
-      const onePmET = "2024-01-15T18:00:00Z";
-      const firstPrTime = "2024-01-15T17:00:00Z"; // 12 PM ET
+    it("categorizes as on-time PR when first PR before 2 PM", () => {
+      const twoPmET = "2024-01-15T19:00:00Z";
+      const firstPrTime = "2024-01-15T18:00:00Z"; // 1 PM ET
 
-      const isLatePr = firstPrTime > onePmET;
+      const isLatePr = firstPrTime > twoPmET;
       expect(isLatePr).toBe(false);
     });
   });
@@ -213,5 +220,126 @@ describe("Daily Briefing - Student Categorization Logic", () => {
       const hasNoEod = !eodPostedUsers.has(discordId);
       expect(hasNoEod).toBe(true);
     });
+  });
+});
+
+describe("Daily Briefing - isValidEodMessage", () => {
+  it("returns true with win, block, and PR link", () => {
+    const message = "**Wins**\nShipped auth\n**Blockers**\nNone\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns true with win, block, and 'PRs' string", () => {
+    const message = "wins: did stuff\nblockers: none\nPRs: none today";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns true with only 'win' (no 'block') plus PR link", () => {
+    const message = "Win: shipped auth\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns true with only 'block' (no 'win') plus PR link", () => {
+    const message = "Blocker: stuck on deploy\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("is case insensitive", () => {
+    const message = "WIN today\nprs: link";
+    expect(isValidEodMessage(message)).toBe(true);
+  });
+
+  it("returns false when missing both win and block", () => {
+    const message = "Did some stuff\nhttps://github.com/user/repo/pull/1";
+    expect(isValidEodMessage(message)).toBe(false);
+  });
+
+  it("returns false when missing PRs section and PR links", () => {
+    const message = "**Wins**\nShipped auth\n**Blockers**\nNone";
+    expect(isValidEodMessage(message)).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(isValidEodMessage("")).toBe(false);
+  });
+
+  it("returns false for a casual message without the required sections", () => {
+    expect(isValidEodMessage("Hey team, wrapping up for the day!")).toBe(false);
+  });
+});
+
+describe("Daily Briefing - PR Deduplication", () => {
+  it("counts unique PR URLs across multiple messages", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "midday: https://github.com/user/repo/pull/1" },
+      { author_id: "user-1", content: "EOD:\nhttps://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(2);
+  });
+
+  it("counts PRs separately per user", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/1" },
+      { author_id: "user-2", content: "https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(1);
+    expect(prsByUser.get("user-2")!.size).toBe(2);
+  });
+
+  it("does not count the same PR URL posted three times", () => {
+    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+    const messages = [
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
+    ];
+
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+
+    expect(prsByUser.get("user-1")!.size).toBe(1);
   });
 });

@@ -29,6 +29,7 @@ import {
   fetchMessagesSince,
   sendDirectMessage,
   sendChannelMessage,
+  splitMessage,
 } from "../services/discord";
 import {
   incrementMessagesSent,
@@ -159,9 +160,14 @@ export function buildEodMessage(): string {
   if (!CURRENT_COHORT_ROLE_ID) {
     message = `Friendly reminder for those who celebrate to post your ${getCurrentMonthDay()} EOD update.`;
   } else {
-    message = `${roleMention(
-      CURRENT_COHORT_ROLE_ID,
-    )} please post your EOD update for ${getCurrentMonthDay()} when you're done working.`;
+    message =
+      `${roleMention(
+        CURRENT_COHORT_ROLE_ID,
+      )} reminder to post your EOD update for ${getCurrentMonthDay()} when you're done working.\n` +
+      `Your EOD must include sections for **Wins** and **Blockers** along with links to your **PRs**.\n` +
+      `Also, please provide:\n` +
+      `- Anonymous feedback: https://forms.gle/SgzMsfX29CF5noZ1A\n` +
+      `- Flow check: https://forms.gle/TE9NNsXhhQVfayo96.`;
   }
 
   // Add tomorrow's assignment if available and feature flag is enabled
@@ -223,7 +229,7 @@ async function sendMiddayPrReminder(): Promise<void> {
 
   await sendReminder(
     EOD_CHANNEL_ID,
-    `${roleMention(CURRENT_COHORT_ROLE_ID)} please post your first PR of the day by 1 PM for ${getCurrentMonthDay()}.`,
+    `${roleMention(CURRENT_COHORT_ROLE_ID)} please post your first PR of the day by 2 PM for ${getCurrentMonthDay()}.`,
   );
   incrementRemindersTriggered();
 }
@@ -238,7 +244,9 @@ async function verifyMiddayPrPost(): Promise<string[]> {
 
   const { userIds, nameMap } = getCurrentCohortUsers();
   if (userIds.length === 0) {
-    console.log("No active students with Discord IDs. Skipping midday PR verification.");
+    console.log(
+      "No active students with Discord IDs. Skipping midday PR verification.",
+    );
     return [];
   }
 
@@ -268,9 +276,7 @@ async function verifyMiddayPrPost(): Promise<string[]> {
   }
 
   // DM users without any PR
-  const missingUsers = userIds.filter(
-    (id) => !usersWithPr.has(id),
-  );
+  const missingUsers = userIds.filter((id) => !usersWithPr.has(id));
   const dateStr = `${year}-${month}-${day}`;
   const dmedUserNames: string[] = [];
 
@@ -355,7 +361,9 @@ async function verifyPosts(
 ): Promise<string[]> {
   const { userIds, nameMap } = getCurrentCohortUsers();
   if (userIds.length === 0) {
-    console.log(`No active students with Discord IDs. Skipping ${label} verification.`);
+    console.log(
+      `No active students with Discord IDs. Skipping ${label} verification.`,
+    );
     return [];
   }
 
@@ -384,24 +392,12 @@ async function verifyPosts(
     // Sort by PR count descending
     const sorted = Array.from(userPullRequestCounts.entries())
       .map(([userId, count]) => ({
-        name: nameMap.get(userId) ?? "Unknown User",
+        name: `<@${userId}>`,
         count,
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Get top 3 places (include ties)
-    const top3: typeof sorted = [];
-    let currentRank = 0;
-    let lastCount = -1;
-
-    for (const entry of sorted) {
-      if (entry.count !== lastCount) {
-        currentRank++;
-        if (currentRank > 3) break;
-        lastCount = entry.count;
-      }
-      top3.push(entry);
-    }
+    const top3 = getTopLeaderboard(sorted);
 
     if (top3.length > 0) {
       const leaderboard = top3.map((e) => `${e.name}: ${e.count}`).join("\n");
@@ -412,9 +408,7 @@ async function verifyPosts(
     }
   }
 
-  const missingUsers = userIds.filter(
-    (id) => !usersWhoPosted.has(id),
-  );
+  const missingUsers = userIds.filter((id) => !usersWhoPosted.has(id));
 
   const dmedUserNames: string[] = [];
 
@@ -433,9 +427,7 @@ async function verifyPosts(
       if (sent) {
         incrementMessagesSent();
         dmsSent++;
-        dmedUserNames.push(
-          nameMap.get(userId) ?? `<@${userId}>`,
-        );
+        dmedUserNames.push(nameMap.get(userId) ?? `<@${userId}>`);
       }
     }
     console.log(
@@ -457,10 +449,46 @@ function roleMention(roleId: string) {
   return `<@&${roleId}>`;
 }
 
+/**
+ * Selects the top entries for the PR leaderboard from a pre-sorted (descending) list.
+ * Includes ties for any included rank, but stops adding new ranks once 3+ people
+ * are already included from higher ranks.
+ * Always allows up to 3 distinct ranks if the cumulative count stays under 3.
+ */
+export function getTopLeaderboard(
+  sorted: Array<{ name: string; count: number }>,
+): Array<{ name: string; count: number }> {
+  const result: Array<{ name: string; count: number }> = [];
+  let currentRank = 0;
+  let lastCount = -1;
+
+  for (const entry of sorted) {
+    if (entry.count !== lastCount) {
+      currentRank++;
+      if (currentRank > 3 || (currentRank > 1 && result.length >= 3)) break;
+      lastCount = entry.count;
+    }
+    result.push(entry);
+  }
+
+  return result;
+}
+
 /** Counts the number of GitHub pull request URLs in a message. */
 export function countPrsInMessage(messageContent: string): number {
   const re = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   return (messageContent.match(re) || []).length;
+}
+
+/**
+ * Checks whether a message qualifies as a valid EOD submission.
+ * Must contain ("win" OR "block", case-insensitive) AND (a GitHub PR link OR "PRs", case-insensitive).
+ */
+export function isValidEodMessage(content: string): boolean {
+  const lower = content.toLowerCase();
+  const hasWinOrBlock = lower.includes("win") || lower.includes("block");
+  const hasPrs = lower.includes("prs") || countPrsInMessage(content) > 0;
+  return hasWinOrBlock && hasPrs;
 }
 
 // ============================================================================
@@ -468,21 +496,21 @@ export function countPrsInMessage(messageContent: string): number {
 // ============================================================================
 
 /**
- * Returns start/end ISO strings for the day before the given date (or yesterday if not provided).
+ * Returns start/end ISO strings for the previous working day relative to the given date.
+ * On Mondays (or simulated Mondays), looks back to Saturday instead of Sunday.
  * @param simulatedToday - Optional YYYY-MM-DD string representing "today". If not provided, uses actual today.
  */
-function getPreviousDayRangeET(simulatedToday?: string): {
+export function getPreviousDayRangeET(simulatedToday?: string): {
   start: string;
   end: string;
 } {
-  let targetDate: Date;
+  let todayDate: Date;
 
   if (simulatedToday) {
-    // Parse the simulated date and get the previous day
     const [year, month, day] = simulatedToday.split("-").map(Number);
-    targetDate = new Date(year, month - 1, day - 1); // month is 0-indexed, subtract 1 day
+    todayDate = new Date(year, month - 1, day);
   } else {
-    // Get yesterday in ET
+    // Get today in ET
     const now = new Date();
     const etFormatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/New_York",
@@ -490,10 +518,14 @@ function getPreviousDayRangeET(simulatedToday?: string): {
       month: "2-digit",
       day: "2-digit",
     });
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const [month, day, year] = etFormatter.format(yesterday).split("/");
-    targetDate = new Date(Number(year), Number(month) - 1, Number(day));
+    const [month, day, year] = etFormatter.format(now).split("/");
+    todayDate = new Date(Number(year), Number(month) - 1, Number(day));
   }
+
+  // On Monday (day 1), look back to Saturday (2 days); otherwise look back 1 day
+  const daysBack = todayDate.getDay() === 1 ? 2 : 1;
+  const targetDate = new Date(todayDate);
+  targetDate.setDate(targetDate.getDate() - daysBack);
 
   // Format as YYYY-MM-DD for consistent parsing
   const year = targetDate.getFullYear();
@@ -517,9 +549,9 @@ function getEightAmET(dateStr: string): string {
   return new Date(`${dateStr}T08:00:00-05:00`).toISOString();
 }
 
-/** Returns the ISO timestamp for 1 PM ET on a given date string (YYYY-MM-DD). */
-function getOnePmET(dateStr: string): string {
-  return new Date(`${dateStr}T13:00:00-05:00`).toISOString();
+/** Returns the ISO timestamp for 2 PM ET on a given date string (YYYY-MM-DD). */
+function getTwoPmET(dateStr: string): string {
+  return new Date(`${dateStr}T14:00:00-05:00`).toISOString();
 }
 
 /**
@@ -541,7 +573,7 @@ export async function generateDailyBriefing(
   const previousDayStr = start.split("T")[0];
   const tenAm = getTenAmET(previousDayStr);
   const eightAm = getEightAmET(previousDayStr);
-  const onePm = getOnePmET(previousDayStr);
+  const twoPm = getTwoPmET(previousDayStr);
 
   // Get messages from previous day
   const attendanceMessages = getMessagesByChannelAndDateRange(
@@ -559,15 +591,31 @@ export async function generateDailyBriefing(
     }
   }
 
-  const eodPrCountByUser = new Map<string, number>(); // discord_id -> PR count
+  const eodPrsByUser = new Map<string, Set<string>>(); // discord_id -> unique PR URLs
+  const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   for (const msg of eodMessages) {
-    const prCount = countPrsInMessage(msg.content ?? "");
-    eodPrCountByUser.set(
-      msg.author_id,
-      (eodPrCountByUser.get(msg.author_id) ?? 0) + prCount,
-    );
+    const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+    if (urls.length > 0) {
+      if (!eodPrsByUser.has(msg.author_id)) {
+        eodPrsByUser.set(msg.author_id, new Set());
+      }
+      const userPrs = eodPrsByUser.get(msg.author_id)!;
+      for (const url of urls) {
+        userPrs.add(url);
+      }
+    }
   }
-  const eodPostedUsers = new Set(eodMessages.map((m) => m.author_id));
+  const eodPrCountByUser = new Map<string, number>(
+    [...eodPrsByUser.entries()].map(([id, prs]) => [id, prs.size]),
+  );
+  // A valid EOD must be posted between 2 PM and end of day, and contain "Wins", "Blockers", and "PRs"
+  const eodPostedUsers = new Set(
+    eodMessages
+      .filter(
+        (m) => m.created_at >= twoPm && isValidEodMessage(m.content ?? ""),
+      )
+      .map((m) => m.author_id),
+  );
 
   // Track first PR time for each student (only PRs after 8 AM count)
   const firstPrTimeByUser = new Map<string, string>();
@@ -598,9 +646,9 @@ export async function generateDailyBriefing(
       lateStudents.push(student.name);
     }
 
-    // Check late midday PR (no PR after 8 AM, or first PR was after 1 PM)
+    // Check late midday PR (no PR after 8 AM, or first PR was after 2 PM)
     const firstPrTime = firstPrTimeByUser.get(discordId);
-    if (!firstPrTime || firstPrTime > onePm) {
+    if (!firstPrTime || firstPrTime > twoPm) {
       lateMiddayPrStudents.push(student.name);
     }
 
@@ -665,7 +713,7 @@ export async function generateDailyBriefing(
   briefing += "\n\n";
 
   // Late midday PR
-  briefing += `**Late Midday PR (after 1 PM):**\n`;
+  briefing += `**Late Midday PR (after 2 PM):**\n`;
   briefing +=
     lateMiddayPrStudents.length > 0 ? lateMiddayPrStudents.join(", ") : "None";
   briefing += "\n\n";
@@ -700,6 +748,9 @@ export async function generateDailyBriefing(
     })
     .join("\n");
   briefing += checkInList || "No students";
+  briefing += "\n\n";
+
+  briefing += "Don't forget to record all your conversations!";
 
   return briefing;
 }
@@ -718,9 +769,12 @@ async function sendDailyBriefing(): Promise<void> {
     return;
   }
 
-  // Send to channel
+  // Send to channel, splitting into chunks if needed
   const channel = await fetchTextChannel(DAILY_BRIEFING_CHANNEL_ID);
-  await channel.send({ content: briefing });
+  const chunks = splitMessage(briefing);
+  for (const chunk of chunks) {
+    await channel.send({ content: chunk });
+  }
   incrementMessagesSent();
-  console.log(`Sent daily briefing to #${channel.name}`);
+  console.log(`Sent daily briefing to #${channel.name} (${chunks.length} message(s))`);
 }

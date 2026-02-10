@@ -10,12 +10,14 @@ import { renderWithLinks } from "../utils/linkify";
 interface StudentFeedProps {
   items: FeedItem[];
   loading?: boolean;
+  onDeleteNote?: (noteId: number) => void;
 }
 
 /** Displays an interleaved feed of EOD messages and instructor notes. */
-export function StudentFeed({ items, loading }: StudentFeedProps) {
+export function StudentFeed({ items, loading, onDeleteNote }: StudentFeedProps) {
   const [showEods, setShowEods] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -73,6 +75,23 @@ export function StudentFeed({ items, loading }: StudentFeedProps) {
                 </span>
                 <span className="feed-item-author">{item.author}</span>
                 <span className="feed-item-date">{formatDate(item.createdAt)}</span>
+                {item.type === "note" && onDeleteNote && (
+                  <button
+                    className={`delete-note-btn ${deleteConfirm === item.id ? "confirm" : ""}`}
+                    onClick={() => {
+                      if (deleteConfirm === item.id) {
+                        const noteId = parseInt(item.id.replace("note_", ""), 10);
+                        onDeleteNote(noteId);
+                        setDeleteConfirm(null);
+                      } else {
+                        setDeleteConfirm(item.id);
+                      }
+                    }}
+                    onBlur={() => setDeleteConfirm(null)}
+                  >
+                    {deleteConfirm === item.id ? "Confirm?" : "Delete"}
+                  </button>
+                )}
               </div>
               <div className="feed-item-content">{renderWithLinks(item.content)}</div>
             </div>

@@ -15,14 +15,14 @@ bun run lint     # Run ESLint
 
 ```
 src/
-├── main.tsx              # React entry point
-├── App.tsx               # Root component with tab navigation and auth
+├── main.tsx              # React entry point (BrowserRouter + AuthProvider + Routes)
 ├── App.css               # Main styles
 ├── api/
 │   └── client.ts         # API client (fetch wrapper, cookie auth, all endpoints)
 ├── lib/
 │   └── auth-client.ts    # BetterAuth client for Discord OAuth
 ├── components/
+│   ├── RootLayout.tsx    # Route layout with auth-based redirects
 │   ├── Login.tsx         # Discord OAuth login page
 │   ├── StudentTable.tsx  # Sortable student list with observer dropdown
 │   ├── StudentDetail.tsx # Individual student view with summary
@@ -40,17 +40,26 @@ src/
 │   ├── TestingPanel.tsx  # Test briefings and EOD previews
 │   └── Sidebar.tsx       # Navigation sidebar
 ├── hooks/
+│   ├── useAuth.tsx       # Auth context, provider, and useAuth() hook
 │   └── useWebSocket.ts   # WebSocket connection hook (cookie auth)
+├── pages/
+│   ├── LoginPage.tsx     # Login route (/)
+│   ├── StudentPage.tsx   # Student portal route (/student)
+│   └── InstructorPage.tsx # Instructor dashboard route (/instructor)
 └── utils/
     └── linkify.tsx       # URL detection and linking
 ```
 
-## Key Components
+## Routing
 
-### App.tsx
-- Root component managing auth state and tab navigation
-- Tabs: Students, Observers, Messages, Testing, Configuration
-- Auth state determined by BetterAuth `getSession()` (Discord OAuth)
+Uses **React Router v7** (declarative mode) with three routes:
+- `/` — Login page (redirects to dashboard if already logged in)
+- `/student` — Student portal (role-gated)
+- `/instructor` — Instructor admin dashboard (role-gated)
+
+`RootLayout` handles auth-based redirects. `AuthProvider` (in `useAuth.tsx`) provides auth state via context. The `loading` state stays `true` until both `getSession()` and `getMe()` resolve, preventing redirect flicker.
+
+## Key Components
 
 ### StudentTable.tsx
 - Displays students in selected cohort with sortable columns
@@ -116,10 +125,11 @@ Authentication uses **BetterAuth** with Discord OAuth. There is no JWT or passwo
 
 ## State Management
 
-- **Local state**: useState/useEffect throughout
-- **Auth**: BetterAuth session cookies (no localStorage tokens)
+- **Auth state**: `AuthProvider` context (`useAuth()` hook) — provides `loggedIn`, `role`, `username`, `sessionInvalid`, `logout()`, etc.
+- **Local state**: useState/useEffect throughout for component-specific data
+- **Auth cookies**: BetterAuth session cookies (no localStorage tokens)
 - **Username display**: Stored in localStorage for display only (not for auth)
-- **No global store**: Each component fetches its own data
+- **No global store**: Each component fetches its own data (except auth which is in context)
 
 ## API Client (api/client.ts)
 
@@ -179,7 +189,7 @@ const { logs, status, clearLogs } = useWebSocket();
      return <div>...</div>;
    }
    ```
-3. Import and add to App.tsx or parent component
+3. Import and add to the appropriate page component or add a new route
 
 ## Adding a New API Endpoint
 
@@ -198,7 +208,6 @@ const { logs, status, clearLogs } = useWebSocket();
 
 - **Auth redirects**: fetchWithAuth triggers `onAuthFailure` callback on 401/403, which shows session expired warning
 - **Vite proxy**: Only works in dev mode; production serves from backend static files
-- **No React Router**: Navigation is tab-based within App.tsx, not URL-based
 - **Styling**: CSS in App.css, no CSS modules or styled-components
 - **Two-click delete pattern**: Used for destructive actions (delete student, delete note). Click shows "Confirm?", click again deletes, blur resets.
-- **Role loading race condition**: App.tsx gates on `role` before rendering dashboards. If `role` is `null` (still loading from `getMe()`), a loading screen is shown — NOT the instructor dashboard. Rendering instructor components (e.g., `StudentCohortPanel`) before role is known causes 403s on instructor-only endpoints (`/api/cohorts`, `/api/observers`) which triggers the session expired banner for students.
+- **Role loading race condition**: `AuthProvider` waits for both `getSession()` and `getMe()` to resolve before setting `loading=false`. This prevents `RootLayout` from redirecting before the role is known, which would cause instructor components to mount for students and trigger 403 errors.

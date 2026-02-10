@@ -5,13 +5,8 @@
 import { useState } from "react";
 import { authClient } from "../lib/auth-client";
 
-/** Props for the Login component. */
-interface LoginProps {
-  onLogin: () => void;
-}
-
 /** Login page with Discord OAuth button. */
-export function Login({ onLogin: _onLogin }: LoginProps) {
+export function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

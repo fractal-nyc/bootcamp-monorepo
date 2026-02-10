@@ -1181,4 +1181,113 @@ export const flows: AuthFlow[] = [
       "Requires browser and OS support (widespread now, but not universal)",
     ],
   },
+
+  // ── SSH Key Authentication ──
+  {
+    id: "ssh",
+    title: "SSH Keys",
+    subtitle:
+      "Public-key authentication for secure remote shell access",
+    entities: [
+      {
+        id: "client",
+        label: "Your Computer",
+        icon: "\uD83D\uDCBB",
+        color: "#6c8cff",
+      },
+      {
+        id: "server",
+        label: "Remote Server",
+        icon: "\uD83D\uDDA5\uFE0F",
+        color: "#4ade80",
+      },
+    ],
+    steps: [
+      {
+        from: "client",
+        to: "client",
+        label: "ssh-keygen",
+        description:
+          "You run ssh-keygen on your local machine. This generates a public/private key pair using an algorithm like Ed25519 or RSA. The private key stays on your machine (typically ~/.ssh/id_ed25519). The public key is the part you'll share with servers.",
+        payload: `$ ssh-keygen -t ed25519 -C "alice@laptop"\n\nGenerating public/private ed25519 key pair.\nEnter file: ~/.ssh/id_ed25519\nEnter passphrase: ••••••••\n\n\uD83D\uDD10 Private key: ~/.ssh/id_ed25519\n   NEVER leaves your machine.\n\n\uD83D\uDD13 Public key:  ~/.ssh/id_ed25519.pub\n   Safe to copy anywhere.`,
+        color: "#a78bfa",
+      },
+      {
+        from: "client",
+        to: "server",
+        label: "Copy public key to server",
+        description:
+          "You copy your public key to the server's ~/.ssh/authorized_keys file. This is a one-time setup step — typically done with ssh-copy-id or by pasting it manually. After this, the server knows which public keys are allowed to log in.",
+        payload: `$ ssh-copy-id alice@server.example.com\n\n# This appends your public key to:\n# ~/.ssh/authorized_keys on the server\n\nserver$ cat ~/.ssh/authorized_keys\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5\n  AAAAIBt2... alice@laptop`,
+        color: "#6c8cff",
+      },
+      {
+        from: "client",
+        to: "server",
+        label: "SSH connection request",
+        description:
+          "Later, you run ssh to connect. The client initiates a TCP connection to port 22 and they negotiate protocol versions and encryption algorithms. This sets up an encrypted tunnel (using symmetric encryption) BEFORE any authentication happens — so everything from here on is encrypted.",
+        payload: `$ ssh alice@server.example.com\n\n1. TCP connection to port 22\n2. Protocol version exchange\n3. Key exchange (Diffie-Hellman)\n   \u2192 Shared symmetric session key\n4. All further traffic is encrypted\n\n\u26A0\uFE0F No authentication yet —\n   just an encrypted tunnel.`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "Server sends challenge",
+        description:
+          'The server generates a random challenge (a nonce) and sends it to the client. This is a one-time random value — if the client can sign it with the private key matching one of the authorized public keys, the server will know "this person has the private key."',
+        payload: `Server generates random challenge:\n  "dGhpcyBpcyBhIHJhbmRvbQ..."\n\nSends to client:\n  "Prove you own a private key\n   matching one of the public\n   keys in authorized_keys"`,
+        color: "#4ade80",
+      },
+      {
+        from: "client",
+        to: "client",
+        label: "Sign challenge with private key",
+        description:
+          "Your SSH client reads the private key from ~/.ssh/id_ed25519. If the key is passphrase-protected, you're prompted to enter it (or ssh-agent provides it automatically). The client signs the challenge — this produces a signature that only the holder of this private key could create.",
+        payload: `signature = sign(\n  challenge: "dGhpcyBpcyBhIHJhbmRvbQ...",\n  key: ~/.ssh/id_ed25519\n)\n\n\uD83D\uDD10 If passphrase-protected:\n   "Enter passphrase for\n    ~/.ssh/id_ed25519: ••••••"\n\n   (or ssh-agent provides it)`,
+        color: "#a78bfa",
+      },
+      {
+        from: "client",
+        to: "server",
+        label: "Send signature + public key",
+        description:
+          "The client sends the digital signature along with which public key it used. The server will check this against its authorized_keys file.",
+        payload: `{\n  "public_key": "ssh-ed25519 AAAAC3Nz...",\n  "signature": "r9Xk2mQ7pLw3n...",\n  "algorithm": "ssh-ed25519"\n}`,
+        color: "#6c8cff",
+      },
+      {
+        from: "server",
+        to: "server",
+        label: "Verify signature",
+        description:
+          "The server checks: (1) Is this public key in ~/.ssh/authorized_keys? (2) Does the signature verify against the challenge using this public key? If both pass, the server knows the client holds the matching private key — without ever seeing it.",
+        payload: `1. Check authorized_keys:\n   "ssh-ed25519 AAAAC3Nz..."\n   \u2192 \u2705 Key is authorized\n\n2. Verify signature:\n   verify(\n     signature,\n     challenge,\n     public_key\n   ) \u2192 \u2705 VALID\n\n\u2714 Client proved key ownership\n\u2714 Private key never left client`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "client",
+        label: "Shell session granted",
+        description:
+          "Authentication succeeded! The server opens a shell session for the user. All traffic flows over the already-encrypted SSH tunnel. You're now logged in without ever sending a password over the network.",
+        payload: `SSH: Authentication successful.\n\nalice@server:~$ _\n\n\u2714 Encrypted tunnel (AES-256-GCM)\n\u2714 No password sent over network\n\u2714 Private key never left client\n\u2714 Session persists until disconnect`,
+        color: "#4ade80",
+      },
+    ],
+    pros: [
+      "No password sent over the network — immune to credential interception",
+      "Private key never leaves your machine — server breach doesn't compromise you",
+      "Can protect the private key with a passphrase + ssh-agent for convenience",
+      "One key pair works across many servers — just add the public key to each",
+      "Foundation for Git over SSH, SCP, SFTP, tunneling, and remote automation",
+    ],
+    cons: [
+      "Key management is manual — you must copy public keys to each server",
+      "If you lose your private key (and have no backup), you're locked out",
+      "No central revocation — removing access means deleting the public key from each server's authorized_keys",
+      "Passphrase-less keys are risky if your machine is compromised — anyone who gets the file can use it",
+    ],
+  },
 ];

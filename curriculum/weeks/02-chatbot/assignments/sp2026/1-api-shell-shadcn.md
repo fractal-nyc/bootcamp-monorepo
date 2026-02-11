@@ -29,6 +29,7 @@ Today we are going to start building a chatbot/AI agent app. We will be using fa
     - a `<button>` that when clicked calls your `/chat` endpoint
     - a `<div>` that displays the entire conversation. It gets updated when the call to `/chat` returns.
 - Add a `/reset` endpoint that clears the current conversation so the user can start a fresh one without restarting the server.
+- Bonus: improve the chat UX with the [Streaming API](https://platform.claude.com/docs/en/build-with-claude/streaming) to incrementally render Claude's responses rather than dumping the whole message onto the screen at once.
 
 ## Steps (Afternoon)
 

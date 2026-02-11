@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains API keys — NEVER commit this!)
+.env
+
+# Build output
+dist/
+
+# SQLite database files (for the afternoon assignment)
+*.db

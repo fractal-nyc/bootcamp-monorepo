@@ -630,6 +630,15 @@ export const flows: AuthFlow[] = [
       {
         from: "server",
         to: "server",
+        label: "Verify password",
+        description:
+          'Server checks the credentials against a database or other store (e.g. hashed passwords, LDAP, env vars). This step is NOT stateless \u2014 the server needs some source of truth to authenticate the user. The "stateless" property of JWT only applies to subsequent requests, after this initial verification.',
+        payload: `hash = bcrypt.hash(password, user.salt)\n\nhash === user.password_hash  \u2192  \u2705 MATCH\n\n// This is the ONLY database read\n// in the entire JWT flow`,
+        color: "#a78bfa",
+      },
+      {
+        from: "server",
+        to: "server",
         label: "Create & sign JWT",
         description:
           'Server constructs a payload ("claims") and cryptographically signs it. The result is three base64-encoded parts: header.payload.signature. This is NOT encryption \u2014 anyone can read the payload. The signature just proves it hasn\u2019t been tampered with.',

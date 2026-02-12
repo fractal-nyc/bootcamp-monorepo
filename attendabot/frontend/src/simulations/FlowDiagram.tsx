@@ -51,6 +51,7 @@ export default function FlowDiagram({ flow }: { flow: AuthFlow }) {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault();
         next();

@@ -57,9 +57,9 @@ describe("getTopLeaderboard", () => {
     ];
     const result = getTopLeaderboard(sorted);
     expect(result).toEqual([
-      { name: "Alice", count: 5 },
-      { name: "Bob", count: 4 },
-      { name: "Charlie", count: 3 },
+      { name: "Alice", count: 5, rank: 1 },
+      { name: "Bob", count: 4, rank: 2 },
+      { name: "Charlie", count: 3, rank: 3 },
     ]);
   });
 
@@ -73,10 +73,10 @@ describe("getTopLeaderboard", () => {
     ];
     const result = getTopLeaderboard(sorted);
     expect(result).toEqual([
-      { name: "Alice", count: 5 },
-      { name: "Bob", count: 5 },
-      { name: "Charlie", count: 5 },
-      { name: "Dave", count: 5 },
+      { name: "Alice", count: 5, rank: 1 },
+      { name: "Bob", count: 5, rank: 1 },
+      { name: "Charlie", count: 5, rank: 1 },
+      { name: "Dave", count: 5, rank: 1 },
     ]);
   });
 
@@ -96,7 +96,7 @@ describe("getTopLeaderboard", () => {
     ];
     const result = getTopLeaderboard(sorted);
     expect(result.length).toBe(7);
-    expect(result.every((e) => e.count === 5)).toBe(true);
+    expect(result.every((e) => e.count === 5 && e.rank === 1)).toBe(true);
   });
 
   it("includes 2nd place ties when 1st + 2nd totals under 3", () => {
@@ -108,9 +108,9 @@ describe("getTopLeaderboard", () => {
     ];
     const result = getTopLeaderboard(sorted);
     expect(result).toEqual([
-      { name: "Alice", count: 5 },
-      { name: "Bob", count: 4 },
-      { name: "Charlie", count: 4 },
+      { name: "Alice", count: 5, rank: 1 },
+      { name: "Bob", count: 4, rank: 2 },
+      { name: "Charlie", count: 4, rank: 2 },
     ]);
   });
 
@@ -123,9 +123,9 @@ describe("getTopLeaderboard", () => {
     ];
     const result = getTopLeaderboard(sorted);
     expect(result).toEqual([
-      { name: "Alice", count: 5 },
-      { name: "Bob", count: 5 },
-      { name: "Charlie", count: 4 },
+      { name: "Alice", count: 5, rank: 1 },
+      { name: "Bob", count: 5, rank: 1 },
+      { name: "Charlie", count: 4, rank: 2 },
     ]);
   });
 
@@ -139,10 +139,10 @@ describe("getTopLeaderboard", () => {
     ];
     const result = getTopLeaderboard(sorted);
     expect(result).toEqual([
-      { name: "Alice", count: 5 },
-      { name: "Bob", count: 4 },
-      { name: "Charlie", count: 3 },
-      { name: "Dave", count: 3 },
+      { name: "Alice", count: 5, rank: 1 },
+      { name: "Bob", count: 4, rank: 2 },
+      { name: "Charlie", count: 3, rank: 3 },
+      { name: "Dave", count: 3, rank: 3 },
     ]);
   });
 
@@ -152,7 +152,9 @@ describe("getTopLeaderboard", () => {
 
   it("returns single entry when only one person", () => {
     const sorted = [{ name: "Alice", count: 3 }];
-    expect(getTopLeaderboard(sorted)).toEqual([{ name: "Alice", count: 3 }]);
+    expect(getTopLeaderboard(sorted)).toEqual([
+      { name: "Alice", count: 3, rank: 1 },
+    ]);
   });
 
   it("returns two entries when only two people", () => {
@@ -161,8 +163,8 @@ describe("getTopLeaderboard", () => {
       { name: "Bob", count: 3 },
     ];
     expect(getTopLeaderboard(sorted)).toEqual([
-      { name: "Alice", count: 5 },
-      { name: "Bob", count: 3 },
+      { name: "Alice", count: 5, rank: 1 },
+      { name: "Bob", count: 3, rank: 2 },
     ]);
   });
 });

@@ -400,9 +400,12 @@ async function verifyPosts(
     const top3 = getTopLeaderboard(sorted);
 
     if (top3.length > 0) {
-      const leaderboard = top3.map((e) => `${e.name}: ${e.count}`).join("\n");
+      const rankEmoji = ["🥇", "🥈", "🥉"];
+      const leaderboard = top3
+        .map((e) => `${rankEmoji[e.rank - 1]} ${e.name}: ${e.count}`)
+        .join("\n");
       await channel.send({
-        content: `PR Leaderboard for ${getCurrentMonthDay()} (Top 3):\n${leaderboard}`,
+        content: `PR Leaderboard for ${getCurrentMonthDay()}:\n${leaderboard}`,
       });
       incrementMessagesSent();
     }
@@ -457,8 +460,8 @@ function roleMention(roleId: string) {
  */
 export function getTopLeaderboard(
   sorted: Array<{ name: string; count: number }>,
-): Array<{ name: string; count: number }> {
-  const result: Array<{ name: string; count: number }> = [];
+): Array<{ name: string; count: number; rank: number }> {
+  const result: Array<{ name: string; count: number; rank: number }> = [];
   let currentRank = 0;
   let lastCount = -1;
 
@@ -468,7 +471,7 @@ export function getTopLeaderboard(
       if (currentRank > 3 || (currentRank > 1 && result.length >= 3)) break;
       lastCount = entry.count;
     }
-    result.push(entry);
+    result.push({ ...entry, rank: currentRank });
   }
 
   return result;

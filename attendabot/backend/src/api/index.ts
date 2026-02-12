@@ -72,16 +72,10 @@ if (process.env.NODE_ENV === "production") {
 
   app.use(express.static(frontendPath));
 
-  // Fallback: serve the correct index.html based on path
+  // Fallback: serve index.html for all non-API routes (SPA routing)
   app.get("*", (req, res) => {
     if (req.path.startsWith("/api")) return;
-    if (req.path.startsWith("/simulations/auth")) {
-      res.sendFile(path.join(frontendPath, "simulations/auth/index.html"));
-    } else if (req.path.startsWith("/simulations")) {
-      res.sendFile(path.join(frontendPath, "simulations/auth/index.html"));
-    } else {
-      res.sendFile(path.join(frontendPath, "index.html"));
-    }
+    res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
 

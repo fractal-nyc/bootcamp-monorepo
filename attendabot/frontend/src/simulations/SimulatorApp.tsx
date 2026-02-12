@@ -1,10 +1,13 @@
-import { useState } from "react";
 import FlowDiagram from "./FlowDiagram";
 import { flows } from "./flowData";
+import "./simulations.css";
 
-export default function SimulatorApp() {
-  const [activeTab, setActiveTab] = useState(0);
+interface SimulatorAppProps {
+  activeTab: number;
+  onTabChange: (index: number) => void;
+}
 
+export default function SimulatorApp({ activeTab, onTabChange }: SimulatorAppProps) {
   return (
     <>
       <h1 className="app-title">Auth Flow Simulator</h1>
@@ -12,17 +15,17 @@ export default function SimulatorApp() {
         Interactive animations of common authentication systems
       </p>
 
-      <div className="tab-bar">
+      <nav className="tab-navigation">
         {flows.map((flow, i) => (
           <button
             key={flow.id}
             className={`tab-btn ${i === activeTab ? "active" : ""}`}
-            onClick={() => setActiveTab(i)}
+            onClick={() => onTabChange(i)}
           >
             {flow.title}
           </button>
         ))}
-      </div>
+      </nav>
 
       <FlowDiagram flow={flows[activeTab]} />
     </>

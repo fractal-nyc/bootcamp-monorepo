@@ -4,11 +4,13 @@
  */
 
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { MyEods } from "./MyEods";
 import { StudentStats } from "./StudentStats";
 import { SimulationsHub } from "./SimulationsHub";
 
 type StudentTab = "stats" | "eods" | "simulations";
+const VALID_TABS: StudentTab[] = ["stats", "eods", "simulations"];
 
 interface StudentPortalProps {
   username: string | null;
@@ -21,8 +23,21 @@ interface StudentPortalProps {
 
 /** Student portal with tabs for Stats, My EODs, and Simulations. */
 export function StudentPortal({ username, sessionInvalid, onLogout, studentDiscordId, cohortStartDate, cohortEndDate }: StudentPortalProps) {
-  const [activeTab, setActiveTab] = useState<StudentTab>("stats");
   const embedded = !!studentDiscordId;
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // When embedded (instructor impersonation), use local state since URL is /instructor/*
+  const [embeddedTab, setEmbeddedTab] = useState<StudentTab>("stats");
+
+  // When standalone, derive tab from URL
+  const segment = location.pathname.split("/")[2] ?? "";
+  const urlTab: StudentTab = VALID_TABS.includes(segment as StudentTab) ? (segment as StudentTab) : "stats";
+
+  const activeTab = embedded ? embeddedTab : urlTab;
+  const setActiveTab = embedded
+    ? setEmbeddedTab
+    : (tab: StudentTab) => navigate(`/student/${tab}`);
 
   const content = (
     <>

@@ -1,21 +1,5 @@
 /* ── Simulations page – Fractal design system ── */
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  min-height: 100vh;
-}
-
-#root {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: var(--space-5) var(--space-6);
-}
-
 /* ── Header ── */
 .app-title {
   font-size: var(--text-2xl);
@@ -28,40 +12,6 @@ body {
   color: var(--color-slate);
   font-size: var(--text-xl);
   margin-bottom: var(--space-5);
-}
-
-/* ── Tabs ── */
-.tab-bar {
-  display: flex;
-  gap: 0;
-  margin-bottom: var(--space-6);
-  border: 2px solid var(--color-charcoal);
-}
-.tab-btn {
-  background: var(--color-white);
-  border: none;
-  border-right: 2px solid var(--color-charcoal);
-  box-shadow: none;
-  color: var(--color-slate);
-  padding: var(--space-3) var(--space-5);
-  cursor: pointer;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-family: inherit;
-  transition: background 0.15s, color 0.15s;
-}
-.tab-btn:last-child {
-  border-right: none;
-}
-.tab-btn:hover {
-  color: var(--color-charcoal);
-  background: var(--color-platinum);
-}
-.tab-btn.active {
-  color: var(--color-white);
-  background: var(--color-charcoal);
 }
 
 /* ── Flow Diagram ── */

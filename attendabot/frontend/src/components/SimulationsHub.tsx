@@ -2,17 +2,21 @@
  * @fileoverview Displays available simulations as cards with links.
  */
 
+import { useNavigate } from "react-router";
+
 const simulations = [
   {
     id: "auth",
     title: "Auth Flow Simulator",
     description: "Interactive animations of common authentication systems",
-    url: "/simulations/auth/",
+    url: "/simulations/auth",
   },
 ];
 
 /** Renders a grid of available simulation cards. */
 export function SimulationsHub() {
+  const navigate = useNavigate();
+
   return (
     <div className="panel" style={{ gridColumn: "span 2" }}>
       <h2>Simulations</h2>
@@ -45,7 +49,7 @@ export function SimulationsHub() {
             </p>
             <button
               className="primary-btn"
-              onClick={() => window.open(sim.url, "_blank")}
+              onClick={() => navigate(sim.url)}
             >
               Open
             </button>

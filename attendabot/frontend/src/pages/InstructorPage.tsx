@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { getCohorts, getStudentsByCohort } from "../api/client";
 import type { Student, Cohort } from "../api/client";
 import { MessageFeed } from "../components/MessageFeed";
@@ -17,11 +18,16 @@ import { SimulationsHub } from "../components/SimulationsHub";
 import { useAuth } from "../hooks/useAuth";
 
 type Tab = "students" | "simulations" | "observers" | "messages" | "testing" | "diagnostics";
+const VALID_TABS: Tab[] = ["students", "simulations", "observers", "messages", "testing", "diagnostics"];
 
 /** Instructor admin dashboard with tabs and impersonation. */
 export function InstructorPage() {
   const { username, sessionInvalid, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>("students");
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const segment = location.pathname.split("/")[2] ?? "";
+  const activeTab: Tab = VALID_TABS.includes(segment as Tab) ? (segment as Tab) : "students";
   const [impersonating, setImpersonating] = useState<{ discordId: string; name: string; cohortId: number } | null>(null);
   const [impersonateStudents, setImpersonateStudents] = useState<{ discordId: string; name: string; cohortId: number }[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -115,37 +121,37 @@ export function InstructorPage() {
           <nav className="tab-navigation">
             <button
               className={`tab-btn ${activeTab === "students" ? "active" : ""}`}
-              onClick={() => setActiveTab("students")}
+              onClick={() => navigate("/instructor/students")}
             >
               Students
             </button>
             <button
               className={`tab-btn ${activeTab === "simulations" ? "active" : ""}`}
-              onClick={() => setActiveTab("simulations")}
+              onClick={() => navigate("/instructor/simulations")}
             >
               Simulations
             </button>
             <button
               className={`tab-btn ${activeTab === "observers" ? "active" : ""}`}
-              onClick={() => setActiveTab("observers")}
+              onClick={() => navigate("/instructor/observers")}
             >
               Observers
             </button>
             <button
               className={`tab-btn ${activeTab === "messages" ? "active" : ""}`}
-              onClick={() => setActiveTab("messages")}
+              onClick={() => navigate("/instructor/messages")}
             >
               Messages
             </button>
             <button
               className={`tab-btn ${activeTab === "testing" ? "active" : ""}`}
-              onClick={() => setActiveTab("testing")}
+              onClick={() => navigate("/instructor/testing")}
             >
               Testing
             </button>
             <button
               className={`tab-btn ${activeTab === "diagnostics" ? "active" : ""}`}
-              onClick={() => setActiveTab("diagnostics")}
+              onClick={() => navigate("/instructor/diagnostics")}
             >
               Configuration
             </button>

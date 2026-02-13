@@ -372,28 +372,32 @@ async function verifyPosts(
   const messages = await fetchMessagesSince(channel, since);
 
   const usersWhoPosted = new Set<string>();
-  const userPullRequestCounts = new Map<string, number>();
+  const userPrUrls = new Map<string, Set<string>>();
 
   for (const message of messages) {
     const authorId = message.author.id;
     if (userIds.includes(authorId)) {
-      usersWhoPosted.add(message.author.id);
+      usersWhoPosted.add(authorId);
 
-      const prCount = countPrsInMessage(message.content);
-
-      userPullRequestCounts.set(
-        authorId,
-        (userPullRequestCounts.get(message.author.id) ?? 0) + prCount,
-      );
+      const urls = extractPrUrls(message.content);
+      if (urls.length > 0) {
+        if (!userPrUrls.has(authorId)) {
+          userPrUrls.set(authorId, new Set());
+        }
+        const prSet = userPrUrls.get(authorId)!;
+        for (const url of urls) {
+          prSet.add(url);
+        }
+      }
     }
   }
 
   if (channelId == EOD_CHANNEL_ID) {
     // Sort by PR count descending
-    const sorted = Array.from(userPullRequestCounts.entries())
-      .map(([userId, count]) => ({
+    const sorted = Array.from(userPrUrls.entries())
+      .map(([userId, urls]) => ({
         name: `<@${userId}>`,
-        count,
+        count: urls.size,
       }))
       .sort((a, b) => b.count - a.count);
 
@@ -477,10 +481,15 @@ export function getTopLeaderboard(
   return result;
 }
 
+/** Extracts all GitHub pull request URLs from a message. */
+export function extractPrUrls(messageContent: string): string[] {
+  const re = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
+  return messageContent.match(re) ?? [];
+}
+
 /** Counts the number of GitHub pull request URLs in a message. */
 export function countPrsInMessage(messageContent: string): number {
-  const re = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
-  return (messageContent.match(re) || []).length;
+  return extractPrUrls(messageContent).length;
 }
 
 /**
@@ -595,9 +604,8 @@ export async function generateDailyBriefing(
   }
 
   const eodPrsByUser = new Map<string, Set<string>>(); // discord_id -> unique PR URLs
-  const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
   for (const msg of eodMessages) {
-    const urls = (msg.content ?? "").match(prUrlRe) ?? [];
+    const urls = extractPrUrls(msg.content ?? "");
     if (urls.length > 0) {
       if (!eodPrsByUser.has(msg.author_id)) {
         eodPrsByUser.set(msg.author_id, new Set());

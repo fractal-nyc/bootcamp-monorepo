@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage, isValidEodMessage, getPreviousDayRangeET } from "../../bot/index";
+import { countPrsInMessage, extractPrUrls, isValidEodMessage, getPreviousDayRangeET } from "../../bot/index";
 
 describe("Daily Briefing - PR Counting", () => {
   describe("countPrsInMessage", () => {
@@ -269,77 +269,52 @@ describe("Daily Briefing - isValidEodMessage", () => {
 });
 
 describe("Daily Briefing - PR Deduplication", () => {
+  /** Helper that mirrors the deduplication logic used in generateDailyBriefing. */
+  function collectUniquePrs(
+    messages: Array<{ author_id: string; content: string | null }>,
+  ): Map<string, Set<string>> {
+    const prsByUser = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = extractPrUrls(msg.content ?? "");
+      if (urls.length > 0) {
+        if (!prsByUser.has(msg.author_id)) {
+          prsByUser.set(msg.author_id, new Set());
+        }
+        const userPrs = prsByUser.get(msg.author_id)!;
+        for (const url of urls) {
+          userPrs.add(url);
+        }
+      }
+    }
+    return prsByUser;
+  }
+
   it("counts unique PR URLs across multiple messages", () => {
-    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
     const messages = [
       { author_id: "user-1", content: "midday: https://github.com/user/repo/pull/1" },
       { author_id: "user-1", content: "EOD:\nhttps://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
     ];
-
-    const prsByUser = new Map<string, Set<string>>();
-    for (const msg of messages) {
-      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
-      if (urls.length > 0) {
-        if (!prsByUser.has(msg.author_id)) {
-          prsByUser.set(msg.author_id, new Set());
-        }
-        const userPrs = prsByUser.get(msg.author_id)!;
-        for (const url of urls) {
-          userPrs.add(url);
-        }
-      }
-    }
-
+    const prsByUser = collectUniquePrs(messages);
     expect(prsByUser.get("user-1")!.size).toBe(2);
   });
 
   it("counts PRs separately per user", () => {
-    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
     const messages = [
       { author_id: "user-1", content: "https://github.com/user/repo/pull/1" },
       { author_id: "user-2", content: "https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
     ];
-
-    const prsByUser = new Map<string, Set<string>>();
-    for (const msg of messages) {
-      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
-      if (urls.length > 0) {
-        if (!prsByUser.has(msg.author_id)) {
-          prsByUser.set(msg.author_id, new Set());
-        }
-        const userPrs = prsByUser.get(msg.author_id)!;
-        for (const url of urls) {
-          userPrs.add(url);
-        }
-      }
-    }
-
+    const prsByUser = collectUniquePrs(messages);
     expect(prsByUser.get("user-1")!.size).toBe(1);
     expect(prsByUser.get("user-2")!.size).toBe(2);
   });
 
   it("does not count the same PR URL posted three times", () => {
-    const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
     const messages = [
       { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
       { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
       { author_id: "user-1", content: "https://github.com/user/repo/pull/5" },
     ];
-
-    const prsByUser = new Map<string, Set<string>>();
-    for (const msg of messages) {
-      const urls = (msg.content ?? "").match(prUrlRe) ?? [];
-      if (urls.length > 0) {
-        if (!prsByUser.has(msg.author_id)) {
-          prsByUser.set(msg.author_id, new Set());
-        }
-        const userPrs = prsByUser.get(msg.author_id)!;
-        for (const url of urls) {
-          userPrs.add(url);
-        }
-      }
-    }
-
+    const prsByUser = collectUniquePrs(messages);
     expect(prsByUser.get("user-1")!.size).toBe(1);
   });
 });

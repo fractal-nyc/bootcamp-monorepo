@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countPrsInMessage, getTopLeaderboard } from "../../bot/index.js";
+import { countPrsInMessage, extractPrUrls, getTopLeaderboard } from "../../bot/index.js";
 
 describe("countPrsInMessage", () => {
   it("returns 1 when there is one PR URL", () => {
@@ -166,5 +166,117 @@ describe("getTopLeaderboard", () => {
       { name: "Alice", count: 5, rank: 1 },
       { name: "Bob", count: 3, rank: 2 },
     ]);
+  });
+});
+
+describe("extractPrUrls", () => {
+  it("returns empty array when no PR URLs", () => {
+    expect(extractPrUrls("Just a regular message")).toEqual([]);
+  });
+
+  it("returns empty array for empty string", () => {
+    expect(extractPrUrls("")).toEqual([]);
+  });
+
+  it("extracts a single PR URL", () => {
+    const message = "Check this: https://github.com/user/repo/pull/1";
+    expect(extractPrUrls(message)).toEqual(["https://github.com/user/repo/pull/1"]);
+  });
+
+  it("extracts multiple distinct PR URLs", () => {
+    const message = `PRs:
+      https://github.com/user/repo/pull/1
+      https://github.com/user/repo/pull/2
+      https://github.com/other/repo/pull/5`;
+    const urls = extractPrUrls(message);
+    expect(urls).toHaveLength(3);
+    expect(urls).toContain("https://github.com/user/repo/pull/1");
+    expect(urls).toContain("https://github.com/user/repo/pull/2");
+    expect(urls).toContain("https://github.com/other/repo/pull/5");
+  });
+
+  it("returns duplicate URLs when the same URL appears multiple times in one message", () => {
+    const message =
+      "https://github.com/user/repo/pull/1 and again https://github.com/user/repo/pull/1";
+    const urls = extractPrUrls(message);
+    expect(urls).toHaveLength(2);
+  });
+
+  it("ignores non-PR GitHub URLs", () => {
+    const message = "https://github.com/user/repo https://github.com/user/repo/issues/1";
+    expect(extractPrUrls(message)).toEqual([]);
+  });
+});
+
+describe("PR deduplication across messages", () => {
+  /** Helper that mirrors the deduplication logic used in verifyPosts / student portal. */
+  function countUniquePrsAcrossMessages(
+    messages: Array<{ authorId: string; content: string }>,
+  ): Map<string, number> {
+    const userPrUrls = new Map<string, Set<string>>();
+    for (const msg of messages) {
+      const urls = extractPrUrls(msg.content);
+      if (urls.length > 0) {
+        if (!userPrUrls.has(msg.authorId)) {
+          userPrUrls.set(msg.authorId, new Set());
+        }
+        const prSet = userPrUrls.get(msg.authorId)!;
+        for (const url of urls) {
+          prSet.add(url);
+        }
+      }
+    }
+    return new Map(
+      [...userPrUrls.entries()].map(([id, urls]) => [id, urls.size]),
+    );
+  }
+
+  it("does not double-count when the same PR URL appears in two messages", () => {
+    const messages = [
+      { authorId: "user-1", content: "midday: https://github.com/user/repo/pull/1" },
+      { authorId: "user-1", content: "EOD: https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+    ];
+    const counts = countUniquePrsAcrossMessages(messages);
+    expect(counts.get("user-1")).toBe(2);
+  });
+
+  it("does not double-count when the same PR URL is posted three times", () => {
+    const messages = [
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/5" },
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/5" },
+    ];
+    const counts = countUniquePrsAcrossMessages(messages);
+    expect(counts.get("user-1")).toBe(1);
+  });
+
+  it("counts distinct PRs correctly when duplicates are mixed in", () => {
+    const messages = [
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/2\nhttps://github.com/user/repo/pull/3" },
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/3" },
+    ];
+    const counts = countUniquePrsAcrossMessages(messages);
+    expect(counts.get("user-1")).toBe(3);
+  });
+
+  it("deduplicates per user independently", () => {
+    const messages = [
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/1" },
+      { authorId: "user-1", content: "https://github.com/user/repo/pull/1" },
+      { authorId: "user-2", content: "https://github.com/user/repo/pull/1\nhttps://github.com/user/repo/pull/2" },
+      { authorId: "user-2", content: "https://github.com/user/repo/pull/1" },
+    ];
+    const counts = countUniquePrsAcrossMessages(messages);
+    expect(counts.get("user-1")).toBe(1);
+    expect(counts.get("user-2")).toBe(2);
+  });
+
+  it("returns 0 for users with no PR URLs", () => {
+    const messages = [
+      { authorId: "user-1", content: "Just chatting, no PRs here" },
+    ];
+    const counts = countUniquePrsAcrossMessages(messages);
+    expect(counts.has("user-1")).toBe(false);
   });
 });

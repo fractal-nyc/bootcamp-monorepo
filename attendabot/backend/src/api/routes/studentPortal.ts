@@ -7,7 +7,7 @@ import { Router, Response } from "express";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 import { getMessagesByUser, getMessagesByChannelAndDateRange } from "../../services/db";
 import { EOD_CHANNEL_ID, ATTENDANCE_CHANNEL_ID } from "../../bot/constants";
-import { countPrsInMessage, isValidEodMessage } from "../../bot/index";
+import { extractPrUrls, isValidEodMessage } from "../../bot/index";
 
 export const studentPortalRouter = Router();
 
@@ -116,25 +116,23 @@ studentPortalRouter.get(
       const attendancePosted = myAttendance.length > 0;
       const attendanceOnTime = attendancePosted && myAttendance[0].created_at < tenAm;
 
-      // Midday PR (PR links before 2 PM)
-      const prBeforeTwoPm = myEod.filter(
-        (m) => m.created_at < twoPm && countPrsInMessage(m.content ?? "") > 0,
-      );
-      const middayPrPosted = prBeforeTwoPm.length > 0;
-      const middayPrCount = prBeforeTwoPm.reduce(
-        (sum, m) => sum + countPrsInMessage(m.content ?? ""),
-        0,
-      );
+      // Midday PR (unique PR links before 2 PM)
+      const middayPrUrls = new Set<string>();
+      for (const m of myEod.filter((m) => m.created_at < twoPm)) {
+        for (const url of extractPrUrls(m.content ?? "")) {
+          middayPrUrls.add(url);
+        }
+      }
+      const middayPrPosted = middayPrUrls.size > 0;
+      const middayPrCount = middayPrUrls.size;
 
       // EOD
       const eodPosted = myEod.some((m) => isValidEodMessage(m.content ?? ""));
 
       // Total unique PR count
-      const prUrlRe = /https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+/g;
       const allPrUrls = new Set<string>();
       for (const m of myEod) {
-        const urls = (m.content ?? "").match(prUrlRe) ?? [];
-        for (const url of urls) {
+        for (const url of extractPrUrls(m.content ?? "")) {
           allPrUrls.add(url);
         }
       }

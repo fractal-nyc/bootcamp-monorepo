@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { countPrsInMessage, getTopLeaderboard } from "../../bot/index.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { countPrsInMessage, getTopLeaderboard, getCurrentMonthDay } from "../../bot/index.js";
 
 describe("countPrsInMessage", () => {
   it("returns 1 when there is one PR URL", () => {
@@ -164,5 +164,46 @@ describe("getTopLeaderboard", () => {
       { name: "Alice", count: 5 },
       { name: "Bob", count: 3 },
     ]);
+  });
+});
+
+describe("getCurrentMonthDay", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("returns the correct ET date at 11:59 PM ET (which is next day in UTC)", () => {
+    // 11:59 PM ET on Feb 13 = 4:59 AM UTC on Feb 14
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-14T04:59:00.000Z"));
+    expect(getCurrentMonthDay()).toBe("02/13");
+  });
+
+  it("returns the correct ET date at midnight ET (which is 5 AM UTC)", () => {
+    // 12:00 AM ET on Feb 14 = 5:00 AM UTC on Feb 14
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-14T05:00:00.000Z"));
+    expect(getCurrentMonthDay()).toBe("02/14");
+  });
+
+  it("returns the correct ET date during normal daytime hours", () => {
+    // 2:00 PM ET on Feb 13 = 7:00 PM UTC on Feb 13
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-13T19:00:00.000Z"));
+    expect(getCurrentMonthDay()).toBe("02/13");
+  });
+
+  it("returns the correct ET date at the start of the day in ET", () => {
+    // 12:01 AM ET on Jan 1 = 5:01 AM UTC on Jan 1
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T05:01:00.000Z"));
+    expect(getCurrentMonthDay()).toBe("01/01");
+  });
+
+  it("handles EDT (daylight saving time) correctly", () => {
+    // During EDT (UTC-4), 11:59 PM ET on Jul 15 = 3:59 AM UTC on Jul 16
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-16T03:59:00.000Z"));
+    expect(getCurrentMonthDay()).toBe("07/15");
   });
 });

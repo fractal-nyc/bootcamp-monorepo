@@ -438,8 +438,9 @@ async function verifyPosts(
   return dmedUserNames;
 }
 
-function getCurrentMonthDay(): string {
+export function getCurrentMonthDay(): string {
   return new Date().toLocaleDateString("en-US", {
+    timeZone: CRON_TIMEZONE,
     month: "2-digit",
     day: "2-digit",
   });

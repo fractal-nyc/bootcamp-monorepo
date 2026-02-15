@@ -253,6 +253,7 @@ export interface FeedItem {
   content: string;
   author: string;
   createdAt: string;
+  updatedAt: string | null;
 }
 
 /** Fetches all cohorts. */
@@ -477,12 +478,14 @@ export async function getStudentFeed(studentId: number, limit: number = 50): Pro
       content: string;
       author: string;
       created_at: string;
+      updated_at: string | null;
     }) => ({
       type: item.type as FeedItem["type"],
       id: item.id,
       content: item.content,
       author: item.author,
       createdAt: item.created_at,
+      updatedAt: item.updated_at,
     }));
   } catch (error) {
     console.error(error);
@@ -490,13 +493,15 @@ export async function getStudentFeed(studentId: number, limit: number = 50): Pro
   }
 }
 
-/** Creates an instructor note for a student. */
-export async function createNote(studentId: number, content: string): Promise<boolean> {
+/** Creates an instructor note for a student. Optionally accepts a custom createdAt timestamp. */
+export async function createNote(studentId: number, content: string, createdAt?: string): Promise<boolean> {
   try {
     const username = getUsername() || "Unknown";
+    const body: Record<string, string> = { content, author: username };
+    if (createdAt) body.createdAt = createdAt;
     const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes`, {
       method: "POST",
-      body: JSON.stringify({ content, author: username }),
+      body: JSON.stringify(body),
     });
     return res.ok;
   } catch (error) {
@@ -510,6 +515,24 @@ export async function deleteNote(studentId: number, noteId: number): Promise<boo
   try {
     const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes/${noteId}`, {
       method: "DELETE",
+    });
+    return res.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
+/** Updates an instructor note's content and/or timestamp. */
+export async function updateNote(
+  studentId: number,
+  noteId: number,
+  updates: { content?: string; createdAt?: string }
+): Promise<boolean> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/students/${studentId}/notes/${noteId}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
     });
     return res.ok;
   } catch (error) {

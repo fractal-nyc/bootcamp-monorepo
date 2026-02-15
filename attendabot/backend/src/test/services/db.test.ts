@@ -538,6 +538,94 @@ describe("Database Service - Direct Tests", () => {
       expect(note.content).toBe("Great progress!");
       expect(note.author).toBe("Instructor");
     });
+
+    it("creates a note with custom created_at", () => {
+      const customDate = "2026-01-15T10:30:00.000Z";
+      const stmt = db.prepare(`
+        INSERT INTO instructor_notes (student_id, author, content, created_at)
+        VALUES (?, ?, ?, ?)
+      `);
+      const result = stmt.run(studentId, "Instructor", "Backdated note", customDate);
+
+      const selectStmt = db.prepare("SELECT * FROM instructor_notes WHERE id = ?");
+      const note = selectStmt.get(result.lastInsertRowid) as {
+        content: string;
+        created_at: string;
+        updated_at: string | null;
+      };
+
+      expect(note.content).toBe("Backdated note");
+      expect(note.created_at).toBe(customDate);
+      expect(note.updated_at).toBeNull();
+    });
+
+    it("has null updated_at by default", () => {
+      const note = createTestNote(db, { studentId, content: "New note" });
+
+      const stmt = db.prepare("SELECT updated_at FROM instructor_notes WHERE id = ?");
+      const result = stmt.get(note.id) as { updated_at: string | null };
+
+      expect(result.updated_at).toBeNull();
+    });
+
+    it("updates note content and sets updated_at", () => {
+      const note = createTestNote(db, {
+        studentId,
+        content: "Original content",
+      });
+
+      db.prepare(`
+        UPDATE instructor_notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run("Edited content", note.id);
+
+      const stmt = db.prepare("SELECT content, updated_at FROM instructor_notes WHERE id = ?");
+      const result = stmt.get(note.id) as { content: string; updated_at: string | null };
+
+      expect(result.content).toBe("Edited content");
+      expect(result.updated_at).not.toBeNull();
+    });
+
+    it("updates note created_at timestamp", () => {
+      const note = createTestNote(db, {
+        studentId,
+        content: "Some note",
+        createdAt: "2026-02-10T12:00:00.000Z",
+      });
+
+      const newDate = "2026-02-08T09:00:00.000Z";
+      db.prepare(`
+        UPDATE instructor_notes SET created_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run(newDate, note.id);
+
+      const stmt = db.prepare("SELECT created_at, updated_at FROM instructor_notes WHERE id = ?");
+      const result = stmt.get(note.id) as { created_at: string; updated_at: string | null };
+
+      expect(result.created_at).toBe(newDate);
+      expect(result.updated_at).not.toBeNull();
+    });
+
+    it("returns 0 changes when updating non-existent note", () => {
+      const result = db.prepare(`
+        UPDATE instructor_notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run("Updated", 9999);
+
+      expect(result.changes).toBe(0);
+    });
+
+    it("deletes a note by id", () => {
+      const note = createTestNote(db, { studentId, content: "To delete" });
+
+      const result = db.prepare("DELETE FROM instructor_notes WHERE id = ?").run(note.id);
+      expect(result.changes).toBe(1);
+
+      const selectStmt = db.prepare("SELECT * FROM instructor_notes WHERE id = ?");
+      expect(selectStmt.get(note.id)).toBeUndefined();
+    });
+
+    it("returns 0 changes when deleting non-existent note", () => {
+      const result = db.prepare("DELETE FROM instructor_notes WHERE id = ?").run(9999);
+      expect(result.changes).toBe(0);
+    });
   });
 
   describe("Student Feed", () => {
@@ -570,6 +658,60 @@ describe("Database Service - Direct Tests", () => {
       const results = stmt.all(studentId);
 
       expect(results.length).toBe(2);
+    });
+
+    it("includes updated_at for notes in feed query", () => {
+      const note = createTestNote(db, { studentId, author: "David", content: "Original" });
+
+      // Update the note to set updated_at
+      db.prepare(`
+        UPDATE instructor_notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run("Edited", note.id);
+
+      const stmt = db.prepare(`
+        SELECT
+          'note' as type,
+          'note_' || id as id,
+          content,
+          author,
+          created_at,
+          updated_at
+        FROM instructor_notes
+        WHERE student_id = ?
+      `);
+      const results = stmt.all(studentId) as { updated_at: string | null; content: string }[];
+
+      expect(results.length).toBe(1);
+      expect(results[0].content).toBe("Edited");
+      expect(results[0].updated_at).not.toBeNull();
+    });
+
+    it("returns null updated_at for EOD messages in feed query", () => {
+      const eodChannel = createTestChannel(db, "eod-ch", "eod");
+
+      createTestMessage(db, {
+        channelId: eodChannel.channel_id,
+        authorId: discordUserId,
+        content: "EOD message",
+      });
+
+      const stmt = db.prepare(`
+        SELECT
+          'eod' as type,
+          'eod_' || m.discord_message_id as id,
+          m.content,
+          u.username as author,
+          m.created_at,
+          NULL as updated_at
+        FROM messages m
+        JOIN users u ON m.author_id = u.author_id
+        JOIN channels c ON m.channel_id = c.channel_id
+        WHERE m.author_id = ? AND c.channel_name != 'attendance'
+      `);
+      const results = stmt.all(discordUserId) as { updated_at: string | null }[];
+
+      expect(results.length).toBe(1);
+      expect(results[0].updated_at).toBeNull();
     });
 
     it("excludes attendance channel from feed", () => {

@@ -13,6 +13,7 @@ import {
   deleteStudent,
   getStudentFeed,
   createInstructorNote,
+  updateInstructorNote,
   deleteInstructorNote,
   getStudentImage,
   updateStudentImage,
@@ -199,7 +200,7 @@ studentsRouter.post("/:id/notes", (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const { content, author } = req.body;
+    const { content, author, createdAt } = req.body;
 
     if (!content || typeof content !== "string") {
       res.status(400).json({ error: "content is required" });
@@ -211,6 +212,16 @@ studentsRouter.post("/:id/notes", (req: AuthRequest, res: Response) => {
       return;
     }
 
+    if (createdAt !== undefined && typeof createdAt !== "string") {
+      res.status(400).json({ error: "createdAt must be a string" });
+      return;
+    }
+
+    if (createdAt !== undefined && isNaN(new Date(createdAt).getTime())) {
+      res.status(400).json({ error: "createdAt must be a valid date string" });
+      return;
+    }
+
     // Verify student exists
     const student = getStudent(id);
     if (!student) {
@@ -218,7 +229,7 @@ studentsRouter.post("/:id/notes", (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const note = createInstructorNote(id, author, content);
+    const note = createInstructorNote(id, author, content, createdAt);
     res.status(201).json({ note });
   } catch (error) {
     console.error("Error creating note:", error);
@@ -245,6 +256,56 @@ studentsRouter.delete("/:id/notes/:noteId", (req: AuthRequest, res: Response) =>
   } catch (error) {
     console.error("Error deleting note:", error);
     res.status(500).json({ error: "Failed to delete note" });
+  }
+});
+
+/** PUT /api/students/:id/notes/:noteId - Update an instructor note */
+studentsRouter.put("/:id/notes/:noteId", (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid student ID" });
+      return;
+    }
+
+    const noteId = parseInt(req.params.noteId, 10);
+    if (isNaN(noteId)) {
+      res.status(400).json({ error: "Invalid note ID" });
+      return;
+    }
+
+    const { content, createdAt } = req.body;
+
+    if (content === undefined && createdAt === undefined) {
+      res.status(400).json({ error: "At least one of content or createdAt is required" });
+      return;
+    }
+
+    if (content !== undefined && typeof content !== "string") {
+      res.status(400).json({ error: "content must be a string" });
+      return;
+    }
+
+    if (createdAt !== undefined && typeof createdAt !== "string") {
+      res.status(400).json({ error: "createdAt must be a string" });
+      return;
+    }
+
+    if (createdAt !== undefined && isNaN(new Date(createdAt).getTime())) {
+      res.status(400).json({ error: "createdAt must be a valid date string" });
+      return;
+    }
+
+    const note = updateInstructorNote(noteId, { content, createdAt });
+    if (!note || note.student_id !== id) {
+      res.status(404).json({ error: "Note not found" });
+      return;
+    }
+
+    res.json({ note });
+  } catch (error) {
+    console.error("Error updating note:", error);
+    res.status(500).json({ error: "Failed to update note" });
   }
 });
 

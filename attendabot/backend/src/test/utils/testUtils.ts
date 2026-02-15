@@ -90,7 +90,8 @@ export function createTestDatabase(): Database.Database {
       student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
       author TEXT NOT NULL,
       content TEXT NOT NULL,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT
     )
   `);
 

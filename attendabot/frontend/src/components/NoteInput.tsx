@@ -1,12 +1,12 @@
 /**
- * @fileoverview Textarea and button for adding instructor notes.
+ * @fileoverview Textarea and button for adding instructor notes with optional custom date.
  */
 
 import { useState } from "react";
 
 /** Props for the NoteInput component. */
 interface NoteInputProps {
-  onSubmit: (content: string) => Promise<void>;
+  onSubmit: (content: string, createdAt?: string) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -14,13 +14,20 @@ interface NoteInputProps {
 export function NoteInput({ onSubmit, disabled }: NoteInputProps) {
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customDate, setCustomDate] = useState("");
 
   const handleSubmit = async () => {
     if (!content.trim() || submitting) return;
 
     setSubmitting(true);
-    await onSubmit(content.trim());
+    const createdAt = showDatePicker && customDate
+      ? new Date(customDate).toISOString()
+      : undefined;
+    await onSubmit(content.trim(), createdAt);
     setContent("");
+    setShowDatePicker(false);
+    setCustomDate("");
     setSubmitting(false);
   };
 
@@ -42,12 +49,32 @@ export function NoteInput({ onSubmit, disabled }: NoteInputProps) {
         disabled={disabled || submitting}
         rows={3}
       />
-      <button
-        onClick={handleSubmit}
-        disabled={disabled || submitting || !content.trim()}
-      >
-        {submitting ? "Adding..." : "Add Note"}
-      </button>
+      <div className="note-input-controls">
+        <label className="note-date-toggle">
+          <input
+            type="checkbox"
+            checked={showDatePicker}
+            onChange={(e) => setShowDatePicker(e.target.checked)}
+            disabled={disabled || submitting}
+          />
+          Custom date
+        </label>
+        {showDatePicker && (
+          <input
+            type="datetime-local"
+            className="note-date-picker"
+            value={customDate}
+            onChange={(e) => setCustomDate(e.target.value)}
+            disabled={disabled || submitting}
+          />
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={disabled || submitting || !content.trim()}
+        >
+          {submitting ? "Adding..." : "Add Note"}
+        </button>
+      </div>
     </div>
   );
 }

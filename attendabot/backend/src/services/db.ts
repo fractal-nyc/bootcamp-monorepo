@@ -187,6 +187,12 @@ function initializeTables(): void {
     db.exec(`ALTER TABLE cohorts ADD COLUMN break_end TEXT`);
   }
 
+  // Add updated_at column to instructor_notes if it doesn't exist
+  const noteCols = db.pragma("table_info(instructor_notes)") as Array<{ name: string }>;
+  if (!noteCols.some((col) => col.name === "updated_at")) {
+    db.exec(`ALTER TABLE instructor_notes ADD COLUMN updated_at TEXT`);
+  }
+
   // Seed default cohorts if they don't exist
   seedDefaultCohorts();
 
@@ -655,15 +661,32 @@ export interface InstructorNoteRecord {
   author: string;
   content: string;
   created_at: string;
+  updated_at: string | null;
 }
 
-/** Creates an instructor note for a student. */
+/** Creates an instructor note for a student. If createdAt is provided, uses that timestamp instead of auto-generating. */
 export function createInstructorNote(
   studentId: number,
   author: string,
-  content: string
+  content: string,
+  createdAt?: string
 ): InstructorNoteRecord {
   const db = getDatabase();
+  if (createdAt) {
+    const stmt = db.prepare(`
+      INSERT INTO instructor_notes (student_id, author, content, created_at)
+      VALUES (?, ?, ?, ?)
+    `);
+    const result = stmt.run(studentId, author, content, createdAt);
+    return {
+      id: result.lastInsertRowid as number,
+      student_id: studentId,
+      author,
+      content,
+      created_at: createdAt,
+      updated_at: null,
+    };
+  }
   const stmt = db.prepare(`
     INSERT INTO instructor_notes (student_id, author, content)
     VALUES (?, ?, ?)
@@ -675,6 +698,7 @@ export function createInstructorNote(
     author,
     content,
     created_at: new Date().toISOString(),
+    updated_at: null,
   };
 }
 
@@ -686,6 +710,31 @@ export function deleteInstructorNote(noteId: number): boolean {
   return result.changes > 0;
 }
 
+/** Updates an instructor note's content and/or timestamp. Sets updated_at to current time. */
+export function updateInstructorNote(
+  noteId: number,
+  updates: { content?: string; createdAt?: string }
+): InstructorNoteRecord | null {
+  const db = getDatabase();
+  const existing = db.prepare(`SELECT * FROM instructor_notes WHERE id = ?`).get(noteId) as InstructorNoteRecord | undefined;
+  if (!existing) return null;
+
+  const stmt = db.prepare(`
+    UPDATE instructor_notes SET
+      content = ?,
+      created_at = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+  stmt.run(
+    updates.content ?? existing.content,
+    updates.createdAt ?? existing.created_at,
+    noteId
+  );
+
+  return db.prepare(`SELECT * FROM instructor_notes WHERE id = ?`).get(noteId) as InstructorNoteRecord;
+}
+
 /** A feed item that can be either an EOD message or an instructor note. */
 export interface FeedItem {
   type: "eod" | "note";
@@ -693,6 +742,7 @@ export interface FeedItem {
   content: string;
   author: string;
   created_at: string;
+  updated_at: string | null;
 }
 
 /**
@@ -712,7 +762,8 @@ export function getStudentFeed(studentId: number, limit: number = 50): FeedItem[
       'note_' || id as id,
       content,
       author,
-      created_at
+      created_at,
+      updated_at
     FROM instructor_notes
     WHERE student_id = ?
   `);
@@ -728,7 +779,8 @@ export function getStudentFeed(studentId: number, limit: number = 50): FeedItem[
         'eod_' || m.discord_message_id as id,
         m.content,
         u.username as author,
-        m.created_at
+        m.created_at,
+        NULL as updated_at
       FROM messages m
       JOIN users u ON m.author_id = u.author_id
       JOIN channels c ON m.channel_id = c.channel_id

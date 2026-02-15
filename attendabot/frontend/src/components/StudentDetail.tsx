@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Markdown from "react-markdown";
 import type { Student, FeedItem, StudentSummaryResponse } from "../api/client";
-import { getStudentFeed, createNote, deleteNote, getStudentSummary, getStudentImage, uploadStudentImage, deleteStudentImage } from "../api/client";
+import { getStudentFeed, createNote, updateNote, deleteNote, getStudentSummary, getStudentImage, uploadStudentImage, deleteStudentImage } from "../api/client";
 import { NoteInput } from "./NoteInput";
 import { StudentFeed } from "./StudentFeed";
 
@@ -84,8 +84,16 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
     loadImage();
   }, [loadFeed, loadSummary, loadImage]);
 
-  const handleAddNote = async (content: string) => {
-    const success = await createNote(student.id, content);
+  const handleAddNote = async (content: string, createdAt?: string) => {
+    const success = await createNote(student.id, content, createdAt);
+    if (success) {
+      await loadFeed();
+      onNoteAdded?.();
+    }
+  };
+
+  const handleEditNote = async (noteId: number, content: string, createdAt: string) => {
+    const success = await updateNote(student.id, noteId, { content, createdAt });
     if (success) {
       await loadFeed();
       onNoteAdded?.();
@@ -260,7 +268,7 @@ export function StudentDetail({ student, onNoteAdded }: StudentDetailProps) {
       {/* Feed */}
       <div className="student-feed-section">
         <h3>Activity Feed</h3>
-        <StudentFeed items={feed} loading={loading} onDeleteNote={handleDeleteNote} />
+        <StudentFeed items={feed} loading={loading} onDeleteNote={handleDeleteNote} onEditNote={handleEditNote} />
       </div>
     </div>
   );

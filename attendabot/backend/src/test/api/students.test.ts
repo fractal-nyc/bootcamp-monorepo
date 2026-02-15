@@ -117,6 +117,77 @@ describe("Student API - Validation Logic", () => {
       const authorValid = typeof body.author === "string";
       expect(contentValid && authorValid).toBe(true);
     });
+
+    it("accepts note body with optional createdAt", () => {
+      const body = { content: "Note", author: "David", createdAt: "2026-01-15T10:00:00.000Z" };
+      const createdAtValid = typeof body.createdAt === "string";
+      expect(createdAtValid).toBe(true);
+    });
+
+    it("validates createdAt must be a string if provided", () => {
+      const body = { content: "Note", author: "David", createdAt: 123 };
+      const createdAtValid = body.createdAt === undefined || typeof body.createdAt === "string";
+      expect(createdAtValid).toBe(false);
+    });
+
+    it("validates createdAt must be a valid date string", () => {
+      const createdAt = "banana";
+      const isValidDate = !isNaN(new Date(createdAt).getTime());
+      expect(isValidDate).toBe(false);
+    });
+
+    it("accepts valid ISO date string for createdAt", () => {
+      const createdAt = "2026-02-10T14:30:00.000Z";
+      const isValidDate = !isNaN(new Date(createdAt).getTime());
+      expect(isValidDate).toBe(true);
+    });
+  });
+
+  describe("update note validation", () => {
+    it("requires at least one of content or createdAt", () => {
+      const body = {};
+      const hasUpdate = (body as any).content !== undefined || (body as any).createdAt !== undefined;
+      expect(hasUpdate).toBe(false);
+    });
+
+    it("validates content must be a string if provided", () => {
+      const body = { content: 123 };
+      const isValid = body.content === undefined || typeof body.content === "string";
+      expect(isValid).toBe(false);
+    });
+
+    it("validates createdAt must be a string if provided", () => {
+      const body = { createdAt: 456 };
+      const isValid = (body as any).createdAt === undefined || typeof (body as any).createdAt === "string";
+      expect(isValid).toBe(false);
+    });
+
+    it("validates createdAt must be a valid date string", () => {
+      const createdAt = "not-a-date";
+      const isValidDate = !isNaN(new Date(createdAt).getTime());
+      expect(isValidDate).toBe(false);
+    });
+
+    it("accepts body with only content", () => {
+      const body = { content: "Updated content" };
+      const hasUpdate = body.content !== undefined;
+      const contentValid = typeof body.content === "string";
+      expect(hasUpdate && contentValid).toBe(true);
+    });
+
+    it("accepts body with only createdAt", () => {
+      const body = { createdAt: "2026-02-10T14:30:00.000Z" };
+      const hasUpdate = body.createdAt !== undefined;
+      const dateValid = !isNaN(new Date(body.createdAt).getTime());
+      expect(hasUpdate && dateValid).toBe(true);
+    });
+
+    it("accepts body with both content and createdAt", () => {
+      const body = { content: "Updated", createdAt: "2026-02-10T14:30:00.000Z" };
+      const contentValid = typeof body.content === "string";
+      const dateValid = !isNaN(new Date(body.createdAt).getTime());
+      expect(contentValid && dateValid).toBe(true);
+    });
   });
 
   describe("limit parameter parsing", () => {
@@ -354,6 +425,95 @@ describe("Student API - Database Operations", () => {
       expect(note.content).toBe("Great work today!");
       expect(note.author).toBe("David");
       expect(note.student_id).toBe(student.id);
+    });
+
+    it("creates a note with custom created_at", () => {
+      const student = createTestStudent(db, { name: "Test Student", cohortId });
+      const customDate = "2026-01-15T10:30:00.000Z";
+
+      const stmt = db.prepare(`
+        INSERT INTO instructor_notes (student_id, author, content, created_at)
+        VALUES (?, ?, ?, ?)
+      `);
+      const result = stmt.run(student.id, "David", "Backdated note", customDate);
+
+      const selectStmt = db.prepare("SELECT * FROM instructor_notes WHERE id = ?");
+      const note = selectStmt.get(result.lastInsertRowid) as {
+        content: string;
+        created_at: string;
+      };
+
+      expect(note.content).toBe("Backdated note");
+      expect(note.created_at).toBe(customDate);
+    });
+  });
+
+  describe("update note", () => {
+    it("updates note content", () => {
+      const student = createTestStudent(db, { name: "Test Student", cohortId });
+      const note = createTestNote(db, {
+        studentId: student.id,
+        content: "Original",
+      });
+
+      db.prepare(`
+        UPDATE instructor_notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run("Edited content", note.id);
+
+      const selectStmt = db.prepare("SELECT * FROM instructor_notes WHERE id = ?");
+      const updated = selectStmt.get(note.id) as {
+        content: string;
+        updated_at: string | null;
+      };
+
+      expect(updated.content).toBe("Edited content");
+      expect(updated.updated_at).not.toBeNull();
+    });
+
+    it("updates note created_at", () => {
+      const student = createTestStudent(db, { name: "Test Student", cohortId });
+      const note = createTestNote(db, {
+        studentId: student.id,
+        createdAt: "2026-02-10T12:00:00.000Z",
+      });
+
+      const newDate = "2026-02-08T09:00:00.000Z";
+      db.prepare(`
+        UPDATE instructor_notes SET created_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run(newDate, note.id);
+
+      const selectStmt = db.prepare("SELECT * FROM instructor_notes WHERE id = ?");
+      const updated = selectStmt.get(note.id) as {
+        created_at: string;
+        updated_at: string | null;
+      };
+
+      expect(updated.created_at).toBe(newDate);
+      expect(updated.updated_at).not.toBeNull();
+    });
+
+    it("returns 0 changes for non-existent note", () => {
+      const result = db.prepare(`
+        UPDATE instructor_notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run("Updated", 9999);
+
+      expect(result.changes).toBe(0);
+    });
+
+    it("verifies note belongs to student via student_id", () => {
+      const student1 = createTestStudent(db, { name: "Student 1", cohortId });
+      const student2 = createTestStudent(db, { name: "Student 2", cohortId });
+      const note = createTestNote(db, {
+        studentId: student1.id,
+        content: "Belongs to student 1",
+      });
+
+      // Note exists but belongs to student1, not student2
+      const selectStmt = db.prepare("SELECT * FROM instructor_notes WHERE id = ?");
+      const result = selectStmt.get(note.id) as { student_id: number };
+
+      expect(result.student_id).toBe(student1.id);
+      expect(result.student_id).not.toBe(student2.id);
     });
   });
 });

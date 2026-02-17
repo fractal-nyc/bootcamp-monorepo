@@ -52,3 +52,15 @@ The theme of this week will be about building software as a team. Now that you'v
   - Since we're building a game, there's less opportunity for "solving user problems" per se. This exercise is mainly about aligning on vision.
 - Resources
   - PRD template examples: https://www.lennysnewsletter.com/p/my-favorite-templates-issue-37
+
+## Afternoon: ECS
+
+- We've seen from the Snake example that there are two basic functions in a real-time game: initialize() and loop().
+  - Initialize sets up the starting conditions for the game.
+  - Loop computes updates to the game state once per "tick" according to the game's rules until the game is terminated.
+- However, if you try to put all your game logic in these two methods, it will become unmanageably complex and difficult to split up among multiple developers (merge conflicts).
+- One solution: ECS (Entities, Components, Systems)
+  - Entities:
+  - Components:
+  - Systems:
+- A note on Composition vs. Inheritance

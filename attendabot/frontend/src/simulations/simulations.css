@@ -350,3 +350,166 @@
   color: var(--color-error);
   font-weight: 700;
 }
+
+/* ══════════════════════════════════════════════════
+   Architecture Diagram (Scaling Simulation)
+   ══════════════════════════════════════════════════ */
+
+/* ── Arch Layout (overrides flow-layout for scaling sim) ── */
+.arch-layout {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.arch-layout .arch-diagram-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.arch-layout .arch-sidebar-col {
+  width: 320px;
+  min-width: 280px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 860px) {
+  .arch-layout {
+    flex-direction: column;
+  }
+  .arch-layout .arch-sidebar-col {
+    width: 100%;
+    min-width: unset;
+    order: 1;
+  }
+  .arch-layout .arch-diagram-col {
+    width: 100%;
+    order: 0;
+  }
+}
+
+/* ── Frame Indicator ── */
+.arch-frame-indicator {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: var(--space-5);
+  color: var(--color-charcoal);
+}
+.arch-frame-number {
+  color: var(--color-slate);
+}
+
+/* ── Change Summary ── */
+.arch-change-summary {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: #2d7a4f;
+  margin-bottom: var(--space-3);
+  line-height: 1.4;
+}
+
+/* ── Canvas ── */
+.arch-canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+/* ── Groups (dashed tier containers) ── */
+.arch-group {
+  position: absolute;
+  border: 2px dashed var(--color-line);
+  border-radius: 4px;
+  transition: left 0.4s ease, top 0.4s ease, width 0.4s ease, height 0.4s ease;
+}
+.arch-group-label {
+  position: absolute;
+  top: -9px;
+  left: 8px;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-slate);
+  background: var(--color-white);
+  padding: 0 4px;
+  z-index: 2;
+}
+
+/* ── Nodes ── */
+.arch-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-white);
+  border: 2px solid var(--color-charcoal);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+  text-align: center;
+  z-index: 1;
+  transition: left 0.4s ease, top 0.4s ease, opacity 0.4s ease;
+  animation: archNodeFadeIn 0.3s ease both;
+}
+.arch-node-icon {
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+.arch-node-label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: pre-line;
+  line-height: 1.2;
+}
+.arch-node-detail {
+  font-size: var(--text-xs);
+  color: var(--color-slate);
+  white-space: nowrap;
+}
+
+/* New-node highlight pulse */
+.arch-node.new {
+  animation: archNodePulse 0.6s ease both;
+}
+
+@keyframes archNodeFadeIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes archNodePulse {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.8); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 16px rgba(45, 122, 79, 0.4); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1); }
+}
+
+/* ── SVG Edges ── */
+.arch-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.arch-edge-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--color-slate);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  stroke: var(--color-white);
+  stroke-width: 4px;
+  paint-order: stroke fill;
+}

@@ -11,6 +11,13 @@ const simulations = [
     description: "Interactive animations of common authentication systems",
     url: "/simulations/auth",
   },
+  {
+    id: "scaling",
+    title: "Scale From Zero to Millions",
+    description:
+      'Watch a web architecture evolve from a single server to global infrastructure. infrastructure. Based on "System Design Interview Volume 1" by Alex Xu.',
+    url: "/simulations/scaling",
+  },
 ];
 
 /** Renders a grid of available simulation cards. */
@@ -20,7 +27,13 @@ export function SimulationsHub() {
   return (
     <div className="panel" style={{ gridColumn: "span 2" }}>
       <h2>Simulations</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "var(--space-5)" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: "var(--space-5)",
+        }}
+      >
         {simulations.map((sim) => (
           <div
             key={sim.id}
@@ -31,26 +44,27 @@ export function SimulationsHub() {
               boxShadow: "4px 4px 0 rgba(0, 0, 0, 0.15)",
             }}
           >
-            <h3 style={{
-              margin: "0 0 var(--space-3) 0",
-              fontSize: "var(--text-base)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}>
+            <h3
+              style={{
+                margin: "0 0 var(--space-3) 0",
+                fontSize: "var(--text-base)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
               {sim.title}
             </h3>
-            <p style={{
-              color: "var(--color-slate)",
-              fontSize: "var(--text-base)",
-              margin: "0 0 var(--space-5) 0",
-              lineHeight: "1.6",
-            }}>
+            <p
+              style={{
+                color: "var(--color-slate)",
+                fontSize: "var(--text-base)",
+                margin: "0 0 var(--space-5) 0",
+                lineHeight: "1.6",
+              }}
+            >
               {sim.description}
             </p>
-            <button
-              className="primary-btn"
-              onClick={() => navigate(sim.url)}
-            >
+            <button className="primary-btn" onClick={() => navigate(sim.url)}>
               Open
             </button>
           </div>

@@ -6,6 +6,8 @@
 import { useParams, useNavigate } from "react-router";
 import SimulatorApp from "../simulations/SimulatorApp";
 import { flows } from "../simulations/flowData";
+import ScalingSimulatorApp from "../simulations/ScalingSimulatorApp";
+import { scalingFrames } from "../simulations/scalingData";
 
 /** Thin wrapper that maps URL params to SimulatorApp props. */
 export function SimulatorPage() {
@@ -21,6 +23,20 @@ export function SimulatorPage() {
         <SimulatorApp
           activeTab={activeTab}
           onTabChange={(i) => navigate(`/simulations/auth/${flows[i].id}`)}
+        />
+      </div>
+    );
+  }
+
+  if (kind === "scaling") {
+    const frameIndex = flowId ? scalingFrames.findIndex((f) => f.id === flowId) : 0;
+    const activeFrame = frameIndex >= 0 ? frameIndex : 0;
+
+    return (
+      <div className="app app-wide">
+        <ScalingSimulatorApp
+          activeFrame={activeFrame}
+          onFrameChange={(i) => navigate(`/simulations/scaling/${scalingFrames[i].id}`)}
         />
       </div>
     );

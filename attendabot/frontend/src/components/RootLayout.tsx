@@ -22,12 +22,13 @@ export function RootLayout() {
   }
 
   // Not logged in and not on login page → redirect to login
-  if (!loggedIn && location.pathname !== "/") {
+  // (simulations are public — no auth required)
+  if (!loggedIn && location.pathname !== "/" && !location.pathname.startsWith("/simulations")) {
     return <Navigate to="/" replace />;
   }
 
   // Logged in but role couldn't be determined (getMe() failed)
-  if (loggedIn && !role && location.pathname !== "/") {
+  if (loggedIn && !role && location.pathname !== "/" && !location.pathname.startsWith("/simulations")) {
     return (
       <div className="app">
         <header>

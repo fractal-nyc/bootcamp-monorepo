@@ -689,7 +689,7 @@ export const scalingFrames: ScalingFrame[] = [
     id: "message-queue",
     title: "Message Queue + Workers",
     description:
-      "Some operations are too slow or resource-intensive to handle synchronously in a web request — sending emails, processing images, generating reports, running ML models. A message queue (like RabbitMQ, Kafka, or SQS) decouples producers (web servers) from consumers (workers). The web server publishes a task to the queue and immediately responds to the user. Worker processes pick up tasks from the queue and process them asynchronously. This makes the system more loosely coupled and failure resilient — if a worker crashes, the message stays in the queue and gets picked up by another worker.",
+      "Some operations are too slow or resource-intensive to handle synchronously in a web request — sending emails, processing images, generating reports, running ML models. A message queue (like RabbitMQ, Kafka, or SQS) decouples producers (web servers) from consumers (workers). The web server publishes a task to the queue and immediately responds to the user. Worker processes pick up tasks from the queue and process them asynchronously. This makes the system more loosely coupled and failure resilient — if a worker crashes, the message stays in the queue and gets picked up by another worker. Beyond the main application, async events also power internal tools, observability dashboards, aggregated statistics, and debug logs — all of which need to talk to the database without blocking user-facing requests.",
     changeSummary:
       "Add a message queue for async processing — web servers publish, workers consume.",
     nodes: [
@@ -728,7 +728,7 @@ export const scalingFrames: ScalingFrame[] = [
       },
       {
         id: "servers",
-        label: "Web Servers",
+        label: "Servers",
         icon: "\uD83D\uDDA5\uFE0F",
         color: "#4ade80",
         x: 25,
@@ -780,6 +780,38 @@ export const scalingFrames: ScalingFrame[] = [
         y: 70,
         group: "dc",
       },
+      {
+        id: "internal-tools",
+        label: "Internal\nTools",
+        icon: "\uD83D\uDEE0\uFE0F",
+        color: "#7dd3fc",
+        x: 15,
+        y: 92,
+      },
+      {
+        id: "monitoring",
+        label: "Observability\nDashboards",
+        icon: "\uD83D\uDCCA",
+        color: "#86efac",
+        x: 38,
+        y: 92,
+      },
+      {
+        id: "agg-stats",
+        label: "Aggregated\nStatistics",
+        icon: "\uD83D\uDCC8",
+        color: "#fde68a",
+        x: 61,
+        y: 92,
+      },
+      {
+        id: "debug-logs",
+        label: "Debug\nLogs",
+        icon: "\uD83D\uDC1B",
+        color: "#fca5a5",
+        x: 84,
+        y: 92,
+      },
     ],
     groups: [
       { id: "dc", label: "Data Center", x: 2, y: 22, width: 90, height: 58 },
@@ -795,8 +827,19 @@ export const scalingFrames: ScalingFrame[] = [
       { from: "servers", to: "db" },
       { from: "servers", to: "cache" },
       { from: "workers", to: "db" },
+      { from: "internal-tools", to: "db" },
+      { from: "monitoring", to: "db" },
+      { from: "agg-stats", to: "db" },
+      { from: "debug-logs", to: "db" },
     ],
-    newNodeIds: ["mq", "workers"],
+    newNodeIds: [
+      "mq",
+      "workers",
+      "internal-tools",
+      "monitoring",
+      "agg-stats",
+      "debug-logs",
+    ],
   },
 
   // ── Frame 11: Database Sharding ──

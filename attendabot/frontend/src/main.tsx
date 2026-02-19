@@ -19,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<LoginPage />} />
             <Route path="/student/*" element={<StudentPage />} />
             <Route path="/instructor/*" element={<InstructorPage />} />
+            <Route path="/simulations" element={<SimulatorPage />} />
             <Route path="/simulations/:kind/:flowId?" element={<SimulatorPage />} />
           </Route>
         </Routes>

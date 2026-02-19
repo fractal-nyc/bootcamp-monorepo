@@ -8,11 +8,20 @@ import SimulatorApp from "../simulations/SimulatorApp";
 import { flows } from "../simulations/flowData";
 import ScalingSimulatorApp from "../simulations/ScalingSimulatorApp";
 import { scalingFrames } from "../simulations/scalingData";
+import { SimulationsHub } from "../components/SimulationsHub";
 
 /** Thin wrapper that maps URL params to SimulatorApp props. */
 export function SimulatorPage() {
   const { kind, flowId } = useParams();
   const navigate = useNavigate();
+
+  if (!kind) {
+    return (
+      <div className="app">
+        <SimulationsHub />
+      </div>
+    );
+  }
 
   if (kind === "auth") {
     const flowIndex = flowId ? flows.findIndex((f) => f.id === flowId) : 0;

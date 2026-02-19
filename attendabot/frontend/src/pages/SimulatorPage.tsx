@@ -28,7 +28,7 @@ export function SimulatorPage() {
     const activeTab = flowIndex >= 0 ? flowIndex : 0;
 
     return (
-      <div className="app">
+      <div className="app app-wide">
         <SimulatorApp
           activeTab={activeTab}
           onTabChange={(i) => navigate(`/simulations/auth/${flows[i].id}`)}

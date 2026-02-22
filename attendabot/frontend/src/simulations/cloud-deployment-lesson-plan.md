@@ -15,6 +15,69 @@ By the end of this lesson, students will be able to:
 
 ---
 
+## Prerequisites
+
+Students should have the following set up **before** the lesson. Use Claude Code to help with any of the CLI setup — it can run the install commands and troubleshoot issues for you.
+
+### Accounts
+
+- [ ] **AWS account** — [Create one here](https://aws.amazon.com/free/). Free tier covers a `t2.micro` instance for 12 months. We'll use `t3.small` for this project, which is not free tier — budget ~$0.02/hr per instance. **Tear it down when you're done.**
+- [ ] **GCP account** — [Create one here](https://cloud.google.com/free). New accounts get $300 in free credits. An `e2-small` costs ~$0.02/hr.
+
+### CLI tools
+
+Install these locally. Claude Code can run all of these commands for you:
+
+```bash
+# Docker
+# Mac: Install Docker Desktop from https://www.docker.com/products/docker-desktop/
+# Linux: sudo apt-get install -y docker.io docker-compose-v2
+
+# AWS CLI
+# Mac: brew install awscli
+# Linux: sudo apt-get install -y awscli
+
+# Google Cloud CLI
+# Mac: brew install --cask google-cloud-sdk
+# Linux: https://cloud.google.com/sdk/docs/install
+
+# Terraform
+# Mac: brew install terraform
+# Linux: https://developer.hashicorp.com/terraform/install
+```
+
+### Authentication
+
+```bash
+# Configure AWS credentials (you'll need an access key from the IAM console)
+aws configure
+
+# Log into GCP
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+
+# Verify both work
+aws sts get-caller-identity
+gcloud config list
+```
+
+### AWS SSH key pair
+
+You need a key pair to SSH into EC2 instances. Create one in the AWS console (EC2 > Key Pairs) or via CLI:
+
+```bash
+aws ec2 create-key-pair --key-name my-app-key --query 'KeyMaterial' --output text > my-app-key.pem
+chmod 400 my-app-key.pem
+```
+
+This is the key name you'll pass to the Terraform `key_pair_name` variable.
+
+### Existing project
+
+- [ ] A working React + Vite + Express app you want to deploy (any project from the accelerator will work)
+
+---
+
 ## Part 1 — Architecture Recap (15 min)
 
 Walk through the final frame of the scaling simulation (Stage 12: Multiple Data Centers). The diagram shows every major primitive you'd encounter in a production system:
@@ -82,7 +145,7 @@ Without Docker, deploying means: "it works on my machine" and then spending hour
 
 ### Dockerizing a React + Vite + Express app
 
-Here's a minimal `Dockerfile` for a typical bootcamp app:
+Here's a minimal `Dockerfile` for a typical app:
 
 ```dockerfile
 FROM node:20-alpine

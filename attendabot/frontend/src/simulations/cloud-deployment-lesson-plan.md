@@ -4,7 +4,7 @@
 
 ## Learning Objectives
 
-By the end of this lesson, students will be able to:
+By the end of this lesson, engineers will be able to:
 
 1. Name the generic architectural components of a production web system and explain what each one does
 2. Map those generic components to brand-specific services on AWS and GCP
@@ -17,7 +17,7 @@ By the end of this lesson, students will be able to:
 
 ## Prerequisites
 
-Students should have the following set up **before** the lesson. Use Claude Code to help with any of the CLI setup — it can run the install commands and troubleshoot issues for you.
+Engineers should have the following set up **before** the lesson. Use Claude Code to help with any of the CLI setup — it can run the install commands and troubleshoot issues for you.
 
 ### Accounts
 

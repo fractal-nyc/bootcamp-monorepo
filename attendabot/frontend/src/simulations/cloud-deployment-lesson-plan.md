@@ -11,6 +11,7 @@ By the end of this lesson, students will be able to:
 3. Containerize an existing React + Vite + Express app with Docker
 4. Deploy that container to a cloud VM (EC2 / GCE)
 5. Run Grafana and OpenTelemetry alongside their app to observe its performance characteristics
+6. Use Terraform to define and provision cloud infrastructure as code
 
 ---
 
@@ -52,6 +53,9 @@ The same architecture, mapped to real services you can spin up today:
 | **Container Orchestration** | Manages clusters of containers | ECS / EKS | GKE (Google Kubernetes Engine) / Cloud Run | AKS (Azure Kubernetes Service) / Container Apps |
 | **Auto Scaling** | Adjusts number of instances based on load | Auto Scaling Groups | Managed Instance Groups | Virtual Machine Scale Sets |
 | **Monitoring / Observability** | Metrics, logs, traces | CloudWatch / X-Ray | Cloud Monitoring / Cloud Trace | Azure Monitor / Application Insights |
+| **Infrastructure as Code** | Define infrastructure in config files, version-controlled and repeatable | CloudFormation | Infrastructure Manager / Deployment Manager | ARM Templates / Bicep |
+
+All of these also work with **Terraform**, which is provider-agnostic — one tool, one language (HCL), any cloud. See Part 5.
 
 ### Key takeaway
 
@@ -196,7 +200,195 @@ Once running:
 
 ---
 
-## Part 5 — The Project: Deploy to the Cloud (Hands-on)
+## Part 5 — Infrastructure as Code with Terraform (30 min)
+
+### The problem with clicking around in consoles
+
+In Parts 1–4, we learned *what* cloud services exist and *how* to containerize an app. But how do you actually create the infrastructure? You could click through the AWS or GCP web console — but that's manual, error-prone, and impossible to reproduce. If you need to set up the same thing for a second project, you're starting from scratch.
+
+**Infrastructure as Code (IaC)** means defining your infrastructure in config files that you can version control, review in PRs, and re-run to get an identical environment every time.
+
+### Why Terraform?
+
+Terraform is the most widely used IaC tool. It works with every major cloud provider using the same language (HCL — HashiCorp Configuration Language). Write once, apply to AWS, GCP, or Azure by swapping the provider.
+
+### Core concepts
+
+| Concept | What it is |
+|---|---|
+| **Provider** | A plugin that talks to a specific cloud (e.g. `aws`, `google`, `azurerm`). |
+| **Resource** | A single piece of infrastructure (a VM, a firewall rule, a DNS record). |
+| **State** | Terraform's record of what it has created. Stored in `terraform.tfstate`. |
+| **Plan** | A preview of what Terraform *would* do. Run `terraform plan` to see it. |
+| **Apply** | Actually create/update/destroy the infrastructure. Run `terraform apply`. |
+| **Variables** | Parameterize your config so the same file works across environments. |
+
+### Example: Provision an EC2 instance (AWS)
+
+```hcl
+# main.tf — AWS version
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_security_group" "app" {
+  name        = "app-sg"
+  description = "Allow HTTP traffic to app and Grafana"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3001
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "app" {
+  ami           = "ami-0c02fb55956c7d316" # Amazon Linux 2023 (us-east-1)
+  instance_type = "t3.small"
+  key_name      = var.key_pair_name
+
+  vpc_security_group_ids = [aws_security_group.app.id]
+
+  user_data = <<-EOF
+    #!/bin/bash
+    yum install -y docker
+    systemctl start docker
+    usermod -aG docker ec2-user
+    mkdir -p /usr/local/lib/docker/cli-plugins
+    curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+      -o /usr/local/lib/docker/cli-plugins/docker-compose
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+  EOF
+
+  tags = {
+    Name = "app-server"
+  }
+}
+
+variable "key_pair_name" {
+  description = "Name of your EC2 key pair for SSH access"
+  type        = string
+}
+
+output "public_ip" {
+  value = aws_instance.app.public_ip
+}
+```
+
+### Example: Provision a Compute Engine VM (GCP)
+
+```hcl
+# main.tf — GCP version
+
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = "us-central1"
+  zone    = "us-central1-a"
+}
+
+resource "google_compute_firewall" "app" {
+  name    = "allow-app-ports"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "3000", "3001"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["app-server"]
+}
+
+resource "google_compute_instance" "app" {
+  name         = "app-server"
+  machine_type = "e2-small"
+  tags         = ["app-server"]
+
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-2204-lts"
+    }
+  }
+
+  network_interface {
+    network = "default"
+    access_config {} # gives it a public IP
+  }
+
+  metadata_startup_script = <<-EOF
+    #!/bin/bash
+    apt-get update
+    apt-get install -y docker.io docker-compose-v2
+    systemctl start docker
+    usermod -aG docker $USER
+  EOF
+}
+
+variable "project_id" {
+  description = "Your GCP project ID"
+  type        = string
+}
+
+output "public_ip" {
+  value = google_compute_instance.app.network_interface[0].access_config[0].nat_ip
+}
+```
+
+### The workflow
+
+```bash
+# 1. Initialize — downloads the provider plugins
+terraform init
+
+# 2. Preview — see what will be created (no changes yet)
+terraform plan
+
+# 3. Apply — actually create the infrastructure
+terraform apply
+
+# 4. When you're done — tear everything down
+terraform destroy
+```
+
+> **Key insight**: Notice how the AWS and GCP configs do the *same thing* (create a VM, open ports, install Docker) but use different resource names. This is the cloud mapping table from Part 2 in action — same concepts, different syntax.
+
+---
+
+## Part 6 — The Project: Deploy to the Cloud (Hands-on)
 
 ### Goal
 
@@ -211,48 +403,27 @@ Deploy one of your existing React + Vite + Express apps to **both** an AWS EC2 i
 - Add OpenTelemetry instrumentation to your Express server
 - Verify it works locally: hit your app, then check Grafana for traces and metrics
 
-#### 2. Deploy to AWS EC2
+#### 2. Provision infrastructure with Terraform
 
-1. Launch an EC2 instance (Amazon Linux 2023 or Ubuntu, `t3.small` or larger)
-2. SSH into the instance
-3. Install Docker and Docker Compose:
-   ```bash
-   # Amazon Linux 2023
-   sudo yum install -y docker
-   sudo systemctl start docker
-   sudo usermod -aG docker ec2-user
-   # Install Docker Compose plugin
-   sudo mkdir -p /usr/local/lib/docker/cli-plugins
-   sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
-     -o /usr/local/lib/docker/cli-plugins/docker-compose
-   sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-   ```
-4. Copy your project files to the instance (use `scp` or clone from git)
-5. Run `docker compose up -d`
-6. Open the security group to allow inbound traffic on ports 3000 and 3001
-7. Visit `http://<ec2-public-ip>:3000` for your app and `:3001` for Grafana
+- Create a `terraform/` directory in your project with two subdirectories: `aws/` and `gcp/`
+- Use the example configs from Part 5 as a starting point
+- Run `terraform init` and `terraform apply` for each provider
+- Note the public IPs from the output
 
-#### 3. Deploy to GCP Compute Engine
+#### 3. Deploy to your VMs
 
-1. Create a Compute Engine VM (Ubuntu, `e2-small` or larger)
-2. SSH into the instance (use the GCP Console SSH button or `gcloud compute ssh`)
-3. Install Docker and Docker Compose:
-   ```bash
-   # Ubuntu on GCE
-   sudo apt-get update
-   sudo apt-get install -y docker.io docker-compose-v2
-   sudo systemctl start docker
-   sudo usermod -aG docker $USER
-   ```
-4. Copy your project files and run `docker compose up -d`
-5. Create a firewall rule to allow TCP on ports 3000 and 3001:
-   ```bash
-   gcloud compute firewall-rules create allow-app-ports \
-     --allow tcp:3000,tcp:3001 \
-     --target-tags=http-server \
-     --description="Allow app and Grafana access"
-   ```
-6. Visit `http://<gce-external-ip>:3000` for your app and `:3001` for Grafana
+Once Terraform has created the instances (with Docker pre-installed via the startup scripts):
+
+**AWS EC2:**
+1. SSH into the instance: `ssh -i your-key.pem ec2-user@<ec2-public-ip>`
+2. Copy your project files (use `scp` or clone from git)
+3. Run `docker compose up -d`
+4. Visit `http://<ec2-public-ip>:3000` for your app and `:3001` for Grafana
+
+**GCP Compute Engine:**
+1. SSH into the instance: `gcloud compute ssh app-server`
+2. Copy your project files and run `docker compose up -d`
+3. Visit `http://<gce-public-ip>:3000` for your app and `:3001` for Grafana
 
 #### 4. Generate load and observe
 
@@ -276,10 +447,12 @@ Then open Grafana and explore:
 
 - [ ] `Dockerfile` and `docker-compose.yml` in your project repo
 - [ ] `tracing.ts` file with OpenTelemetry setup
+- [ ] `terraform/aws/main.tf` and `terraform/gcp/main.tf` that provision your infrastructure
 - [ ] Screenshot of your app running on EC2 with the public URL
 - [ ] Screenshot of your app running on GCE with the public URL
 - [ ] Screenshot of a Grafana dashboard showing traces or metrics from load testing
 - [ ] Short writeup (3-5 sentences): What did you observe? How did the performance compare between AWS and GCP? What was the most surprising thing you saw in the traces?
+- [ ] Run `terraform destroy` for both providers when you're done to avoid charges
 
 ---
 
@@ -298,6 +471,9 @@ Then open Grafana and explore:
 - [Docker Getting Started Guide](https://docs.docker.com/get-started/)
 - [OpenTelemetry Node.js Instrumentation](https://opentelemetry.io/docs/languages/js/getting-started/nodejs/)
 - [Grafana LGTM Docker Image](https://github.com/grafana/docker-otel-lgtm)
+- [Terraform Getting Started](https://developer.hashicorp.com/terraform/tutorials/aws-get-started)
+- [Terraform AWS Provider Docs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [Terraform Google Provider Docs](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
 - [AWS EC2 Getting Started](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html)
 - [GCP Compute Engine Quickstart](https://cloud.google.com/compute/docs/quickstart-linux)
 - [Docker + OpenTelemetry Guide](https://docs.docker.com/guides/opentelemetry/)

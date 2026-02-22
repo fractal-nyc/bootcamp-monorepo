@@ -36,22 +36,22 @@ Each of these components exists as a managed service on every major cloud provid
 
 The same architecture, mapped to real services you can spin up today:
 
-| Generic Component | What It Does | AWS | GCP |
-|---|---|---|---|
-| **DNS** | Maps domain names to IP addresses | Route 53 | Cloud DNS |
-| **CDN** | Serves static assets from edge locations near users | CloudFront | Cloud CDN |
-| **Load Balancer** | Distributes traffic across multiple servers | Elastic Load Balancing (ALB / NLB) | Cloud Load Balancing |
-| **Web Servers (Compute)** | Runs your application code | EC2 | Compute Engine (GCE) |
-| **Relational Database** | Structured data with SQL queries | RDS / Aurora | Cloud SQL / AlloyDB |
-| **NoSQL Database** | Flexible schema for sessions, documents, key-value data | DynamoDB | Firestore / Bigtable |
-| **Cache** | In-memory data store for fast reads | ElastiCache (Redis or Memcached) | Memorystore |
-| **Message Queue** | Decouples producers from consumers for async work | SQS / SNS / Amazon MQ | Pub/Sub / Cloud Tasks |
-| **Workers** | Background processes that consume from the queue | EC2 / ECS / Lambda | Compute Engine / Cloud Run / Cloud Functions |
-| **Object Storage** | Stores files, images, backups | S3 | Cloud Storage |
-| **Container Registry** | Hosts your Docker images | ECR (Elastic Container Registry) | Artifact Registry |
-| **Container Orchestration** | Manages clusters of containers | ECS / EKS | GKE (Google Kubernetes Engine) / Cloud Run |
-| **Auto Scaling** | Adjusts number of instances based on load | Auto Scaling Groups | Managed Instance Groups |
-| **Monitoring / Observability** | Metrics, logs, traces | CloudWatch / X-Ray | Cloud Monitoring / Cloud Trace |
+| Generic Component | What It Does | AWS | GCP | Azure |
+|---|---|---|---|---|
+| **DNS** | Maps domain names to IP addresses | Route 53 | Cloud DNS | Azure DNS |
+| **CDN** | Serves static assets from edge locations near users | CloudFront | Cloud CDN | Azure CDN / Front Door |
+| **Load Balancer** | Distributes traffic across multiple servers | Elastic Load Balancing (ALB / NLB) | Cloud Load Balancing | Azure Load Balancer / Application Gateway |
+| **Web Servers (Compute)** | Runs your application code | EC2 | Compute Engine (GCE) | Virtual Machines (VMs) |
+| **Relational Database** | Structured data with SQL queries | RDS / Aurora | Cloud SQL / AlloyDB | Azure SQL / Azure Database for PostgreSQL |
+| **NoSQL Database** | Flexible schema for sessions, documents, key-value data | DynamoDB | Firestore / Bigtable | Cosmos DB |
+| **Cache** | In-memory data store for fast reads | ElastiCache (Redis or Memcached) | Memorystore | Azure Cache for Redis |
+| **Message Queue** | Decouples producers from consumers for async work | SQS / SNS / Amazon MQ | Pub/Sub / Cloud Tasks | Service Bus / Queue Storage |
+| **Workers** | Background processes that consume from the queue | EC2 / ECS / Lambda | Compute Engine / Cloud Run / Cloud Functions | VMs / Container Apps / Azure Functions |
+| **Object Storage** | Stores files, images, backups | S3 | Cloud Storage | Blob Storage |
+| **Container Registry** | Hosts your Docker images | ECR (Elastic Container Registry) | Artifact Registry | Azure Container Registry (ACR) |
+| **Container Orchestration** | Manages clusters of containers | ECS / EKS | GKE (Google Kubernetes Engine) / Cloud Run | AKS (Azure Kubernetes Service) / Container Apps |
+| **Auto Scaling** | Adjusts number of instances based on load | Auto Scaling Groups | Managed Instance Groups | Virtual Machine Scale Sets |
+| **Monitoring / Observability** | Metrics, logs, traces | CloudWatch / X-Ray | Cloud Monitoring / Cloud Trace | Azure Monitor / Application Insights |
 
 ### Key takeaway
 

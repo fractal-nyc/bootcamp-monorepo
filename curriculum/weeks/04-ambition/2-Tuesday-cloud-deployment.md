@@ -22,7 +22,7 @@ Engineers should have the following set up **before** the lesson. Use Claude Cod
 - [ ] **AWS account** — [Create one here](https://aws.amazon.com/free/).
 - [ ] **GCP account** — [Create one here](https://cloud.google.com/free).
 
-Note: once we're done with this exercise, feel free to clean up any cloud resources you no longer want running so you don't cut into your free quota and/or get charged.
+Note: once we're done with this exercise, feel free to clean up any cloud resources you no longer want running so you don't cut into your free quota and/or get charged. You can use `terraform destroy` for this.
 
 ### CLI tools
 

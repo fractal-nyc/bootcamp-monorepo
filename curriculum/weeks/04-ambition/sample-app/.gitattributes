@@ -1,0 +1,3 @@
+# Terraform files embed shell scripts in heredocs — CRLF line endings
+# cause "bad interpreter" errors on Linux VMs. Force LF.
+*.tf text eol=lf

@@ -638,8 +638,9 @@ Use a simple load testing tool to generate traffic and watch the dashboards:
 
 ```bash
 # Install hey (HTTP load generator)
-# On Mac: brew install hey
-# Or download from: https://github.com/rakyll/hey
+# Mac: brew install hey
+# Linux: curl -sLo hey https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64 && chmod +x hey
+# Windows: curl -sLo hey.exe https://hey-release.s3.us-east-2.amazonaws.com/hey_windows_amd64
 
 # Send 1000 requests, 10 concurrent
 hey -n 1000 -c 10 http://<your-server-ip>:3000

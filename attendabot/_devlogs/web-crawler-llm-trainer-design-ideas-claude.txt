@@ -1,0 +1,705 @@
+PROMPT
+I want to prep for senior software engineering interviews. one of those kind of interviews is the system design interview. i want you to help me design a 2-part practice question. PArt 1 is designing a web crawler. Part 2 is about designing an LLM training pipeline based on the websites crawled by the crawler in part 1. Let’s make a markdown file that defines a model solution to the two problems. It could be used as a rubric to grade someone's performance on an interview. The solution should include functional and non-functional requirements like in a typical . Assume we're operating at web scale (millions if not billions of users). We should note tradeoffs in the design and why we favor one approach vs another (usually tied to some part of the user experience or if not that a technical requirement). do deep research to create the best artifact
+
+RESPONSE
+Here's your model solution and grading rubric. It covers both parts end-to-end:
+Part 1 (Web Crawler) covers the full architecture — URL frontier with two-queue politeness enforcement, distributed fetchers, selective JS rendering, two-level deduplication (Bloom + MinHash), WARC storage — with back-of-envelope math showing why you need ~1,000 workers and ~1.2 PB of storage.
+Part 2 (LLM Training Pipeline) flows directly from the crawler output, covering the 6-stage quality filtering pipeline (language ID → heuristics → perplexity → toxicity → edu scoring → dedup), tokenization with sequence packing, data mixing ratios with canary model ablation methodology, and the full 4D parallelism training setup (TP=8 within node, PP=4 across nodes, DP=64) with checkpointing and failure recovery.
+Each part has a 9-criterion rubric scored 1–3, with clear distinctions between junior, mid, senior, and staff+ performance. There's also a set of follow-up questions at the end for probing depth.
+
+# System Design Interview: Web Crawler → LLM Training Pipeline
+
+## Model Solution & Grading Rubric
+
+> **Interview Format:** Two-part, 60–90 minutes total. Part 1 builds the data acquisition layer. Part 2 consumes its output to train a large language model. A strong candidate connects the two parts seamlessly, demonstrating end-to-end systems thinking.
+
+---
+
+## Part 1: Design a Web Crawler at Scale
+
+### 1.1 Clarifying Questions (Expected from Candidate)
+
+Before designing anything, a senior candidate should ask questions like these to scope the problem. Award credit for each clarified assumption.
+
+| Question | Assumed Answer |
+|---|---|
+| What is the purpose of the crawl? | Collecting text data for downstream ML/LLM training |
+| How many pages on the web are we targeting? | ~10 billion pages |
+| What is the average page size? | ~500 KB (HTML + assets), ~50 KB extracted text |
+| How fresh must the data be? | Full re-crawl every 30 days; high-priority pages every 24–48 hrs |
+| Do we need to render JavaScript? | Yes, for a subset of dynamic/SPA sites |
+| Must we respect robots.txt? | Yes, strictly — both legal and ethical requirement |
+| Are we crawling the whole web or specific domains? | Broad crawl with seed URLs, expanding via link extraction |
+| What is our budget for infrastructure? | Cloud-scale; optimize for cost-efficiency, not unlimited budget |
+
+**Grading note:** A candidate who dives straight into architecture without scoping gets no credit here. Clarifying questions reveal product sense and maturity.
+
+---
+
+### 1.2 Functional Requirements
+
+1. **Seed URL Ingestion** — Accept a set of seed URLs to bootstrap the crawl.
+2. **Page Fetching** — Download HTML content from URLs via HTTP/HTTPS.
+3. **Link Extraction** — Parse fetched HTML to discover new URLs, feeding them back into the crawl loop.
+4. **Content Extraction** — Strip boilerplate (nav bars, ads, footers) and extract clean text, metadata, and structural information.
+5. **URL Deduplication** — Avoid re-crawling the same URL or substantially identical content.
+6. **robots.txt Compliance** — Fetch, parse, cache, and obey robots.txt for every domain.
+7. **Crawl Scheduling & Prioritization** — Prioritize URLs based on page importance (PageRank-like signal), freshness requirements, and domain diversity.
+8. **Storage** — Persist raw HTML and extracted text to durable storage for downstream consumption.
+
+---
+
+### 1.3 Non-Functional Requirements
+
+1. **Scalability** — Must handle 10B+ pages. Target throughput: ~5,000–10,000 pages/second across the cluster.
+2. **Politeness** — Per-domain rate limiting (e.g., 1 request per second per domain) to avoid overloading origin servers.
+3. **Fault Tolerance** — Individual worker crashes must not halt the crawl. Failed URLs are retried with exponential backoff.
+4. **Extensibility** — Easy to add new parsers (PDF, images), new storage backends, or new prioritization signals without rewriting the system.
+5. **Consistency of Deduplication** — Near-perfect URL-level dedup; content-level dedup to within ~95% recall via fuzzy hashing.
+6. **Observability** — Real-time dashboards for crawl rate, error rates, queue depth, per-domain statistics, and storage growth.
+7. **Cost Efficiency** — Minimize egress, storage, and compute costs. Compress stored data. Use spot/preemptible instances where possible.
+
+---
+
+### 1.4 Back-of-Envelope Estimation
+
+```
+Target:           10 billion pages
+Crawl window:     30 days = ~2.6 million seconds
+Required rate:    10B / 2.6M ≈ ~3,800 pages/sec (round up to 5,000 for headroom)
+
+Per-page data:
+  - Raw HTML:     ~500 KB avg → total raw: 10B × 500 KB = ~5 PB
+  - Extracted text: ~50 KB avg → total text: 10B × 50 KB = ~500 TB
+
+Bandwidth:
+  - Inbound:  5,000 pages/sec × 500 KB = ~2.5 GB/s = ~20 Gbps sustained
+
+Workers (assuming 1 req/sec politeness per domain):
+  - Each worker handles ~10 concurrent connections to different domains
+  - Need ~500 workers for 5,000 pages/sec
+  - With overhead/failures, plan for ~700–1,000 worker instances
+
+Storage (with compression):
+  - Raw HTML (gzip ~5:1): ~1 PB compressed
+  - Extracted text (gzip ~3:1): ~170 TB compressed
+  - Total: ~1.2 PB stored on object storage (S3/GCS)
+```
+
+**Grading note:** Exact numbers don't matter. What matters is the candidate's ability to reason through the scale, identify the dominant cost/bottleneck (storage and bandwidth), and use these numbers to drive design decisions.
+
+---
+
+### 1.5 High-Level Architecture
+
+```
+                        ┌──────────────┐
+                        │  Seed URLs   │
+                        └──────┬───────┘
+                               │
+                               ▼
+                     ┌───────────────────┐
+                     │   URL Frontier    │
+                     │  (Priority Queue) │
+                     │   Kafka / SQS     │
+                     └────────┬──────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+      ┌──────────────┐┌──────────────┐┌──────────────┐
+      │   Crawler    ││   Crawler    ││   Crawler    │
+      │   Worker 1   ││   Worker 2   ││   Worker N   │
+      │              ││              ││              │
+      │ ┌──────────┐ ││ ┌──────────┐ ││ ┌──────────┐ │
+      │ │ Fetcher  │ ││ │ Fetcher  │ ││ │ Fetcher  │ │
+      │ ├──────────┤ ││ ├──────────┤ ││ ├──────────┤ │
+      │ │ Parser   │ ││ │ Parser   │ ││ │ Parser   │ │
+      │ ├──────────┤ ││ ├──────────┤ ││ ├──────────┤ │
+      │ │ Extractor│ ││ │ Extractor│ ││ │ Extractor│ │
+      │ └──────────┘ ││ └──────────┘ ││ └──────────┘ │
+      └──────┬───────┘└──────┬───────┘└──────┬───────┘
+             │               │               │
+             ▼               ▼               ▼
+      ┌──────────────────────────────────────────┐
+      │         Content Processing Pipeline       │
+      │  ┌────────────┐  ┌───────────────────┐   │
+      │  │ URL Dedup  │  │ Content Dedup     │   │
+      │  │ (Bloom     │  │ (MinHash/SimHash) │   │
+      │  │  Filter)   │  │                   │   │
+      │  └────────────┘  └───────────────────┘   │
+      └──────────────────────┬───────────────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              ▼              ▼              ▼
+      ┌─────────────┐┌─────────────┐┌─────────────┐
+      │ Raw HTML    ││ Extracted   ││ Metadata    │
+      │ Store (S3)  ││ Text (S3)  ││ DB (NoSQL)  │
+      └─────────────┘└─────────────┘└─────────────┘
+                             │
+                             ▼
+                     ┌───────────────┐
+                     │  Discovered   │
+                     │  URLs → back  │
+                     │  to Frontier  │
+                     └───────────────┘
+
+  Supporting Services:
+  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────────┐
+  │ DNS Resolver    │  │ robots.txt      │  │ Politeness       │
+  │ (Local Cache)   │  │ Cache (Redis)   │  │ Rate Limiter     │
+  └─────────────────┘  └─────────────────┘  └──────────────────┘
+```
+
+---
+
+### 1.6 Deep Dive: Key Components
+
+#### A. URL Frontier (The Brain)
+
+The URL Frontier is the most architecturally interesting component. It determines *what* to crawl and *when*.
+
+**Design: Two-Queue Architecture**
+
+- **Front queues (Priority):** Multiple queues ranked by priority. Priority is computed from signals like domain authority, page freshness staleness, link depth, and whether the page is known to change frequently. A priority assigner routes incoming URLs to the appropriate front queue.
+- **Back queues (Politeness):** Each back queue maps to a single domain (or hostname). A per-domain timer enforces the crawl delay (from robots.txt or a default of 1 second). Workers pull from back queues only when the domain's rate limit allows.
+
+**Tradeoff — Centralized vs. Partitioned Frontier:**
+
+| Approach | Pros | Cons | When to Choose |
+|---|---|---|---|
+| Centralized (Kafka) | Globally consistent priority, simpler dedup | Single bottleneck, harder to scale beyond ~10K URLs/sec | Crawls < 1B pages |
+| Partitioned by domain hash | Each partition is independent, linearly scalable | Cross-partition priority is approximate | Crawls > 1B pages (our case) |
+
+**Our choice:** Partitioned by consistent hash of the domain. Each crawler worker "owns" a set of domains, ensuring politeness without cross-worker coordination. URLs for foreign domains are routed to the correct partition via the message broker.
+
+#### B. Fetcher
+
+- Uses async HTTP clients (e.g., `aiohttp`, Go's `net/http`) to maintain hundreds of concurrent connections per worker.
+- **DNS resolution** is cached locally per worker, refreshed every 5–10 minutes. DNS lookups are a major latency bottleneck at scale — a local resolver eliminates redundant external queries.
+- **JavaScript rendering:** For JS-heavy sites (~15–20% of the web), a headless browser pool (Playwright/Puppeteer on a separate rendering service) is invoked. This is expensive, so it is only triggered when the initial HTML fetch returns minimal content.
+
+**Tradeoff — Render everything vs. render selectively:**
+
+We render selectively. Rendering every page with a headless browser would 10–20x our compute cost and halve throughput. Instead, we use a lightweight heuristic (e.g., HTML body < 1 KB, or known SPA frameworks detected in `<script>` tags) to decide which pages need rendering. The tradeoff is that we may miss some dynamic content, but the cost savings and throughput gains are substantial.
+
+#### C. Deduplication
+
+Two levels of deduplication, serving different purposes:
+
+**URL-Level Dedup (Bloom Filter):**
+- A distributed Bloom filter (or Cuckoo filter) stores the fingerprint of every URL seen.
+- At 10B URLs with a 0.01% false positive rate, this requires ~20 GB of memory — easily fits in a Redis cluster or distributed in-memory across workers.
+- Tradeoff: Bloom filters don't support deletion. If a URL is removed and re-added, we'll miss it. Acceptable for our use case because we rarely un-crawl URLs.
+
+**Content-Level Dedup (MinHash + LSH):**
+- After extraction, we compute a MinHash signature (128 hash functions) for each document's text.
+- Locality-Sensitive Hashing bands these signatures to find candidate near-duplicates (Jaccard similarity > 0.8).
+- Why MinHash over SimHash? MinHash provides tunable precision/recall for set similarity, and is the industry standard for web-scale text dedup (used by Common Crawl, FineWeb, DCLM). SimHash is better for bitwise similarity but less effective for documents of varying length.
+
+#### D. Content Extraction
+
+- **HTML → Text:** Use a library like Trafilatura or Readability to strip boilerplate and extract the main content body. These tools use heuristics and DOM analysis to identify the "article" content vs. navigation, ads, and sidebars.
+- **Metadata extraction:** Title, language, publish date, author, Open Graph tags, schema.org structured data.
+- **Language detection:** FastText-based classifier applied post-extraction to tag each document's language. Critical for Part 2 — language distribution in training data directly affects model capabilities.
+
+#### E. Storage Layer
+
+| Data | Store | Format | Rationale |
+|---|---|---|---|
+| Raw HTML | S3/GCS | WARC (Web ARChive) | Industry standard for web archives; self-describing; supports replay |
+| Extracted text | S3/GCS | JSONL, gzip-compressed | Simple, streamable, efficient for batch processing pipelines |
+| URL metadata | DynamoDB / Cassandra | Key-value (URL hash → metadata) | High write throughput, no relational joins needed |
+| Crawl state | Redis | In-memory | Fast reads for Bloom filter, robots.txt cache, rate limiter state |
+
+**Why WARC for raw HTML?** WARC is the standard used by Common Crawl and the Internet Archive. It bundles the HTTP request, response headers, and body into a single self-contained record. This means we preserve provenance (when it was fetched, what headers were returned), which is critical for data lineage in the LLM training pipeline.
+
+---
+
+### 1.7 Key Tradeoffs Summary (Part 1)
+
+| Decision | Option A | Option B | Our Choice & Why |
+|---|---|---|---|
+| Queue system | Kafka (log-based) | SQS/RabbitMQ (traditional queue) | **Kafka** — replay capability is essential for re-processing; consumer groups simplify worker scaling |
+| Frontier partitioning | Centralized | Domain-hash partitioned | **Partitioned** — eliminates cross-worker coordination for politeness; scales linearly |
+| JS rendering | Render all pages | Selective rendering | **Selective** — 10–20x cost savings; heuristic catches ~90% of JS-dependent pages |
+| Dedup strategy | Exact URL match only | URL + content-level (MinHash) | **Both** — URL dedup prevents re-fetching; content dedup catches mirror sites, syndicated content, boilerplate farms |
+| Storage format | Raw files in S3 | WARC archives | **WARC** — industry standard; preserves provenance; compatible with Common Crawl tooling |
+| Compression | None | gzip / zstd | **zstd** — better compression ratio than gzip at similar speed; 3–5x storage savings |
+
+---
+
+### 1.8 Failure Modes & Mitigations
+
+| Failure | Impact | Mitigation |
+|---|---|---|
+| Worker crash | URLs in-flight are lost | Kafka consumer offsets are committed only after successful processing; crashed worker's partition is reassigned |
+| DNS resolver failure | Workers can't resolve hostnames | Local DNS cache with 10-min TTL; fallback to public resolvers (8.8.8.8); circuit breaker pattern |
+| Crawler trap (infinite URLs) | Worker wastes resources on generated URLs | Max URL depth limit (e.g., 15); max pages per domain cap; detect URL patterns with incrementing counters |
+| robots.txt fetch failure | Risk of crawling disallowed paths | Conservative default: if robots.txt can't be fetched after 3 retries, skip the domain entirely |
+| Storage write failure | Data loss | Retry with exponential backoff; buffer to local disk; alert if disk buffer exceeds threshold |
+| Rate limiting / IP blocking | Crawler gets 429s or blocked | Respect `Retry-After` headers; rotate exit IPs across data center regions; adaptive backoff per domain |
+
+---
+
+### 1.9 Grading Rubric — Part 1
+
+| Criterion | Weak (1) | Competent (2) | Strong (3) |
+|---|---|---|---|
+| **Requirements** | Jumps into design without scoping | Identifies most functional reqs | Asks clarifying questions; identifies both functional and non-functional; scopes explicitly |
+| **Estimation** | No estimation | Basic math (page count × size) | Full estimation: throughput, bandwidth, storage, worker count; uses numbers to drive design |
+| **Architecture** | Monolithic or hand-wavy | Core components present (frontier, fetcher, storage) | Clear data flow; all components identified; supporting services (DNS cache, rate limiter, robots.txt) included |
+| **Politeness** | Not mentioned | Mentions robots.txt | Two-queue frontier with per-domain rate limiting; robots.txt caching; adaptive crawl delay |
+| **Deduplication** | Not mentioned or naive | URL-level Bloom filter | Both URL-level and content-level dedup; discusses MinHash/LSH tradeoffs |
+| **Scalability** | Single machine design | Mentions horizontal scaling | Partitioned frontier; stateless workers; discusses scaling bottlenecks and mitigations |
+| **Tradeoffs** | No tradeoff discussion | Mentions one tradeoff | Multiple tradeoffs articulated with clear reasoning tied to requirements |
+| **Failure handling** | Not discussed | Mentions retries | Crawler traps, worker crashes, DNS failures, storage failures — all addressed |
+
+---
+
+## Part 2: Design an LLM Training Data Pipeline
+
+### Transition from Part 1
+
+> *"Great, we've built a crawler that has fetched 10 billion web pages and stored the extracted text in S3 as compressed JSONL files — approximately 500 TB of text. Now, your team wants to use this data to pre-train a large language model. Design the data pipeline that takes this raw crawled text and prepares it for LLM training, including the training infrastructure itself."*
+
+A strong candidate recognizes this is a fundamentally different system — it's a **batch data processing pipeline** feeding a **distributed GPU training cluster**, not a real-time service. The design priorities shift from throughput and politeness to data quality, reproducibility, and GPU utilization.
+
+---
+
+### 2.1 Clarifying Questions (Expected from Candidate)
+
+| Question | Assumed Answer |
+|---|---|
+| What size model are we training? | 70B parameters (Llama-3 scale) |
+| Pre-training, fine-tuning, or both? | Focus on pre-training; mention fine-tuning/RLHF as follow-up stages |
+| What is our GPU budget? | ~2,000 H100 GPUs (256 nodes × 8 GPUs/node) |
+| Target training tokens? | ~15 trillion tokens |
+| What framework? | PyTorch + Megatron-LM / NeMo or equivalent |
+| Do we need multi-language support? | Yes, English-primary (~70%) with multilingual mix |
+| What is our quality bar? | Competitive with open models (Llama 3, Mistral) on standard benchmarks |
+| Reproducibility requirements? | Full data lineage; ability to reproduce any training run from checkpoint |
+
+---
+
+### 2.2 Functional Requirements
+
+1. **Data Ingestion** — Read crawled text (JSONL from S3) into the processing pipeline.
+2. **Language Identification** — Classify each document by language; route to language-specific processing.
+3. **Quality Filtering** — Remove low-quality content: boilerplate, gibberish, adult content, toxic text, machine-generated spam.
+4. **PII Removal** — Detect and redact personally identifiable information (emails, phone numbers, SSNs, addresses).
+5. **Deduplication** — Document-level and paragraph-level fuzzy deduplication using MinHash + LSH (building on, but going beyond, what the crawler already did).
+6. **Content Classification** — Score documents on educational value, domain relevance, and factual density to guide data mixing.
+7. **Tokenization** — Convert cleaned text into token sequences using a trained tokenizer (e.g., BPE via SentencePiece).
+8. **Sequence Packing** — Concatenate tokenized documents and split into fixed-length training sequences with proper document boundary tokens.
+9. **Data Mixing & Shuffling** — Combine data from multiple domains/languages/quality tiers in a controlled ratio; globally shuffle to prevent ordering bias.
+10. **Distributed Training** — Train the model across thousands of GPUs using hybrid parallelism (data, tensor, pipeline).
+11. **Checkpointing & Recovery** — Save model state periodically; resume from any checkpoint without data loss or reprocessing.
+12. **Evaluation** — Continuously evaluate model quality on benchmark suites during training.
+
+---
+
+### 2.3 Non-Functional Requirements
+
+1. **Data Quality** — Filtering must be aggressive enough to remove harmful/low-quality data but not so aggressive that we lose data diversity. Target: retain ~10–20% of raw crawled text after filtering (industry standard per FineWeb/DCLM).
+2. **Reproducibility** — Every step in the pipeline must be deterministic given the same input and configuration. All data transformations are versioned and logged.
+3. **GPU Utilization** — Training must achieve >50% Model FLOPs Utilization (MFU). Wasted GPU time at $2–3/hr per H100 is extremely expensive.
+4. **Throughput** — Data pipeline must produce tokenized batches faster than the training loop consumes them — the GPU must never be I/O-starved.
+5. **Fault Tolerance** — Training runs spanning weeks must survive individual node failures without restarting from scratch.
+6. **Cost Efficiency** — The total pipeline (data processing + training) should be optimized for dollars-per-quality-point. Data processing is cheap relative to training, so we invest heavily in data quality to make every training FLOP count.
+7. **Auditability** — Full data lineage from raw crawled page → processed document → training token. Required for legal compliance (copyright disputes, GDPR).
+
+---
+
+### 2.4 Back-of-Envelope Estimation
+
+```
+Input:
+  - Raw crawled text: ~500 TB (compressed JSONL)
+  - After filtering (~15% retained): ~75 TB of clean text
+  - Average tokens per byte: ~0.25 tokens/byte (BPE on English)
+  - Clean text tokens: 75 TB × 0.25 tokens/byte ≈ ~18.75 trillion tokens
+  - Target training tokens: 15 trillion (we have headroom for selection)
+
+Training compute:
+  - Model: 70B parameters
+  - Tokens: 15T
+  - FLOPs per token (forward + backward): ~6 × 70B = 420 GFLOPs/token
+  - Total FLOPs: 15T × 420 GFLOPs = 6.3 × 10²⁴ FLOPs = 6.3 ZettaFLOPs
+
+  - H100 peak: 990 TFLOPS (bf16)
+  - At 50% MFU: ~495 TFLOPS effective
+  - GPU-seconds needed: 6.3e24 / 495e12 = ~1.27 × 10¹⁰ GPU-seconds
+  - With 2,000 GPUs: ~6.35 × 10⁶ seconds ≈ ~73 days
+
+Data pipeline throughput requirement:
+  - Training consumes 15T tokens / 73 days ≈ ~2.4M tokens/sec
+  - At 4 bytes per token (int32 IDs): ~9.6 MB/sec
+  - This is trivially low for modern storage — data pipeline is NOT the bottleneck
+  - BUT: the data processing pipeline (filtering, dedup, tokenization) over 500 TB
+    must complete BEFORE training starts or run as a streaming pre-process
+
+Data processing:
+  - 500 TB across 1,000 CPU workers ≈ 500 GB per worker
+  - At ~50 MB/s processing rate: ~10,000 seconds ≈ ~3 hours per worker
+  - Total wall-clock: ~3–6 hours with 1,000 workers (embarrassingly parallel)
+```
+
+**Key insight for the candidate:** The data processing pipeline is CPU-bound and embarrassingly parallel — it's a solved problem with tools like Spark, Dataflow, or DataTrove. The hard design challenge is the training infrastructure, not the data pipeline. But the *data quality decisions* made in the pipeline are the highest-leverage choices in the entire system — bad data processing dooms the training run.
+
+---
+
+### 2.5 High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    DATA PROCESSING PIPELINE                         │
+│                    (CPU Cluster — Batch)                            │
+│                                                                     │
+│  ┌──────────┐   ┌──────────┐   ┌───────────┐   ┌───────────────┐  │
+│  │  S3      │──▶│ Language  │──▶│ Quality   │──▶│ PII           │  │
+│  │  (Raw    │   │ ID       │   │ Filtering │   │ Redaction     │  │
+│  │  Text)   │   │ (fastText)│   │ (heuristic│   │ (regex + NER) │  │
+│  └──────────┘   └──────────┘   │ + model)  │   └───────┬───────┘  │
+│                                └───────────┘           │           │
+│                                                        ▼           │
+│  ┌──────────────┐   ┌──────────┐   ┌──────────┐  ┌──────────┐    │
+│  │ Content      │◀──│ MinHash  │◀──│ Toxicity │◀─│ Domain   │    │
+│  │ Classifier   │   │ Dedup    │   │ Filter   │  │ Classifier│    │
+│  │ (Edu Score)  │   │ (LSH)    │   │          │  │          │    │
+│  └──────┬───────┘   └──────────┘   └──────────┘  └──────────┘    │
+│         │                                                          │
+│         ▼                                                          │
+│  ┌──────────────┐   ┌──────────────┐   ┌─────────────────┐        │
+│  │ Data Mixing  │──▶│ Tokenization │──▶│ Sequence Packing │       │
+│  │ & Sampling   │   │ (BPE /       │   │ & Shuffling      │       │
+│  │              │   │  SentencePiece)│   │                 │       │
+│  └──────────────┘   └──────────────┘   └────────┬────────┘        │
+│                                                  │                 │
+└──────────────────────────────────────────────────┼─────────────────┘
+                                                   │
+                                                   ▼
+                              ┌─────────────────────────────┐
+                              │    Tokenized Dataset (S3)    │
+                              │    Parquet / Binary shards   │
+                              └──────────────┬──────────────┘
+                                             │
+┌────────────────────────────────────────────┼────────────────────────┐
+│                  TRAINING INFRASTRUCTURE                            │
+│                  (GPU Cluster)                                      │
+│                                             ▼                       │
+│                              ┌─────────────────────────┐            │
+│                              │  Data Loader Service     │            │
+│                              │  (FSx for Lustre / NFS)  │            │
+│                              └────────────┬────────────┘            │
+│                                           │                         │
+│     ┌─────────────────────────────────────┼──────────────────┐      │
+│     │           Hybrid 4D Parallelism                        │      │
+│     │                                                        │      │
+│     │  ┌──────────────────────────────────────────────────┐  │      │
+│     │  │  Data Parallel Group 1    Data Parallel Group 2  │  │      │
+│     │  │  ┌──────────────────┐    ┌──────────────────┐    │  │      │
+│     │  │  │ Pipeline Stage 1 │    │ Pipeline Stage 1 │    │  │      │
+│     │  │  │ ┌──┐┌──┐┌──┐┌──┐│    │ ┌──┐┌──┐┌──┐┌──┐│    │  │      │
+│     │  │  │ │G0││G1││G2││G3││    │ │G0││G1││G2││G3││    │  │      │
+│     │  │  │ └──┘└──┘└──┘└──┘│    │ └──┘└──┘└──┘└──┘│    │  │      │
+│     │  │  │ Tensor Parallel  │    │ Tensor Parallel  │    │  │      │
+│     │  │  ├──────────────────┤    ├──────────────────┤    │  │      │
+│     │  │  │ Pipeline Stage 2 │    │ Pipeline Stage 2 │    │  │      │
+│     │  │  │ ┌──┐┌──┐┌──┐┌──┐│    │ ┌──┐┌──┐┌──┐┌──┐│    │  │      │
+│     │  │  │ │G4││G5││G6││G7││    │ │G4││G5││G6││G7││    │  │      │
+│     │  │  │ └──┘└──┘└──┘└──┘│    │ └──┘└──┘└──┘└──┘│    │  │      │
+│     │  │  │ Tensor Parallel  │    │ Tensor Parallel  │    │  │      │
+│     │  │  └──────────────────┘    └──────────────────┘    │  │      │
+│     │  └──────────────────────────────────────────────────┘  │      │
+│     │         Node 1 (8 GPUs)          Node 2 (8 GPUs)       │      │
+│     │                    ... × 256 nodes                     │      │
+│     └────────────────────────────────────────────────────────┘      │
+│                                                                     │
+│  ┌───────────────┐  ┌──────────────────┐  ┌─────────────────┐      │
+│  │ Checkpoint    │  │ Training         │  │ Eval Runner     │      │
+│  │ Manager (S3)  │  │ Orchestrator     │  │ (Periodic       │      │
+│  │               │  │ (Kubernetes/SLURM)│  │  Benchmarks)   │      │
+│  └───────────────┘  └──────────────────┘  └─────────────────┘      │
+│                                                                     │
+│  ┌───────────────┐  ┌──────────────────┐  ┌─────────────────┐      │
+│  │ Monitoring    │  │ Experiment       │  │ Alert System    │      │
+│  │ (W&B/MLflow)  │  │ Tracker          │  │ (Loss spikes,   │      │
+│  │               │  │                  │  │  NaN detection) │      │
+│  └───────────────┘  └──────────────────┘  └─────────────────┘      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 2.6 Deep Dive: Data Processing Pipeline
+
+#### A. Quality Filtering (The Highest-Leverage Step)
+
+Quality filtering is where the data pipeline earns its keep. Research consistently shows that model performance is more sensitive to data quality than data quantity. The FineWeb pipeline retains only ~10–15% of raw Common Crawl data, yet models trained on it outperform those trained on larger but noisier datasets.
+
+**Multi-stage filtering pipeline:**
+
+| Stage | Method | What It Removes | Approximate Rejection Rate |
+|---|---|---|---|
+| 1. Language ID | fastText classifier | Non-target-language documents | ~20% |
+| 2. Heuristic filters | Rule-based | Pages with too few words, excessive special characters, too many repeated lines, abnormal word lengths, high symbol-to-word ratio | ~30% |
+| 3. Perplexity filter | KenLM n-gram model trained on Wikipedia | Gibberish, machine-generated SEO spam, garbled text | ~15% |
+| 4. Toxicity filter | Fine-tuned classifier (e.g., on Jigsaw dataset) | Hate speech, extreme violence, adult content | ~5% |
+| 5. Educational value scorer | LLM-based classifier (distilled) | Low-information content (listicles, cookie notices, navigation text) | ~15% |
+| 6. Deduplication | MinHash LSH (Jaccard > 0.8) | Near-duplicate documents and paragraphs | ~20–30% |
+
+**Tradeoff — Aggressive vs. Relaxed Filtering:**
+
+| | Aggressive (FineWeb-Edu style) | Relaxed (RedPajama style) |
+|---|---|---|
+| Retained data | ~10% of raw | ~40% of raw |
+| Unique tokens | Fewer, but very high quality | Many, but includes noise |
+| Model quality (short training) | Higher | Lower |
+| Model quality (very long training, >15T tokens) | May plateau due to lack of diversity | Can sustain learning longer |
+| Best for | Models ≤ 15T tokens; reasoning-heavy tasks | Very large training runs; broad coverage models |
+
+**Our choice:** A middle path. We use aggressive quality filtering but with a softer dedup threshold (keep one copy of near-duplicates rather than removing all) and we explicitly upsample high-quality domains (Wikipedia, academic papers, high-quality news, Stack Overflow) to compensate for diversity loss. This mirrors the approach used in Nemotron-CC and Llama 3.
+
+#### B. Deduplication at the Pipeline Level
+
+Even though the crawler performed URL-level and content-level dedup, the training pipeline needs its own dedup pass because:
+
+1. The crawler deduped within its crawl cycle; different crawl cycles may re-fetch evolved versions of the same page.
+2. Syndicated content appears on multiple domains with different URLs.
+3. Paragraph-level boilerplate (privacy policies, cookie notices) appears across millions of sites.
+
+**Implementation:**
+
+- **Document-level:** MinHash with 128 hash functions, 20 LSH bands of ~6 rows each. Documents with Jaccard similarity > 0.8 are considered duplicates. We keep the version with the highest quality score.
+- **Paragraph-level:** Using the "Big Friendly Filter" approach (from DCLM/DataComp-LM), we tokenize each paragraph into n-grams, query against a Bloom filter, and remove paragraphs where >80% of n-grams are already seen.
+
+**Why both levels?** Document dedup catches wholesale copies; paragraph dedup catches the long tail of boilerplate that inflates token counts without adding information. Failing to do paragraph-level dedup can waste 10–15% of training compute on repeated boilerplate.
+
+#### C. Tokenization & Sequence Packing
+
+- **Tokenizer choice:** Byte-Pair Encoding (BPE) via SentencePiece, trained on a representative sample of the cleaned data. Vocabulary size: ~128K tokens (balances compression ratio with embedding table size). For multilingual, use a larger vocab (~256K) to ensure reasonable fertility across scripts.
+- **Sequence packing:** Concatenate tokenized documents separated by a special `<|endoftext|>` token. Slice into fixed-length sequences (e.g., 8,192 tokens). This maximizes GPU utilization by avoiding padding.
+- **Shuffling:** After packing, globally shuffle sequence shards to prevent ordering bias (e.g., all Wikipedia appearing first). This is done by writing to N shards, shuffling shard order, then shuffling within each shard.
+
+**Tradeoff — Sequence Packing vs. Per-Document Padding:**
+
+| | Sequence Packing | Per-Document Padding |
+|---|---|---|
+| GPU utilization | High (no wasted tokens) | Lower (short docs waste context) |
+| Cross-document attention | Model sees tokens from adjacent documents | Clean document boundaries |
+| Implementation complexity | Moderate | Simple |
+| Industry standard | Yes (GPT, Llama, most large models) | Sometimes for fine-tuning |
+
+**Our choice:** Sequence packing with `<|endoftext|>` separators. The standard approach for pre-training. We use document-mask attention to prevent cross-document attention leakage within packed sequences — a technique popularized by Llama 3.
+
+#### D. Data Mixing
+
+Not all data is equally valuable. We define a **domain-weighted mixing ratio:**
+
+```
+Example mixing weights:
+  - Web text (filtered):         60%
+  - Wikipedia + encyclopedic:     8%
+  - Academic papers:               5%
+  - Books:                         8%
+  - Code (GitHub, StackOverflow): 12%
+  - Conversational / forums:       4%
+  - Math / STEM:                   3%
+```
+
+These ratios are tuned via **ablation studies** on smaller models (e.g., 1B parameter canary models trained for ~100B tokens). You train several canary models with different mixes and evaluate on a benchmark suite to find the optimal blend before committing to the full 70B training run.
+
+**Tradeoff — Static Mix vs. Curriculum Learning:**
+
+Static mixing is simpler and reproducible. Curriculum learning (e.g., starting with easier/cleaner data and gradually introducing harder/noisier data) can improve convergence but adds complexity and makes the training less reproducible. Most current large-scale training runs use static mixing, with a two-stage approach: Stage 1 on the full broad corpus, followed by Stage 2 on a smaller, higher-quality subset for "annealing."
+
+---
+
+### 2.7 Deep Dive: Distributed Training Infrastructure
+
+#### A. Hybrid 4D Parallelism
+
+A 70B parameter model does not fit on a single GPU (requires ~140 GB in bf16 for weights alone, plus optimizer states and activations). We must distribute the model across GPUs using multiple parallelism strategies simultaneously.
+
+**The four dimensions:**
+
+| Parallelism | What It Splits | Where It's Applied | Communication Pattern | Communication Volume |
+|---|---|---|---|---|
+| **Data Parallel (DP)** | Training data (micro-batches) | Across nodes | AllReduce (gradients) | Moderate; once per step |
+| **Tensor Parallel (TP)** | Weight matrices within a layer | Within a node (NVLink) | AllReduce per layer | High; very frequent |
+| **Pipeline Parallel (PP)** | Model layers across stages | Across nodes | Point-to-point (activations) | Low per transfer |
+| **Context Parallel (CP)** | Sequence length | Within/across nodes | AllGather / ReduceScatter | Depends on sequence length |
+
+**Configuration for 70B on 2,048 H100 GPUs (256 nodes × 8 GPUs):**
+
+```
+Tensor Parallel (TP)  = 8   (within a single DGX node, over NVLink)
+Pipeline Parallel (PP) = 4   (across 4 nodes per pipeline)
+Data Parallel (DP)    = 64  (256 nodes / 4 PP stages = 64 DP replicas)
+Context Parallel (CP) = 1   (standard 8K context; increase for 128K+ context)
+
+Verification: TP × PP × DP × CP = 8 × 4 × 64 × 1 = 2,048 GPUs ✓
+```
+
+**Why this configuration?**
+
+- **TP=8 within the node:** Tensor parallelism requires extremely high-bandwidth communication (AllReduce after every layer). NVLink within a DGX node provides 900 GB/s, making TP=8 efficient. Going TP across nodes would be a severe bottleneck.
+- **PP=4 across nodes:** Pipeline parallelism communicates only point-to-point activations between adjacent stages. This is tolerable over InfiniBand across nodes. We use PP=4 (not higher) to keep the pipeline bubble overhead manageable. With the 1F1B (one-forward-one-backward) schedule and micro-batch count ≥ 4×PP, the bubble ratio stays under ~20%.
+- **DP=64 for the remainder:** Data parallelism handles the rest. We use FSDP (Fully Sharded Data Parallel) with ZeRO-1 (shard optimizer states only) to reduce memory overhead while keeping gradient communication efficient.
+
+**Tradeoff — TP within node vs. across nodes:**
+
+TP across nodes would reduce per-node memory pressure further, but NVLink bandwidth is ~10x InfiniBand bandwidth. The communication overhead would destroy throughput. This is why every major training framework (Megatron-LM, NeMo, Llama 3's training stack) enforces TP within a single node. This is a hard rule, not a soft preference.
+
+#### B. Training Loop & Optimization
+
+```
+Hyperparameters (typical for 70B):
+  - Batch size:           ~4M tokens per step (global)
+  - Micro-batch size:     ~8K tokens per GPU
+  - Learning rate:        3e-4 (peak), cosine decay
+  - Warmup:               2,000 steps
+  - Weight decay:         0.1
+  - Optimizer:            AdamW (β₁=0.9, β₂=0.95)
+  - Precision:            bf16 mixed precision
+  - Gradient clipping:    1.0
+  - Sequence length:      8,192 tokens
+```
+
+**Mixed Precision (bf16):**
+We train in bf16 (brain float 16) rather than fp16 because bf16 has a wider exponent range, making it more numerically stable for large models without requiring loss scaling. The optimizer states (momentum, variance) are kept in fp32 for stability. This halves the memory and compute for forward/backward passes while maintaining training stability.
+
+#### C. Checkpointing & Fault Tolerance
+
+At 2,000 GPUs running for ~73 days, hardware failures are not a question of *if* but *when*. The expected MTBF (mean time between failures) for a single GPU is ~1,000 hours; with 2,000 GPUs, we expect a failure every ~30 minutes.
+
+**Checkpointing strategy:**
+
+- Save a full checkpoint every ~500 steps (~20 minutes of training time).
+- Checkpoint includes: model weights (all parallel shards), optimizer states, data loader position, RNG states.
+- Asynchronous checkpointing: Write to local NVMe first, then async-copy to S3 in the background. This avoids stalling the training loop.
+- Checkpoint size: ~70B params × 2 bytes (bf16) + optimizer (×12 bytes fp32) ≈ ~1 TB per checkpoint.
+
+**Failure recovery:**
+
+- When a node fails, the orchestrator (Kubernetes or SLURM) detects the failure, replaces the node, loads the latest checkpoint, and resumes training from the saved data loader position.
+- Data loader state must be deterministic: given the same seed and step number, it produces the same batch. This ensures reproducibility after recovery.
+
+#### D. Evaluation & Monitoring
+
+**Loss monitoring:**
+- Track training loss, validation loss, and gradient norms on every step.
+- Alert on: loss spikes > 2σ, NaN/Inf in gradients or activations, gradient norm explosion.
+- Log to Weights & Biases or MLflow for experiment tracking.
+
+**Periodic benchmark evaluation:**
+- Every ~1,000 steps, run the model on a benchmark suite (MMLU, HellaSwag, ARC, GSM8K, HumanEval).
+- This creates a "learning curve" that helps detect data mix problems early (e.g., if code benchmarks plateau while reasoning improves, adjust code data weight in the next run).
+
+**Hardware monitoring:**
+- GPU utilization, memory usage, NVLink/IB bandwidth utilization, temperature, ECC errors.
+- Proactively replace GPUs showing increasing ECC error rates before they cause training failures.
+
+---
+
+### 2.8 Key Tradeoffs Summary (Part 2)
+
+| Decision | Option A | Option B | Our Choice & Why |
+|---|---|---|---|
+| Filtering intensity | Aggressive (~10% retained) | Relaxed (~40% retained) | **Middle path (~15%)** — aggressive filtering + diversity-preserving dedup + upsampling of high-quality domains |
+| Dedup scope | Document-level only | Document + paragraph | **Both** — paragraph dedup catches 10–15% waste from boilerplate |
+| Tokenizer vocab size | 32K (GPT-2 style) | 128K+ (Llama 3 style) | **128K** — better compression ratio, especially for code and multilingual; slightly larger embedding table is a worthwhile tradeoff |
+| Sequence packing | Pack with cross-doc attention | Pack with document-mask attention | **Document-mask** — prevents attention leakage between unrelated documents; marginal compute cost |
+| Data mixing | Static ratio | Curriculum learning | **Static** — simpler, reproducible; use two-stage (broad → anneal) instead |
+| TP degree | TP=4 | TP=8 | **TP=8** — matches the NVLink topology of DGX nodes; TP=4 would leave memory on the table |
+| PP schedule | GPipe (synchronous) | 1F1B (interleaved) | **1F1B** — lower pipeline bubble, lower memory footprint from interleaved execution |
+| Precision | fp16 + loss scaling | bf16 | **bf16** — no loss scaling needed; wider dynamic range; same performance |
+| Checkpoint frequency | Every 100 steps | Every 1,000 steps | **Every 500 steps** — balances I/O overhead (~2% of step time with async writes) against recovery cost (max 10 min lost work) |
+| Orchestration | Kubernetes | SLURM | **Either works** — SLURM is traditional for HPC and has better GPU scheduling; Kubernetes is more flexible for heterogeneous workloads. Choice depends on existing infra. |
+
+---
+
+### 2.9 End-to-End Data Lineage
+
+A strong candidate emphasizes that the entire pipeline — from crawled URL to trained model — must be traceable:
+
+```
+URL (crawled) 
+  → WARC record (raw HTML, timestamped) 
+    → Extracted text (JSONL, with source URL + crawl timestamp) 
+      → Filtered document (with quality scores, language tag, dedup status) 
+        → Tokenized sequence (with document boundary markers)
+          → Training batch (with step number, data loader seed, shard ID)
+            → Model checkpoint (with training config, data mix, hyperparams)
+```
+
+This lineage is critical for:
+- **Legal compliance:** If a copyright holder requests removal, you can trace which training batches contained their content and evaluate impact.
+- **Debugging:** If the model generates toxic content, you can trace back to the training data that may have contributed.
+- **Reproducibility:** Any training run can be reproduced from checkpoint + data + config.
+
+---
+
+### 2.10 Failure Modes & Mitigations (Part 2)
+
+| Failure | Impact | Mitigation |
+|---|---|---|
+| Data pipeline produces corrupted tokens | Model trains on garbage; loss spikes | Validation checksums on every shard; canary evaluation before full training |
+| GPU failure mid-training | Lost training progress | Async checkpointing every 500 steps; orchestrator auto-replaces nodes and resumes |
+| Loss spike / NaN | Training divergence | Automatic rollback to previous checkpoint; reduce learning rate; investigate data batch |
+| Data mix imbalance | Model weak in some domains | Ablation studies on canary models before committing; periodic eval on diverse benchmarks |
+| Storage I/O bottleneck | GPU idle time (low MFU) | Pre-stage data to FSx for Lustre; prefetch batches async; ensure data pipeline >> training throughput |
+| Bit-flip / silent data corruption | Subtle model quality degradation | ECC memory; periodic gradient norm monitoring; cross-replica gradient comparison |
+
+---
+
+### 2.11 Grading Rubric — Part 2
+
+| Criterion | Weak (1) | Competent (2) | Strong (3) |
+|---|---|---|---|
+| **Data quality pipeline** | Mentions "clean the data" generically | Identifies key stages (filter, dedup, tokenize) | Multi-stage pipeline with specific techniques (MinHash, perplexity filter, edu scorer); discusses quality vs. diversity tradeoff |
+| **Deduplication** | Not mentioned or URL-only | Document-level dedup | Both document and paragraph-level; discusses MinHash parameters and thresholds |
+| **Tokenization & packing** | Mentions tokenization | Describes BPE; mentions sequence length | Discusses vocab size tradeoffs, sequence packing with document boundaries, global shuffling strategy |
+| **Data mixing** | Not mentioned | Mentions different data sources | Quantitative mixing ratios; discusses ablation methodology; mentions two-stage training |
+| **Distributed training** | "Use multiple GPUs" | Mentions data parallelism | Explains 4D parallelism (DP, TP, PP, CP); correct placement on hardware topology; justifies configuration |
+| **Checkpointing** | Not mentioned | "Save periodically" | Async checkpointing; deterministic data loader; failure recovery procedure; checkpoint size estimation |
+| **Evaluation** | Not mentioned | "Evaluate on benchmarks" | Periodic eval during training; loss monitoring with automated alerts; canary model ablations |
+| **Connecting Part 1 → Part 2** | Treats as independent problems | Mentions crawler output as input | Discusses data lineage end-to-end; explains why crawler-level dedup is insufficient; WARC → JSONL → tokens flow |
+| **Cost awareness** | Not mentioned | Mentions GPU cost | Estimates total compute cost; discusses MFU; explains cost-quality tradeoffs in data filtering |
+
+---
+
+## Overall Scoring Guide
+
+| Level | Score Range | Profile |
+|---|---|---|
+| **Junior / Not Ready** | 8–12 / 27 per part | Describes basic components but misses key concerns (politeness, dedup, parallelism). No tradeoff discussion. Single-machine thinking. |
+| **Mid-Level** | 13–18 / 27 per part | Solid high-level design. Identifies most components and some tradeoffs. May miss depth in one area (e.g., strong on crawler but weak on distributed training, or vice versa). |
+| **Senior** | 19–23 / 27 per part | Comprehensive design with clear data flow. Multiple tradeoffs articulated and tied to requirements. Discusses failure modes. Connects Part 1 and Part 2. |
+| **Staff+** | 24–27 / 27 per part | All of the above, plus: back-of-envelope drives design decisions; discusses cost optimization; mentions specific tools/frameworks with opinions; proposes novel optimizations; discusses data lineage and compliance; demonstrates deep understanding of hardware topology and its impact on parallelism strategy. |
+
+---
+
+## Appendix: Possible Follow-Up Questions
+
+These are questions an interviewer might ask to probe depth. A prepared candidate should be able to address most of them.
+
+### Part 1 Follow-Ups
+1. How would you handle a domain that generates infinite URLs (crawler trap)?
+2. What happens if a site changes its robots.txt to disallow crawling after we've already stored its content?
+3. How would you add support for crawling the "dark web" or authenticated pages?
+4. How do you handle pages that return different content based on User-Agent or geographic location?
+5. How would you re-prioritize URLs for a recrawl cycle?
+
+### Part 2 Follow-Ups
+1. How would you handle a copyright takedown request for content already used in training?
+2. If your model is weak on code generation, how would you adjust the data mix?
+3. How does the choice of tokenizer affect multilingual model performance?
+4. What is the difference between pre-training and fine-tuning, and how would you design the fine-tuning data pipeline differently?
+5. How would you handle a 3-day loss plateau during training?
+6. How would you scale this design to a 400B+ parameter model?
+7. What is RLHF/DPO and where does it fit in the overall training pipeline?
+8. How would you estimate the carbon footprint of this training run?
+
+
+r

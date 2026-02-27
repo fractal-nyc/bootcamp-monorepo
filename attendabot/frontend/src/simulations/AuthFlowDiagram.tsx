@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import type { AuthFlow } from "./types";
+import type { AuthFlow } from "./authTypes";
 
 const STEP_DELAY = 1800;
 const ROW_HEIGHT = 56;

@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { setUsername as storeUsername, clearSession, onAuthFailure, getMe } from "../api/client";
 import type { MeResponse } from "../api/client";
 import { authClient } from "../lib/auth-client";
+import { REQUIRE_LOGIN } from "../lib/featureFlags";
 
 interface AuthState {
   loading: boolean;
@@ -32,6 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [studentCohortDates, setStudentCohortDates] = useState<{ startDate?: string; endDate?: string }>({});
 
   useEffect(() => {
+    // On localhost (REQUIRE_LOGIN = false), skip auth entirely and act as instructor.
+    if (!REQUIRE_LOGIN) {
+      setLoggedIn(true);
+      setRole("instructor");
+      setUsername("Local Dev");
+      setLoading(false);
+      return;
+    }
+
     // Check for BetterAuth session (Discord OAuth) then fetch role
     authClient.getSession().then(async (result) => {
       if (result.data?.user) {
@@ -64,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = async () => {
+    if (!REQUIRE_LOGIN) return; // no-op in dev mode; refresh restores the bypass session
     try {
       await authClient.signOut();
     } catch {

@@ -4,10 +4,12 @@
  */
 
 import { useParams, useNavigate } from "react-router";
-import SimulatorApp from "../simulations/SimulatorApp";
-import { flows } from "../simulations/flowData";
+import AuthSimulatorApp from "../simulations/AuthSimulatorApp";
+import { flows } from "../simulations/authData";
 import ScalingSimulatorApp from "../simulations/ScalingSimulatorApp";
 import { scalingFrames } from "../simulations/scalingData";
+import CrawlerSimulatorApp from "../simulations/CrawlerSimulatorApp";
+import { crawlerFrames } from "../simulations/crawlerData";
 import { SimulationsHub } from "../components/SimulationsHub";
 
 /** Thin wrapper that maps URL params to SimulatorApp props. */
@@ -29,7 +31,7 @@ export function SimulatorPage() {
 
     return (
       <div className="app app-wide">
-        <SimulatorApp
+        <AuthSimulatorApp
           activeTab={activeTab}
           onTabChange={(i) => navigate(`/simulations/auth/${flows[i].id}`)}
         />
@@ -46,6 +48,20 @@ export function SimulatorPage() {
         <ScalingSimulatorApp
           activeFrame={activeFrame}
           onFrameChange={(i) => navigate(`/simulations/scaling/${scalingFrames[i].id}`)}
+        />
+      </div>
+    );
+  }
+
+  if (kind === "crawler") {
+    const frameIndex = flowId ? crawlerFrames.findIndex((f) => f.id === flowId) : 0;
+    const activeFrame = frameIndex >= 0 ? frameIndex : 0;
+
+    return (
+      <div className="app app-wide">
+        <CrawlerSimulatorApp
+          activeFrame={activeFrame}
+          onFrameChange={(i) => navigate(`/simulations/crawler/${crawlerFrames[i].id}`)}
         />
       </div>
     );

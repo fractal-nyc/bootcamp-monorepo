@@ -1,5 +1,5 @@
-import FlowDiagram from "./FlowDiagram";
-import { flows } from "./flowData";
+import AuthFlowDiagram from "./AuthFlowDiagram";
+import { flows } from "./authData";
 import "./simulations.css";
 
 interface SimulatorAppProps {
@@ -27,7 +27,7 @@ export default function SimulatorApp({ activeTab, onTabChange }: SimulatorAppPro
         ))}
       </nav>
 
-      <FlowDiagram flow={flows[activeTab]} />
+      <AuthFlowDiagram flow={flows[activeTab]} />
     </>
   );
 }

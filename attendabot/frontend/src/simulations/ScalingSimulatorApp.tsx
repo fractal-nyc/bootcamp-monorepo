@@ -1,4 +1,4 @@
-import ArchDiagram from "./ArchDiagram";
+import ScalingArchDiagram from "./ScalingArchDiagram";
 import { scalingFrames } from "./scalingData";
 import "./simulations.css";
 
@@ -26,7 +26,7 @@ export default function ScalingSimulatorApp({
         {frame.title}
       </div>
 
-      <ArchDiagram
+      <ScalingArchDiagram
         frames={scalingFrames}
         activeFrame={activeFrame}
         onFrameChange={onFrameChange}

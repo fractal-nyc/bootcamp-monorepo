@@ -1,4 +1,4 @@
-import type { AuthFlow } from "./types";
+import type { AuthFlow } from "./authTypes";
 
 export const flows: AuthFlow[] = [
   // ── No Auth ──

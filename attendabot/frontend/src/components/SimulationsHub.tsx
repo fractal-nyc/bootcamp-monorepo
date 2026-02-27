@@ -18,6 +18,13 @@ const simulations = [
       'Watch a web architecture evolve from a single server to global infrastructure. infrastructure. Based on "System Design Interview Volume 1" by Alex Xu.',
     url: "/simulations/scaling",
   },
+  {
+    id: "crawler",
+    title: "Web Crawler → LLM Training Pipeline",
+    description:
+      "How the internet becomes a language model: from seed URLs and politeness enforcement to 3D-parallel GPU training on 15 trillion tokens.",
+    url: "/simulations/crawler",
+  },
 ];
 
 /** Renders a grid of available simulation cards. */

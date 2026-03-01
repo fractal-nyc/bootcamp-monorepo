@@ -22,7 +22,7 @@ const simulations = [
     id: "crawler",
     title: "Web Crawler → LLM Training Pipeline",
     description:
-      "How the internet becomes a language model: from seed URLs and politeness enforcement to 3D-parallel GPU training on 15 trillion tokens.",
+      "Animated diagram of the web crawler inner loop: workers pulling URLs from the frontier, crawling pages, storing content, and feeding new links back into the queue.",
     url: "/simulations/crawler",
   },
 ];

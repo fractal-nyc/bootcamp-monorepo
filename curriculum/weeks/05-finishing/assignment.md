@@ -1,7 +1,7 @@
 # Week 5: THE LAST 10% — Comfort, Polish & the Art of Finishing
 
 **For:** Fractal Tech Cohort
-**Starting:** Monday, Mar 3, 2026
+**Starting:** Monday, Mar 2, 2026
 
 ---
 

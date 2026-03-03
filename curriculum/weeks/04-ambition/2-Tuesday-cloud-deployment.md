@@ -41,6 +41,9 @@ Install these locally. Claude Code can run all of these commands for you:
 # Mac: brew install --cask google-cloud-sdk
 # Linux: https://cloud.google.com/sdk/docs/install
 
+# (Optional): Hetzner
+# hcloud: https://github.com/hetznercloud/cli
+
 # Terraform
 # Mac: brew install terraform
 # Linux: https://developer.hashicorp.com/terraform/install

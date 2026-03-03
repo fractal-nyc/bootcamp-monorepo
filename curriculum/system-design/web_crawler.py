@@ -1,5 +1,8 @@
 # TODO: Update diagram with SimHash/MinHash algorithms
-# TODO: 
+# TODO: Clarify sequence of operations in diagram
+# TODO: Clarify relation between individaul URL Provider and Fetch Workers
+# TODO: Clarify Frontier+Cooldown Cache relationship
+
 
 from collections import deque
 

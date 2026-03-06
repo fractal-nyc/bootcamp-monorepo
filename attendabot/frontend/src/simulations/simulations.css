@@ -233,6 +233,7 @@
   color: var(--color-charcoal);
   padding: var(--space-2) var(--space-4);
   font-size: var(--text-lg);
+  line-height: 1;
   font-family: inherit;
   font-weight: 700;
   cursor: pointer;

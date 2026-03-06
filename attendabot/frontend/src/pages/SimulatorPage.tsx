@@ -8,7 +8,7 @@ import AuthSimulatorApp from "../simulations/AuthSimulatorApp";
 import { flows } from "../simulations/authData";
 import ScalingSimulatorApp from "../simulations/ScalingSimulatorApp";
 import { scalingFrames } from "../simulations/scalingData";
-import CrawlerAnimation from "../simulations/CrawlerAnimation";
+import CrawlerSimulatorApp from "../simulations/CrawlerSimulatorApp";
 import { SimulationsHub } from "../components/SimulationsHub";
 
 /** Thin wrapper that maps URL params to SimulatorApp props. */
@@ -55,7 +55,7 @@ export function SimulatorPage() {
   if (kind === "crawler") {
     return (
       <div className="app app-wide">
-        <CrawlerAnimation />
+        <CrawlerSimulatorApp />
       </div>
     );
   }

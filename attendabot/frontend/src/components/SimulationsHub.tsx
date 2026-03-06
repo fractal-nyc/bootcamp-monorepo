@@ -20,9 +20,9 @@ const simulations = [
   },
   {
     id: "crawler",
-    title: "Web Crawler → LLM Training Pipeline",
+    title: "Web Crawler Pipeline",
     description:
-      "Animated diagram of the web crawler inner loop: workers pulling URLs from the frontier, crawling pages, storing content, and feeding new links back into the queue.",
+      "Step through the complete 16-step crawl sequence: from seed URL injection through deduplication, S3 storage, seen filtering, and full-text search indexing.",
     url: "/simulations/crawler",
   },
 ];

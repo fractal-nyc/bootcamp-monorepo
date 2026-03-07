@@ -1,4 +1,4 @@
-# Week 4: Models, Training, and Evals (Spring 2026)
+# Week 6: Models, Training, and Evals (Spring 2026)
 
 ## Philosophy
 

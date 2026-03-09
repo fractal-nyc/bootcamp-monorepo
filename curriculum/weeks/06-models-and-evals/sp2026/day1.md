@@ -135,13 +135,15 @@ The foundational C/C++ inference engine. Students should understand its role eve
 ```bash
 # Build from source
 git clone https://github.com/ggml-org/llama.cpp
-cd llama.cpp && make -j
+cd llama.cpp
+cmake -B build
+cmake --build build -j
 
 # Run a GGUF model
-./llama-cli -m model.gguf -p "Explain recursion" -n 256
+./build/bin/llama-cli -m model.gguf -p "Explain recursion" -n 256
 
 # Start an OpenAI-compatible server
-./llama-server -m model.gguf --port 8080
+./build/bin/llama-server -m model.gguf --port 8080
 ```
 
 Key teaching points:

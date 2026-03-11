@@ -299,6 +299,16 @@ pip install modal
 modal setup  # follow the browser auth flow
 ```
 
+**Important: Llama 3.1 is a gated model.** Before deploying, you need to:
+
+1. Go to [meta-llama/Llama-3.1-8B-Instruct on Hugging Face](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct) and accept Meta's license agreement
+2. Create a [Hugging Face access token](https://huggingface.co/settings/tokens)
+3. Store it as a Modal secret:
+
+```bash
+modal secret create HUGGINGFACE HF_TOKEN=hf_your_token_here
+```
+
 Create `modal_llama.py`:
 
 ```python
@@ -306,12 +316,13 @@ import modal
 import subprocess
 
 # Define the container image with vLLM and dependencies
+# NOTE: vLLM requires CUDA, so we use an NVIDIA base image instead of debian_slim
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.from_registry("nvidia/cuda:12.8.0-devel-ubuntu22.04", add_python="3.12")
+    .entrypoint([])
     .pip_install(
-        "vllm>=0.8",
+        "vllm==0.13.0",
         "huggingface_hub[hf_transfer]",
-        "flashinfer-python",
     )
     .env({"HF_HUB_ENABLE_HF_TRANSFER": "1"})
 )
@@ -327,8 +338,9 @@ volume = modal.Volume.from_name("model-cache", create_if_missing=True)
     gpu="A10G",  # 24GB VRAM, plenty for an 8B model
     volumes={"/models": volume},
     timeout=600,
+    secrets=[modal.Secret.from_name("HUGGINGFACE")],
 )
-@modal.web_server(port=8000)
+@modal.web_server(port=8000, startup_timeout=600)
 def serve():
     """Spawn a vLLM server serving Llama 3.1 8B."""
     cmd = [
@@ -337,6 +349,7 @@ def serve():
         "--download-dir", "/models",
         "--host", "0.0.0.0",
         "--port", "8000",
+        "--max-model-len", "8192",
     ]
     subprocess.Popen(cmd)
 ```
@@ -346,6 +359,7 @@ Deploy it:
 ```bash
 modal deploy modal_llama.py
 # Modal prints a URL like: https://your-user--llama-inference-serve.modal.run
+# First deploy takes several minutes (building the container image + downloading model weights)
 ```
 
 **Step 3: Get a Groq API key**
